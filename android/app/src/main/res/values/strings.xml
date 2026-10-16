@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">الكرار للموبايل</string>
+    <string name="title_activity_main">الكرار للموبايل</string>
+    <string name="package_name">com.alkarrar.mobile</string>
+    <string name="custom_url_scheme">com.alkarrar.mobile</string>
+</resources>

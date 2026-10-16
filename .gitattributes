@@ -1,0 +1,7 @@
+# Preserve binary files from line-ending conversion
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.apk binary
+*.so binary

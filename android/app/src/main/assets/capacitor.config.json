@@ -1,0 +1,39 @@
+{
+	"appId": "com.alkarrar.mobile",
+	"appName": "الكرار للموبايل",
+	"webDir": "dist",
+	"bundledWebRuntime": false,
+	"server": {
+		"androidScheme": "https",
+		"cleartext": true,
+		"allowNavigation": [
+			"*",
+			"https://ais-dev-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app",
+			"https://ais-pre-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app"
+		]
+	},
+	"plugins": {
+		"CapacitorHttp": {
+			"enabled": true
+		},
+		"CapacitorCookies": {
+			"enabled": true
+		},
+		"BackgroundTask": {
+			"enable": true
+		},
+		"BackgroundRunner": {
+			"label": "com.alkarrar.mobile.backgroundsync",
+			"src": "runners/background.js",
+			"event": "syncOfflineQueue",
+			"repeat": true,
+			"interval": 10,
+			"autoStart": true
+		}
+	},
+	"android": {
+		"allowMixedContent": true,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": true
+	}
+}

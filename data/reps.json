@@ -1,0 +1,51 @@
+[
+  {
+    "id": "rep_1790325874814_0njii",
+    "name": "زيد",
+    "phone": "0780",
+    "code": "4555",
+    "role": "rep",
+    "canEdit": true,
+    "canDelete": false,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "list_1789987238741_0f20f",
+      "list_1789987255564_y9e1d"
+    ],
+    "avatarUrl": ""
+  },
+  {
+    "id": "rep-1",
+    "name": "ضياء المحاسب",
+    "phone": "07801112233",
+    "code": "4444",
+    "role": "admin",
+    "canEdit": true,
+    "canDelete": true,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "all"
+    ],
+    "avatarUrl": ""
+  },
+  {
+    "id": "rep_1790075504995_4y79u",
+    "name": "ماهر",
+    "phone": "",
+    "code": "4446",
+    "role": "supervisor",
+    "canEdit": true,
+    "canDelete": false,
+    "canMoveCustomer": true,
+    "canSell": false,
+    "allowedListIds": [
+      "list_1789987255564_y9e1d",
+      "fund-2",
+      "list-4",
+      "list_1787350092691_n2xzi"
+    ],
+    "avatarUrl": ""
+  }
+]

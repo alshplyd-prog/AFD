@@ -1,0 +1,90 @@
+[
+  {
+    "id": "fund-4",
+    "name": "صندوق ماهر 1",
+    "balance": 18527000,
+    "description": "",
+    "orderIndex": 0,
+    "createdAt": "2026-09-04T18:20:53.845Z"
+  },
+  {
+    "id": "fund-2",
+    "name": "ماهر 2",
+    "balance": 9268000,
+    "description": "",
+    "orderIndex": 1,
+    "createdAt": "2026-09-04T18:19:54.513Z"
+  },
+  {
+    "id": "fund_1787350326789_erqgt",
+    "name": "صندوق الديوانية العام 🌟🌹",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 2,
+    "createdAt": "2026-08-21T22:12:07.489Z"
+  },
+  {
+    "id": "fund_1787350349137_204v6",
+    "name": "صندوق الاولى",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 3,
+    "createdAt": "2026-08-21T22:12:29.884Z"
+  },
+  {
+    "id": "fund_1787350392388_zmj8l",
+    "name": "صندوق الثانية",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 4,
+    "createdAt": "2026-08-21T22:13:13.099Z"
+  },
+  {
+    "id": "fund-1",
+    "name": "صندوق متوقفين الديوانية",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 5,
+    "createdAt": "2026-09-04T18:20:35.204Z"
+  },
+  {
+    "id": "fund_1787351541464_lqvd8",
+    "name": "صندوق كربلاء العام 🌟🌹",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 6,
+    "createdAt": "2026-08-21T22:32:22.201Z"
+  },
+  {
+    "id": "fund_1787412692389_0x4u5",
+    "name": "صندوق كربلاء الاولى",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 7,
+    "createdAt": "2026-08-22T15:31:32.391Z"
+  },
+  {
+    "id": "fund_1787412701870_5rh61",
+    "name": "صندوق كربلاء الثانية",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 8,
+    "createdAt": "2026-08-22T15:31:41.870Z"
+  },
+  {
+    "id": "fundtx_1788545333848_a15gc",
+    "name": "صندوق كربلاء الثالثة",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 9,
+    "createdAt": "2026-09-04T18:15:16.511Z"
+  },
+  {
+    "id": "fund_1787350448071_bdhbq",
+    "name": "صندوق متوقفين كربلاء",
+    "balance": 0,
+    "description": "",
+    "orderIndex": 10,
+    "createdAt": "2026-09-04T18:20:13.852Z"
+  }
+]

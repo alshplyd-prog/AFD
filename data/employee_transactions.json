@@ -1,0 +1,22 @@
+[
+  {
+    "id": "emptx_1790701308340_2m3mp",
+    "employeeId": "emp_1790701282983_zqbza",
+    "fundId": "fund-4",
+    "type": "loan",
+    "amount": 4000,
+    "notes": "صرف امس",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-09-29T17:01:48.340Z"
+  },
+  {
+    "id": "emptx_1789748127345_1iw3r",
+    "employeeId": "emp_1789748111994_n6iaa",
+    "fundId": "fund_1787350448071_bdhbq",
+    "type": "loan",
+    "amount": 1000,
+    "notes": "",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-09-18T16:15:27.345Z"
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "rep-sup-1",
+    "name": "أحمد المشرف (مسؤول)",
+    "phone": "07809991122",
+    "code": "2222",
+    "role": "supervisor",
+    "canEdit": true,
+    "canDelete": true,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "all"
+    ]
+  },
+  {
+    "id": "rep-3",
+    "name": "رغيد",
+    "phone": "07509998877",
+    "code": "0000",
+    "role": "rep",
+    "canEdit": true,
+    "canDelete": true,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "all"
+    ]
+  },
+  {
+    "id": "rep-2",
+    "name": "زيد",
+    "phone": "07704445566",
+    "code": "5678",
+    "role": "rep",
+    "canEdit": true,
+    "canDelete": true,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "all"
+    ]
+  },
+  {
+    "id": "rep-1",
+    "name": "ضياء المحاسب",
+    "phone": "07801112233",
+    "code": "4444",
+    "role": "admin",
+    "canEdit": true,
+    "canDelete": true,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "all"
+    ]
+  },
+  {
+    "id": "rep_1786553941658_rhljp",
+    "name": "ضياء المحاسب",
+    "phone": "07801112233",
+    "code": "4444",
+    "role": "admin",
+    "canEdit": true,
+    "canDelete": true,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "all"
+    ]
+  },
+  {
+    "id": "rep_1786620296205_ae0e2",
+    "name": "ماهر المندوب",
+    "phone": "07800001122",
+    "code": "1234",
+    "role": "supervisor",
+    "canEdit": true,
+    "canDelete": false,
+    "canMoveCustomer": true,
+    "canSell": true,
+    "allowedListIds": [
+      "list_1786560962783_50vm6"
+    ]
+  }
+]

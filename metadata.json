@@ -1,0 +1,10 @@
+{
+  "name": "Remix Name Keeper",
+  "description": "A contact management application for saving, searching, and organizing contacts with call and message capabilities.",
+  "requestFramePermissions": [
+    "bluetooth"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
