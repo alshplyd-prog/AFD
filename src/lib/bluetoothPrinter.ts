@@ -2755,15 +2755,15 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
   <title>${title}</title>
   <style>
     @page {
-      margin: 0;
       size: 58mm auto;
+      margin: 0;
     }
     @media print {
       html, body {
         width: 58mm !important;
         max-width: 58mm !important;
         margin: 0 auto !important;
-        padding: 1.5mm !important;
+        padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
         -webkit-print-color-adjust: exact !important;
@@ -2778,18 +2778,23 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
       -webkit-font-smoothing: antialiased;
     }
     body {
-      margin: 0;
-      padding: 1.5mm;
+      margin: 0 auto;
+      padding: 1mm 2mm;
+      width: 58mm;
+      max-width: 58mm;
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', Tahoma, sans-serif;
-      font-size: 13px;
+      font-size: 11px;
       direction: rtl;
       background: #ffffff;
       color: #000000;
+      text-align: right;
     }
   </style>
 </head>
 <body>
-  ${htmlContent}
+  <div style="width: 58mm; max-width: 58mm; margin: 0 auto; padding: 1mm;">
+    ${htmlContent}
+  </div>
 </body>
 </html>`);
       doc.close();
