@@ -729,6 +729,32 @@ public class MainActivity extends BridgeActivity {
             printReceiptText("", text);
         }
 
+        @JavascriptInterface
+        public boolean printSystemDocument(final String jobTitle) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                            android.print.PrintManager printManager = (android.print.PrintManager) getSystemService(Context.PRINT_SERVICE);
+                            WebView webView = null;
+                            if (getBridge() != null && getBridge().getWebView() != null) {
+                                webView = getBridge().getWebView();
+                            }
+                            if (printManager != null && webView != null) {
+                                String title = (jobTitle != null && !jobTitle.trim().isEmpty()) ? jobTitle : "وصل تسديد";
+                                android.print.PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter(title);
+                                printManager.print(title, printAdapter, new android.print.PrintAttributes.Builder().build());
+                            }
+                        }
+                    } catch (Throwable e) {
+                        Log.e(TAG, "printSystemDocument error: " + e.getMessage());
+                    }
+                }
+            });
+            return true;
+        }
+
         private BluetoothDevice findDevice(String addressOrName) {
             if (bluetoothAdapter == null) return null;
             try {

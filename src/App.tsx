@@ -4095,7 +4095,7 @@ export default function App() {
         }
       />
 
-      <ReceiptPrintTemplate receipt={isReceiptModalOpen ? activeReceiptData : null} />
+      <ReceiptPrintTemplate receipt={activeReceiptData} />
 
       <ReceiptModal
         receipt={activeReceiptData}

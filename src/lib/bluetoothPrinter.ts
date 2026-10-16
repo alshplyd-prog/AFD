@@ -1394,23 +1394,14 @@ export function processPrintQueue() {
  * On Web/Desktop, uses silent iframe printing directly.
  */
 export function openUniversalPdfPrintWindow(contentHtml: string, isThermal: boolean = false, title: string = 'وصل تسديد', receiptData?: ThermalReceiptData) {
-  const isAndroid = (typeof Platform !== 'undefined' && (Platform.isAndroid || Platform.isAPK)) || /Android/i.test(navigator.userAgent || '') || !!(window as any).isAndroidAPK;
-
-  // 1. If receiptData is available and on Android: direct RawBT PDF dispatch
-  if (isAndroid && receiptData) {
-    try {
-      sendReceiptPdfToRawBTIntent(receiptData);
-      return;
-    } catch (e) {
-      console.warn('sendReceiptPdfToRawBTIntent error:', e);
-    }
-  }
-
-  // 2. Silent direct printing via invisible iframe (never displays the receipt on screen)
+  // Silent direct printing via offscreen 58mm iframe (never displays any modal/preview on screen)
   try {
     silentIframePrint(contentHtml, title);
   } catch (err) {
     console.error('Error in openUniversalPdfPrintWindow silent print:', err);
+    try {
+      window.print();
+    } catch (e) {}
   }
 }
 
@@ -1459,52 +1450,9 @@ export function generate58mmReceiptPdfBase64(receiptData: ThermalReceiptData): s
 }
 
 export function sendReceiptPdfToRawBTIntent(receiptData: ThermalReceiptData): boolean {
-  try {
-    const base64Pdf = generate58mmReceiptPdfBase64(receiptData);
-    const RAWBT_PACKAGE = 'ru.a404m.rawbt';
-    
-    // 1. Direct PDF rawbt URL schemes
-    const rawbtPdfUrl = `rawbt:data:application/pdf;base64,${base64Pdf}`;
-    const rawbtAltUrl = `rawbt:pdf;base64,${base64Pdf}`;
-    
-    // 2. Android Intent for RawBT PDF
-    const intentPdfUrl = `intent:#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};S.base64=${base64Pdf};S.type=pdf;end;`;
-    
-    try {
-      window.location.href = intentPdfUrl;
-    } catch (e) {}
-
-    const link = document.createElement('a');
-    link.href = intentPdfUrl;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      try {
-        if (document.body.contains(link)) document.body.removeChild(link);
-      } catch (e) {}
-    }, 500);
-
-    setTimeout(() => {
-      try {
-        const link2 = document.createElement('a');
-        link2.href = rawbtPdfUrl;
-        link2.style.display = 'none';
-        document.body.appendChild(link2);
-        link2.click();
-        setTimeout(() => {
-          try {
-            if (document.body.contains(link2)) document.body.removeChild(link2);
-          } catch (e) {}
-        }, 500);
-      } catch (e) {}
-    }, 200);
-
-    return true;
-  } catch (err) {
-    console.error('Error sending PDF to RawBT:', err);
-    return false;
-  }
+  // RawBT natively supports image printing for thermal printers without Arabic fonts.
+  // Directly convert receipt to sharp 58mm image and print via RawBT image protocol.
+  return sendReceiptImageToRawBTIntent(receiptData);
 }
 
 export function sendReceiptImageToRawBTIntent(receiptData: ThermalReceiptData): boolean {
@@ -2766,18 +2714,35 @@ export async function scanAndSaveBluetoothPrinter(): Promise<{ success: boolean;
 export function silentIframePrint(htmlContent: string, title: string = 'وصل تسديد') {
   try {
     const frameId = '__silent_print_iframe__';
-    let iframe = document.getElementById(frameId) as HTMLIFrameElement;
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.id = frameId;
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.style.visibility = 'hidden';
-      document.body.appendChild(iframe);
+    const oldFrame = document.getElementById(frameId);
+    if (oldFrame && oldFrame.parentNode) {
+      oldFrame.parentNode.removeChild(oldFrame);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = frameId;
+    // CRITICAL: Do NOT use visibility: hidden or width: 0 / height: 0,
+    // as browsers treat visibility: hidden as non-printable and output blank pages.
+    // Use position: fixed off-screen with full 384px (58mm) layout width.
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '-9999px';
+    iframe.style.width = '384px';
+    iframe.style.height = '600px';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.zIndex = '-9999';
+    document.body.appendChild(iframe);
+
+    // Also trigger Native Android PrintManager if inside Capacitor Bridge
+    const androidBridge = (window as any).AndroidPrinter || (window as any).AndroidInterface || (window as any).Android;
+    if (androidBridge && typeof androidBridge.printSystemDocument === 'function') {
+      try {
+        androidBridge.printSystemDocument(title);
+      } catch (e) {
+        console.warn('androidBridge.printSystemDocument error:', e);
+      }
     }
 
     const doc = iframe.contentWindow?.document || iframe.contentDocument;
@@ -2789,12 +2754,34 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
   <meta charset="utf-8">
   <title>${title}</title>
   <style>
-    @page { margin: 0; size: 58mm auto; }
+    @page {
+      margin: 0;
+      size: 58mm auto;
+    }
+    @media print {
+      html, body {
+        width: 58mm !important;
+        max-width: 58mm !important;
+        margin: 0 auto !important;
+        padding: 1.5mm !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      body * {
+        visibility: visible !important;
+      }
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
     body {
       margin: 0;
-      padding: 4px;
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-      font-size: 12px;
+      padding: 1.5mm;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', Tahoma, sans-serif;
+      font-size: 13px;
       direction: rtl;
       background: #ffffff;
       color: #000000;
@@ -2803,23 +2790,28 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
 </head>
 <body>
   ${htmlContent}
-  <script>
-    window.onload = function() {
-      setTimeout(function() {
-        try {
-          window.focus();
-          window.print();
-        } catch(e) {}
-      }, 200);
-    };
-  </script>
 </body>
 </html>`);
       doc.close();
+
+      setTimeout(() => {
+        try {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } else {
+            window.print();
+          }
+        } catch (printErr) {
+          console.warn('iframe print exception, falling back to window.print():', printErr);
+          try { window.print(); } catch (e) {}
+        }
+      }, 300);
       return true;
     }
   } catch (err) {
     console.warn('silentIframePrint fallback notice:', err);
+    try { window.print(); return true; } catch (e) {}
   }
   return false;
 }
@@ -2894,18 +2886,8 @@ export async function directPrintReceipt(
   // 2. PDF Print Mode (Direct PDF without showing any receipt preview on screen)
   if (onProgress) onProgress('جاري إرسال وصل PDF للطباعة المباشرة...');
 
-  const isAndroid = (typeof Platform !== 'undefined' && (Platform.isAndroid || Platform.isAPK)) || /Android/i.test(navigator.userAgent || '') || !!(window as any).isAndroidAPK;
-  if (isAndroid && receiptData) {
-    try {
-      sendReceiptPdfToRawBTIntent(receiptData);
-      return { success: true, message: 'تم إرسال وصل PDF للطباعة المباشرة بنجاح' };
-    } catch (e) {
-      console.warn('sendReceiptPdfToRawBTIntent in directPrintReceipt error:', e);
-    }
-  }
-
   openThermalPrintWindow(receiptData);
-  return { success: true, message: 'تم إرسال وصل PDF للطباعة بنجاح' };
+  return { success: true, message: 'تم فتح أمر طباعة PDF بنجاح' };
 }
 
 /**
