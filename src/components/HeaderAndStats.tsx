@@ -620,7 +620,12 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
       const now = new Date();
 
       appointments.forEach((app) => {
-        if (isAppointmentDueForNotification(app, contracts, now)) {
+        // Check if representative has access to this appointment's contract/list
+        const matchedApptContract = contracts.find((c) => c.id === app.contractId || (app.customerName && c.customerName.trim().toLowerCase() === app.customerName.trim().toLowerCase()));
+        const apptListId = matchedApptContract?.listId || app.listId;
+        const hasListAccess = !currentRep || isSupervisorOrAdmin || !currentRep.allowedListIds || currentRep.allowedListIds.length === 0 || currentRep.allowedListIds.includes('all') || (apptListId && currentRep.allowedListIds.includes(apptListId));
+
+        if (hasListAccess && isAppointmentDueForNotification(app, contracts, now)) {
           const timeLabel = app.appointmentTime || app.dueTime ? ` [الساعة ${app.appointmentTime || app.dueTime}]` : '';
           items.push({
             id: `appt-due-${app.id}`,

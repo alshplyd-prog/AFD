@@ -503,6 +503,8 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                 <Phone className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={11}
                   value={customerPhone}
                   disabled={isNonAdminEdit}
