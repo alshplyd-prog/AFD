@@ -328,16 +328,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <span>طباعة مباشرة إلى RawBT (بدون معاينة PDF) ⚡</span>
           </button>
 
-          {/* Direct RawBT Intent Button */}
-          <button
-            onClick={() => {
-              sendToRawBTDirectly(fullReceiptObj as any);
-            }}
-            className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-900 active:scale-98 text-white font-bold text-xs shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
-            <span>إرسال نصي مباشر إلى تطبيق RawBT ⚡</span>
-          </button>
 
           {/* Save PDF File & Other Secondary Actions */}
           <div className="grid grid-cols-2 gap-1.5">

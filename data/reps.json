@@ -3,15 +3,15 @@
     "id": "rep_1790325874814_0njii",
     "name": "زيد",
     "phone": "0780",
-    "code": "4555",
+    "code": "0000",
     "role": "rep",
     "canEdit": true,
     "canDelete": false,
     "canMoveCustomer": true,
     "canSell": true,
     "allowedListIds": [
-      "list_1789987238741_0f20f",
-      "list_1789987255564_y9e1d"
+      "list-4",
+      "list_1787350092691_n2xzi"
     ],
     "avatarUrl": ""
   },
@@ -34,17 +34,31 @@
     "id": "rep_1790075504995_4y79u",
     "name": "ماهر",
     "phone": "",
-    "code": "4446",
+    "code": "7777",
     "role": "supervisor",
     "canEdit": true,
     "canDelete": false,
     "canMoveCustomer": true,
-    "canSell": false,
+    "canSell": true,
     "allowedListIds": [
       "list_1789987255564_y9e1d",
       "fund-2",
-      "list-4",
-      "list_1787350092691_n2xzi"
+      "list_1791618798751_j2o66"
+    ],
+    "avatarUrl": ""
+  },
+  {
+    "id": "rep_1791619141491_eurdj",
+    "name": "هيثم",
+    "phone": "",
+    "code": "9999",
+    "role": "rep",
+    "canEdit": false,
+    "canDelete": false,
+    "canMoveCustomer": false,
+    "canSell": false,
+    "allowedListIds": [
+      "list_1791618798751_j2o66"
     ],
     "avatarUrl": ""
   }

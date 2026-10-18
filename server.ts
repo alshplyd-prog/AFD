@@ -1072,6 +1072,21 @@ async function startServer() {
             list_name = (SELECT name FROM customer_lists ORDER BY order_index ASC, created_at ASC LIMIT 1)
         WHERE (list_id IS NULL OR list_id = '' OR list_id = 'unknown')
           AND EXISTS (SELECT 1 FROM customer_lists);
+
+        -- Synchronize GPS locations between sales and customers if missing on one side
+        UPDATE customers c
+        SET latitude = s.latitude, longitude = s.longitude, location_address = COALESCE(c.location_address, s.location_address)
+        FROM sales s
+        WHERE (c.id = s.customer_id OR c.name = s.customer_name)
+          AND (c.latitude IS NULL OR c.latitude = 0)
+          AND s.latitude IS NOT NULL AND s.latitude != 0;
+
+        UPDATE sales s
+        SET latitude = c.latitude, longitude = c.longitude, location_address = COALESCE(s.location_address, c.location_address)
+        FROM customers c
+        WHERE (c.id = s.customer_id OR c.name = s.customer_name)
+          AND (s.latitude IS NULL OR s.latitude = 0)
+          AND c.latitude IS NOT NULL AND c.latitude != 0;
       `).catch(() => {});
     } catch (e) {
       console.warn("syncCustomersTableInPg error:", e);
@@ -3788,6 +3803,7 @@ async function startServer() {
           customersStatsRes,
           fundTxStatsRes,
           customerListsStatsRes,
+          locationsStatsRes,
         ] = await Promise.all([
           // 1. العقود والمبيعات (sales مع fallback إلى contracts)
           executePg(`
@@ -3937,6 +3953,28 @@ async function startServer() {
             WHERE list_id IS NOT NULL AND TRIM(list_id) != ''
               AND NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = sales.id)
           `).catch(() => [{}])),
+
+          // 10. المواقع الجغرافية المثبتة (GPS) للزبائن والمندوبين
+          executePg(`
+            SELECT 
+              COUNT(CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN 1 END)::int AS total_locations,
+              COUNT(DISTINCT CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN TRIM(customer_name) END)::int AS unique_customers_with_locations,
+              (SELECT COUNT(*)::int FROM rep_locations WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0) AS rep_locations_count
+            FROM sales
+            WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = sales.id AND (dr.table_name = 'sales' OR dr.table_name = 'contracts'))
+          `).catch(async () => {
+            return executePg(`
+              SELECT 
+                COUNT(CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN 1 END)::int AS total_locations,
+                COUNT(DISTINCT CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN TRIM(customer_name) END)::int AS unique_customers_with_locations,
+                0::int AS rep_locations_count
+              FROM contracts
+              WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = contracts.id)
+            `).catch((err) => {
+              queryErrors["locations"] = err.message;
+              return [{}];
+            });
+          }),
         ]);
 
         const salesStats = salesStatsRes[0] || {};
@@ -3948,6 +3986,7 @@ async function startServer() {
         const customersStats = customersStatsRes[0] || {};
         const fundTxStats = fundTxStatsRes[0] || {};
         const customerListsStats = customerListsStatsRes[0] || {};
+        const locationsStats = locationsStatsRes[0] || {};
 
         return res.json({
           success: true,
@@ -3993,6 +4032,11 @@ async function startServer() {
           },
           lists: {
             count: customerListsStats.total_lists || 0,
+          },
+          locations: {
+            total: locationsStats.total_locations || 0,
+            customerLocations: locationsStats.unique_customers_with_locations || locationsStats.total_locations || 0,
+            repLocations: locationsStats.rep_locations_count || 0,
           },
           diagnostics: {
             hasErrors: Object.keys(queryErrors).length > 0,
@@ -4064,6 +4108,11 @@ async function startServer() {
         reps: {
           total: allReps.length,
           active: allReps.filter((r: any) => r.status === 'active').length,
+        },
+        locations: {
+          total: allContracts.filter((c: any) => c && c.latitude != null && c.longitude != null && !isNaN(Number(c.latitude)) && Number(c.latitude) !== 0).length,
+          customerLocations: allContracts.filter((c: any) => c && c.latitude != null && c.longitude != null && !isNaN(Number(c.latitude)) && Number(c.latitude) !== 0).length,
+          repLocations: (fileDb.get("rep_locations") || []).length,
         },
       });
     } catch (err: any) {

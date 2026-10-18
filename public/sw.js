@@ -695,6 +695,43 @@ self.addEventListener('message', (event) => {
     // Attempt immediate background flush and reconciliation
     handleBackgroundSync().catch(() => {});
   }
+
+  // Handle explicit external notification requests from application
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const p = event.data.payload || {};
+    const title = p.title || 'الكرار للتقسيط';
+    const options = {
+      body: p.body || '',
+      icon: p.icon || '/favicon.ico',
+      badge: p.badge || '/favicon.ico',
+      tag: p.tag || `notif-${Date.now()}`,
+      vibrate: p.vibrate || [200, 100, 200],
+      data: p.data || {},
+      renotify: true,
+    };
+    if (self.registration && typeof self.registration.showNotification === 'function') {
+      self.registration.showNotification(title, options).catch((err) => {
+        console.warn('[SW] showNotification error:', err);
+      });
+    }
+  }
+});
+
+// Notification click listener: brings the window/tab to focus when clicked
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
+      }
+    })
+  );
 });
 
 // BroadcastChannel listener for instant cross-tab & cross-context sync triggers

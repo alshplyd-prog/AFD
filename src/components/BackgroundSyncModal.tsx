@@ -17,7 +17,8 @@ import {
   Play,
   Settings,
   Flame,
-  Trash2
+  Trash2,
+  CalendarClock
 } from 'lucide-react';
 import { Language } from '../types';
 import {
@@ -36,6 +37,10 @@ import {
   subscribeToQueueChange,
   clearPendingQueue,
 } from '../lib/offlineQueue';
+import {
+  get5DayPruneAndPollStatus,
+  run5DayPruneAndPollingInspection
+} from '../lib/postgresClient';
 
 interface BackgroundSyncModalProps {
   isOpen: boolean;
@@ -63,6 +68,8 @@ export const BackgroundSyncModal: React.FC<BackgroundSyncModalProps> = ({
   const [queueItems, setQueueItems] = useState<any[]>([]);
   const [keepAliveActive, setKeepAliveActive] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [pruneStatus, setPruneStatus] = useState(get5DayPruneAndPollStatus());
+  const [isPruningNow, setIsPruningNow] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -141,6 +148,23 @@ export const BackgroundSyncModal: React.FC<BackgroundSyncModalProps> = ({
       showToast(isAr ? `فشل المزامنة: ${err?.message || err}` : `Sync failed: ${err?.message || err}`);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleRunPruneNow = async () => {
+    setIsPruningNow(true);
+    try {
+      const res = await run5DayPruneAndPollingInspection(true);
+      setPruneStatus(get5DayPruneAndPollStatus());
+      showToast(
+        isAr
+          ? `تم التنظيف والاستطلاع بنجاح: تم حذف ${res.prunedCount} تسديد أقدم من سنة من ذاكرة الجهاز، المتبقي ${res.remainingCount}`
+          : `Pruning completed: ${res.prunedCount} pruned, ${res.remainingCount} remaining`
+      );
+    } catch (err: any) {
+      showToast(isAr ? `فشل التنظيف: ${err?.message || err}` : `Cleanup failed: ${err?.message || err}`);
+    } finally {
+      setIsPruningNow(false);
     }
   };
 
@@ -358,6 +382,52 @@ export const BackgroundSyncModal: React.FC<BackgroundSyncModalProps> = ({
                 </div>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                   ✓ محفوظ
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 5-Day Automatic Cleanup & Polling Section */}
+          <div className="p-3.5 rounded-xl bg-linear-to-br from-indigo-50/70 via-blue-50/40 to-slate-50/60 dark:from-slate-800/90 dark:to-slate-800/50 border border-indigo-200 dark:border-indigo-900/60 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <CalendarClock className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-black text-indigo-950 dark:text-indigo-100">
+                    {isAr ? 'الحذف التلقائي للتسديدات (قبل سنة) والاستطلاع كل 5 أيام' : '5-Day Memory Cleanup & Polling'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    {isAr
+                      ? 'تفريغ الذاكرة المحلية للتسديدات الأقدم من 365 يوماً مع بقائها كاملة بالسيرفر'
+                      : 'Cleans cache older than 1 year while retaining full records on server'}
+                  </div>
+                </div>
+              </div>
+              <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[11px] font-black flex items-center gap-1.5 shrink-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{isAr ? 'تلقائي بالكامل كل 5 أيام' : 'Automatic Every 5 Days'}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] font-bold">
+              <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                <span className="text-slate-500 block">{isAr ? 'دورة المراجعة والتنظيف:' : 'Cycle:'}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-black">
+                  {isAr ? 'كل 5 أيام تلقائياً' : 'Every 5 Days'}
+                </span>
+              </div>
+              <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
+                <span className="text-slate-500 block">{isAr ? 'آخر فحص وتنظيف:' : 'Last Cleaned:'}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-mono">
+                  {pruneStatus.lastRun ? new Date(pruneStatus.lastRun).toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : (isAr ? 'اليوم' : 'Today')}
+                </span>
+              </div>
+              <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 col-span-2 sm:col-span-1">
+                <span className="text-slate-500 block">{isAr ? 'الفحص القادم بعد:' : 'Next run in:'}</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-black">
+                  {isAr ? `${pruneStatus.daysRemaining} أيام` : `${pruneStatus.daysRemaining} days`}
                 </span>
               </div>
             </div>

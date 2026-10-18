@@ -695,6 +695,43 @@ self.addEventListener('message', (event) => {
     // Attempt immediate background flush and reconciliation
     handleBackgroundSync().catch(() => {});
   }
+
+  // Handle explicit external notification requests from application
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const p = event.data.payload || {};
+    const title = p.title || 'الكرار للتقسيط';
+    const options = {
+      body: p.body || '',
+      icon: p.icon || '/favicon.ico',
+      badge: p.badge || '/favicon.ico',
+      tag: p.tag || `notif-${Date.now()}`,
+      vibrate: p.vibrate || [200, 100, 200],
+      data: p.data || {},
+      renotify: true,
+    };
+    if (self.registration && typeof self.registration.showNotification === 'function') {
+      self.registration.showNotification(title, options).catch((err) => {
+        console.warn('[SW] showNotification error:', err);
+      });
+    }
+  }
+});
+
+// Notification click listener: brings the window/tab to focus when clicked
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
+      }
+    })
+  );
 });
 
 // BroadcastChannel listener for instant cross-tab & cross-context sync triggers
@@ -724,3 +761,46 @@ setInterval(() => {
     handleBackgroundSync().catch(() => {});
   }
 }, 30000);
+
+// Map Tiles Offline Cache (tile.openstreetmap.org / cartocdn)
+const MAP_TILES_CACHE_NAME = 'alkarrar-map-tiles-v1';
+const OFFLINE_TILE_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" fill="%231e293b"/><path d="M0 64h256M0 128h256M0 192h256M64 0v256M128 0v256M192 0v256" stroke="%23334155" stroke-width="1"/><circle cx="128" cy="128" r="4" fill="%2364748b" opacity="0.4"/></svg>`;
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Check if this request is a map tile request
+  const isMapTile =
+    url.hostname.includes('tile.openstreetmap.org') ||
+    url.hostname.includes('openstreetmap.org') ||
+    url.hostname.includes('cartocdn.com') ||
+    url.pathname.endsWith('.png') && (url.pathname.includes('/10/') || url.pathname.includes('/11/') || url.pathname.includes('/12/') || url.pathname.includes('/13/') || url.pathname.includes('/14/') || url.pathname.includes('/15/') || url.pathname.includes('/16/') || url.pathname.includes('/17/'));
+
+  if (isMapTile) {
+    event.respondWith(
+      caches.open(MAP_TILES_CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(event.request);
+        if (cached) {
+          return cached;
+        }
+
+        return fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.ok) {
+              cache.put(event.request, networkResponse.clone()).catch(() => {});
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Offline fallback tile
+            return new Response(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" fill="#1e293b"/><path d="M0 64h256M0 128h256M0 192h256M64 0v256M128 0v256M192 0v256" stroke="#334155" stroke-width="1"/><circle cx="128" cy="128" r="4" fill="#64748b" opacity="0.4"/></svg>',
+              {
+                headers: { 'Content-Type': 'image/svg+xml' },
+              }
+            );
+          });
+      })
+    );
+  }
+});

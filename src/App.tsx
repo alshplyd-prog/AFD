@@ -156,7 +156,8 @@ import {
   updateAppointmentInPostgres,
   subscribeToAppointments,
   getLocalCache,
-  updateLocalCacheItem
+  updateLocalCacheItem,
+  run5DayPruneAndPollingInspection
 } from './lib/postgresClient';
 
 import { universalApiFetch } from './lib/apiConfig';
@@ -507,6 +508,9 @@ export default function App() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', handleSwMessage);
     }
+
+    // Run 5-day cycle for automatic cleanup of payments older than 1 year and periodic polling
+    run5DayPruneAndPollingInspection(false).catch(() => {});
 
     // Periodic heartbeat (every 15s) to test database connectivity & auto-flush pending queue
     const connectionHeartbeatInterval = setInterval(async () => {
@@ -1442,6 +1446,15 @@ export default function App() {
     setCustomerPaymentsFilter(contract.id);
     setIsPaymentsHistoryOpen(true);
   };
+
+  const handleClosePaymentsHistory = useCallback(() => {
+    setIsPaymentsHistoryOpen(false);
+    setCustomerPaymentsFilter(null);
+  }, []);
+
+  const handleCloseCustomerStatement = useCallback(() => {
+    setIsStatementModalOpen(false);
+  }, []);
 
   // Record custom payment from details modal or add payment window
   const handleRecordCustomPayment = async (
@@ -4184,10 +4197,7 @@ export default function App() {
 
       <PaymentsHistoryModal
         isOpen={isPaymentsHistoryOpen}
-        onClose={() => {
-          setIsPaymentsHistoryOpen(false);
-          setCustomerPaymentsFilter(null);
-        }}
+        onClose={handleClosePaymentsHistory}
         customerFilterId={customerPaymentsFilter}
         payments={
           customerPaymentsFilter
@@ -4246,7 +4256,7 @@ export default function App() {
 
       <CustomerStatementModal
         isOpen={isStatementModalOpen}
-        onClose={() => setIsStatementModalOpen(false)}
+        onClose={handleCloseCustomerStatement}
         contracts={contractsWithLiveBalances}
         payments={payments}
         customerLists={customerLists}

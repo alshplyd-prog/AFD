@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { X, Printer, Filter, Calendar, FolderKanban, Download, Search, FileText, ArrowUpRight, ArrowDownLeft, RotateCcw, ChevronDown, Check, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { X, Printer, Filter, Calendar, FolderKanban, Download, Search, FileText, ArrowUpRight, ArrowDownLeft, RotateCcw, ChevronDown, Check, RefreshCw, CheckCircle2, AlertCircle, DownloadCloud, Loader2 } from 'lucide-react';
 import { InstallmentContract, PaymentRecord, CustomerList, Language, CustomerTransaction, SalesRepresentative } from '../types';
 import { calculateCustomerStatement, fetchCustomerSubCollectionStatement, SubCollectionStatementResult } from '../lib/statementCalculator';
 import { getLocalDateString, isZeroBalanceExpired24h, formatZeroBalanceCountdown } from '../lib/dateUtils';
@@ -26,21 +26,10 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   lang,
   currentRep,
 }) => {
-  // Back gesture / Back button support
-  useEffect(() => {
-    if (!isOpen) return;
-    const today = getLocalDateString();
-    setStartDate(today);
-    setEndDate(today);
-    window.history.pushState({ modal: 'customer_statement' }, '');
-    const handlePopState = () => {
-      onClose();
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [isOpen, onClose]);
+  const prevIsOpenRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   const [selectedListIds, setSelectedListIds] = useState<string[]>(['all']);
   const [isListDropdownOpen, setIsListDropdownOpen] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<string>(() => getLocalDateString());
@@ -52,10 +41,62 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   const [subColResult, setSubColResult] = useState<SubCollectionStatementResult | null>(null);
   const [loadingSubCol, setLoadingSubCol] = useState<boolean>(false);
 
+  const [serverPayments, setServerPayments] = useState<PaymentRecord[] | null>(null);
+  const [isFetchingServerPayments, setIsFetchingServerPayments] = useState<boolean>(false);
+
+  // Initialize dates ONLY on first modal open - never override user's date selection on re-render!
+  useEffect(() => {
+    if (!isOpen) {
+      prevIsOpenRef.current = false;
+      return;
+    }
+
+    if (!prevIsOpenRef.current) {
+      prevIsOpenRef.current = true;
+      const today = getLocalDateString();
+      setStartDate(today);
+      setEndDate(today);
+      // Fetch server records automatically in background without requiring user to press any button
+      handleFetchAllFromServer();
+    }
+  }, [isOpen]);
+
+  // Back gesture / Back button support
+  useEffect(() => {
+    if (!isOpen) return;
+
+    window.history.pushState({ modal: 'customer_statement' }, '');
+    const handlePopState = () => {
+      onCloseRef.current();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isOpen]);
+
+  const handleFetchAllFromServer = async () => {
+    setIsFetchingServerPayments(true);
+    try {
+      const res = await fetch('/api/payments');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setServerPayments(data);
+        }
+      }
+    } catch (e) {
+      console.warn('Error fetching all payments from server:', e);
+    } finally {
+      setIsFetchingServerPayments(false);
+    }
+  };
+
   const isAr = lang === 'ar';
 
   const safeContracts = Array.isArray(contracts) ? contracts : [];
-  const safePayments = Array.isArray(payments) ? payments : [];
+  const activePaymentsList = serverPayments || payments;
+  const safePayments = Array.isArray(activePaymentsList) ? activePaymentsList : [];
   const safeCustomerLists = Array.isArray(customerLists) ? customerLists : [];
 
   // 0. Filter lists allowed for the current rep

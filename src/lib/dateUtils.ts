@@ -356,22 +356,82 @@ export function playNotificationSound() {
   }
 }
 
-export function showBrowserNotification(title: string, body: string) {
+export async function showBrowserNotification(
+  title: string,
+  body: string,
+  options?: {
+    icon?: string;
+    badge?: string;
+    tag?: string;
+    data?: any;
+    vibrate?: number[];
+  }
+): Promise<boolean> {
   try {
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then((permission) => {
-          if (permission === 'granted') {
-            new Notification(title, { body });
-          }
+    playNotificationSound();
+
+    const notifOptions = {
+      body: body || '',
+      icon: options?.icon || '/favicon.ico',
+      badge: options?.badge || '/favicon.ico',
+      tag: options?.tag || `alkarrar-${Date.now()}`,
+      vibrate: options?.vibrate || [200, 100, 200],
+      data: options?.data || {},
+    };
+
+    // 1. Post message to Service Worker controller if available
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      try {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          payload: {
+            title,
+            ...notifOptions,
+          },
         });
+      } catch (postErr) {}
+    }
+
+    // 2. Use ServiceWorkerRegistration.showNotification (Required for Android Chrome, PWA, and background)
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready.catch(() => null);
+        if (reg && typeof reg.showNotification === 'function') {
+          if (typeof Notification !== 'undefined') {
+            if (Notification.permission === 'granted') {
+              await reg.showNotification(title, notifOptions);
+              return true;
+            } else if (Notification.permission === 'default') {
+              const perm = await Notification.requestPermission();
+              if (perm === 'granted') {
+                await reg.showNotification(title, notifOptions);
+                return true;
+              }
+            }
+          }
+        }
+      } catch (swErr) {
+        console.warn('SW showNotification error:', swErr);
+      }
+    }
+
+    // 3. Fallback to standard window.Notification (for Desktop browsers)
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(title, notifOptions);
+        return true;
+      } else if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          new Notification(title, notifOptions);
+          return true;
+        }
       }
     }
   } catch (e) {
-    // Ignore
+    console.warn('showBrowserNotification exception:', e);
   }
+  return false;
 }
 
 export const WEEK_DAYS_AR = [
