@@ -379,7 +379,7 @@ export async function showBrowserNotification(
       data: options?.data || {},
     };
 
-    // 1. Post message to Service Worker controller if available
+    // 1. Post message to Service Worker controller if available (Best for PWA / Android background)
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
       try {
         navigator.serviceWorker.controller.postMessage({
@@ -392,39 +392,35 @@ export async function showBrowserNotification(
       } catch (postErr) {}
     }
 
-    // 2. Use ServiceWorkerRegistration.showNotification (Required for Android Chrome, PWA, and background)
+    // 2. ServiceWorkerRegistration.showNotification fallback
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       try {
         const reg = await navigator.serviceWorker.ready.catch(() => null);
         if (reg && typeof reg.showNotification === 'function') {
-          if (typeof Notification !== 'undefined') {
-            if (Notification.permission === 'granted') {
-              await reg.showNotification(title, notifOptions);
-              return true;
-            } else if (Notification.permission === 'default') {
-              const perm = await Notification.requestPermission();
-              if (perm === 'granted') {
-                await reg.showNotification(title, notifOptions);
-                return true;
-              }
-            }
-          }
+          await reg.showNotification(title, notifOptions);
+          return true;
         }
       } catch (swErr) {
         console.warn('SW showNotification error:', swErr);
       }
     }
 
-    // 3. Fallback to standard window.Notification (for Desktop browsers)
+    // 3. Direct window.Notification fallback
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'granted') {
-        new Notification(title, notifOptions);
-        return true;
-      } else if (Notification.permission === 'default') {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
+        try {
           new Notification(title, notifOptions);
           return true;
+        } catch (dirErr) {
+          console.warn('Direct Notification error:', dirErr);
+        }
+      } else {
+        const perm = await Notification.requestPermission().catch(() => 'denied');
+        if (perm === 'granted') {
+          try {
+            new Notification(title, notifOptions);
+            return true;
+          } catch (dirErr2) {}
         }
       }
     }
