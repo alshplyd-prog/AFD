@@ -1038,12 +1038,12 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             </div>
 
             {/* 2. Date From */}
-            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 px-1.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
+            <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 px-1 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
               <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-                <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
-                <span className="text-[8.5px] sm:text-[10px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'من:' : 'From:'}</span>
+                <Calendar className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                <span className="text-[8px] sm:text-[9px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'من:' : 'From:'}</span>
               </div>
-              <span className="font-mono font-bold text-[8px] xs:text-[9px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              <span className="font-mono font-bold text-[7.5px] xs:text-[8px] sm:text-[9px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
                 {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
@@ -1056,12 +1056,12 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             </div>
 
             {/* 3. Date To */}
-            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 px-1.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
+            <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 px-1 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
               <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-                <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
-                <span className="text-[8.5px] sm:text-[10px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'إلى:' : 'To:'}</span>
+                <Calendar className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                <span className="text-[8px] sm:text-[9px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'إلى:' : 'To:'}</span>
               </div>
-              <span className="font-mono font-bold text-[8px] xs:text-[9px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              <span className="font-mono font-bold text-[7.5px] xs:text-[8px] sm:text-[9px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
                 {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
