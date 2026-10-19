@@ -252,8 +252,27 @@ export default function App() {
 
   const loginTimestampRef = useRef<number>(Date.now());
 
+  const currentRepRef = useRef<SalesRepresentative | null>(currentRep);
+  useEffect(() => {
+    currentRepRef.current = currentRep;
+  }, [currentRep]);
 
+  const contractsRef = useRef<InstallmentContract[]>(contracts);
+  useEffect(() => {
+    contractsRef.current = contracts;
+  }, [contracts]);
 
+  const isFirstContractsLoadRef = useRef(true);
+  const knownContractIdsRef = useRef<Set<string>>(new Set());
+
+  const isFirstPaymentsLoadRef = useRef(true);
+  const knownPaymentIdsRef = useRef<Set<string>>(new Set());
+
+  const isFirstEmpTxsLoadRef = useRef(true);
+  const knownEmpTxIdsRef = useRef<Set<string>>(new Set());
+
+  const isFirstApptsLoadRef = useRef(true);
+  const knownApptIdsRef = useRef<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
 
   const [lang, setLang] = useState<Language>(() => {
@@ -267,6 +286,11 @@ export default function App() {
   });
 
   const isAr = lang === 'ar';
+
+  const isArRef = useRef<boolean>(isAr);
+  useEffect(() => {
+    isArRef.current = isAr;
+  }, [isAr]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
@@ -339,11 +363,23 @@ export default function App() {
   const handleSaveAppointment = async (newAppt: any) => {
     try {
       const saved = await saveAppointmentToPostgres(newAppt);
+      if (saved && saved.id) {
+        knownApptIdsRef.current.add(saved.id);
+      }
       // Immediately update local state so count and box reflect it without delay
       setAppointments((prev) => {
         const filtered = prev.filter((a) => a.id !== saved.id);
         return [...filtered, saved];
       });
+
+      showBrowserNotification(
+        isAr ? '📅 إشعار موعد جديد' : '📅 New Appointment Scheduled',
+        isAr
+          ? `تم تسجيل موعد للزبون "${saved.customerName || newAppt.customerName}" بتاريخ ${saved.appointmentDate || newAppt.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`
+          : `Appointment scheduled for "${saved.customerName || newAppt.customerName}" on ${saved.appointmentDate || newAppt.appointmentDate}`,
+        { tag: `new_appt_${saved.id || Date.now()}` }
+      );
+
       setToastMessage(isAr ? 'تم حفظ الموعد بنجاح' : 'Appointment saved successfully');
       loadAppointments();
     } catch (e) {
@@ -866,11 +902,40 @@ export default function App() {
 
     const unsubContracts = subscribeToContracts(
       (updatedContracts) => {
-        setContracts(updatedContracts);
+        const list = updatedContracts || [];
+        if (isFirstContractsLoadRef.current) {
+          isFirstContractsLoadRef.current = false;
+          list.forEach((c) => knownContractIdsRef.current.add(c.id));
+        } else {
+          list.forEach((c) => {
+            if (!knownContractIdsRef.current.has(c.id)) {
+              knownContractIdsRef.current.add(c.id);
+              const rep = currentRepRef.current;
+              const hasAccess =
+                !rep ||
+                rep.role === 'admin' ||
+                (rep.name && rep.name.includes('ضياء')) ||
+                rep.id === 'rep-1' ||
+                (rep.allowedListIds &&
+                  (rep.allowedListIds.includes('all') || (c.listId && rep.allowedListIds.includes(c.listId))));
+              if (hasAccess) {
+                const priceFmt = Number(c.totalPrice || 0).toLocaleString('en-US');
+                showBrowserNotification(
+                  isArRef.current ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
+                  isArRef.current
+                    ? `تم تسجيل بيع جديد للزبون "${c.customerName}" بقيمة (${priceFmt} د.ع) - مادة: ${c.itemName || 'مادة'} بواسطة ${c.repName || 'المندوب'}`
+                    : `New sale for "${c.customerName}" (${priceFmt} IQD) by ${c.repName || 'Rep'}`,
+                  { tag: `sale_${c.id}` }
+                );
+              }
+            }
+          });
+        }
+        setContracts(list);
         setIsSyncing(false);
         setSyncError(false);
-        if (updatedContracts && updatedContracts.length > 0) {
-          precacheMapTilesForLocations(updatedContracts);
+        if (list.length > 0) {
+          precacheMapTilesForLocations(list);
         }
       },
       (err) => {
@@ -900,6 +965,35 @@ export default function App() {
         const valid = (updatedPayments || []).filter((p: any) => 
           p && p.id && (Number(p.amountPaid ?? p.amount) > 0) && !p.id.startsWith('contract_') && !p.id.startsWith('emp_') && !p.id.startsWith('item_')
         );
+        if (isFirstPaymentsLoadRef.current) {
+          isFirstPaymentsLoadRef.current = false;
+          valid.forEach((p) => knownPaymentIdsRef.current.add(p.id));
+        } else {
+          valid.forEach((p) => {
+            if (!knownPaymentIdsRef.current.has(p.id)) {
+              knownPaymentIdsRef.current.add(p.id);
+              const matchedC = (contractsRef.current || []).find((c) => c.id === p.contractId);
+              const rep = currentRepRef.current;
+              const hasAccess =
+                !rep ||
+                rep.role === 'admin' ||
+                (rep.name && rep.name.includes('ضياء')) ||
+                rep.id === 'rep-1' ||
+                (rep.allowedListIds &&
+                  (rep.allowedListIds.includes('all') || (matchedC?.listId && rep.allowedListIds.includes(matchedC.listId))));
+              if (hasAccess) {
+                const amtFmt = Number(p.amountPaid || p.amount || 0).toLocaleString('en-US');
+                showBrowserNotification(
+                  isArRef.current ? '💰 إشعار تسديد قسط' : '💰 Installment Payment Received',
+                  isArRef.current
+                    ? `تم استلام دفعة بقيمة (${amtFmt} د.ع) للزبون "${p.customerName || matchedC?.customerName || 'زبون'}" بواسطة ${p.repName || 'المندوب'}`
+                    : `Payment of (${amtFmt} IQD) received for "${p.customerName || matchedC?.customerName}" by ${p.repName || 'Rep'}`,
+                  { tag: `payment_${p.id}` }
+                );
+              }
+            }
+          });
+        }
         setPayments(valid);
       },
       (err) => {
@@ -1014,7 +1108,41 @@ export default function App() {
     });
 
     const unsubEmpTxs = subscribeToEmployeeTransactions((updatedTxs) => {
-      setEmployeeTransactions(updatedTxs);
+      const valid = updatedTxs || [];
+      if (isFirstEmpTxsLoadRef.current) {
+        isFirstEmpTxsLoadRef.current = false;
+        valid.forEach((t) => knownEmpTxIdsRef.current.add(t.id));
+      } else {
+        valid.forEach((t) => {
+          if (!knownEmpTxIdsRef.current.has(t.id)) {
+            knownEmpTxIdsRef.current.add(t.id);
+            const rep = currentRepRef.current;
+            const isTargetRep = rep && (t.employeeName === rep.name || t.employeeId === rep.id || t.employeeId === `rep-emp-${rep.id}`);
+            const isAdmin = !rep || rep.role === 'admin' || (rep.name && rep.name.includes('ضياء')) || rep.id === 'rep-1';
+            if (isAdmin || isTargetRep) {
+              const amtFmt = Number(t.amount || 0).toLocaleString('en-US');
+              if (t.type === 'loan') {
+                showBrowserNotification(
+                  isArRef.current ? '💸 إشعار دين / سلفة' : '💸 New Debt / Advance',
+                  isArRef.current
+                    ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حساب "${t.employeeName || 'موظف'}"${t.note ? ` - ${t.note}` : ''}`
+                    : `New debt of (${amtFmt} IQD) for "${t.employeeName}"`,
+                  { tag: `emp_debt_${t.id}` }
+                );
+              } else {
+                showBrowserNotification(
+                  isArRef.current ? '💵 إشعار سداد دين' : '💵 Debt Repayment',
+                  isArRef.current
+                    ? `تم سداد مبلغ (${amtFmt} د.ع) من دين "${t.employeeName || 'موظف'}"${t.note ? ` - ${t.note}` : ''}`
+                    : `Repayment of (${amtFmt} IQD) from "${t.employeeName}"`,
+                  { tag: `emp_repay_${t.id}` }
+                );
+              }
+            }
+          }
+        });
+      }
+      setEmployeeTransactions(valid);
     });
 
     const unsubPaymentConflicts = subscribeToPaymentConflicts((updatedConflicts) => {
@@ -1027,6 +1155,38 @@ export default function App() {
 
     const unsubAppointments = subscribeToAppointments((updatedAppointments) => {
       if (Array.isArray(updatedAppointments)) {
+        if (isFirstApptsLoadRef.current) {
+          isFirstApptsLoadRef.current = false;
+          updatedAppointments.forEach((a) => knownApptIdsRef.current.add(a.id));
+        } else {
+          updatedAppointments.forEach((a) => {
+            if (!knownApptIdsRef.current.has(a.id)) {
+              knownApptIdsRef.current.add(a.id);
+              const matchedC = (contractsRef.current || []).find(
+                (c) => c.id === a.contractId || (a.customerName && c.customerName === a.customerName)
+              );
+              const effectiveListId = a.listId || matchedC?.listId;
+              const rep = currentRepRef.current;
+              const hasAccess =
+                !rep ||
+                rep.role === 'admin' ||
+                (rep.name && rep.name.includes('ضياء')) ||
+                rep.id === 'rep-1' ||
+                (rep.allowedListIds &&
+                  (rep.allowedListIds.includes('all') ||
+                    (effectiveListId && rep.allowedListIds.includes(effectiveListId))));
+              if (hasAccess) {
+                showBrowserNotification(
+                  isArRef.current ? '📅 إشعار موعد جديد' : '📅 New Appointment Scheduled',
+                  isArRef.current
+                    ? `تم تسجيل موعد للزبون "${a.customerName}" بتاريخ ${a.appointmentDate}${a.appointmentTime ? ` الساعة ${a.appointmentTime}` : ''}${a.note ? ` (${a.note})` : ''}`
+                    : `Appointment scheduled for "${a.customerName}" on ${a.appointmentDate}`,
+                  { tag: `new_appt_${a.id}` }
+                );
+              }
+            }
+          });
+        }
         setAppointments(updatedAppointments);
       }
     });
@@ -1703,6 +1863,18 @@ export default function App() {
         return;
       }
 
+      knownPaymentIdsRef.current.add(newPaymentId);
+
+      const paidFmt = Number(amount || 0).toLocaleString('en-US');
+      const remFmt = Number(newRemaining || 0).toLocaleString('en-US');
+      showBrowserNotification(
+        isAr ? '💰 إشعار تسديد قسط' : '💰 Installment Payment Recorded',
+        isAr
+          ? `تم استلام دفعة بقيمة (${paidFmt} د.ع) من الزبون "${contract.customerName}" (المتبقي: ${remFmt} د.ع) بواسطة ${currentRep?.name || 'المندوب'}`
+          : `Payment of (${paidFmt} IQD) recorded for "${contract.customerName}" (Remaining: ${remFmt} IQD)`,
+        { tag: `payment_${newPaymentId}` }
+      );
+
       showToast(
         hasGpsLocation
           ? (isAr ? 'تم تسديد القسط وتثبيت موقع الزبون على الخريطة 📍' : 'Payment recorded & customer location pinned on map 📍')
@@ -2123,8 +2295,21 @@ export default function App() {
           totalPaid: 0,
           createdAt: new Date().toISOString(),
         } as InstallmentContract;
+
+        knownContractIdsRef.current.add(id);
         setContracts((prev) => [newContract, ...prev]);
         await addContractToFirestore(newContract, quantityDeducted);
+
+        const priceFmt = Number(newContract.totalPrice || 0).toLocaleString('en-US');
+        const advanceFmt = Number(newContract.advancePayment || 0).toLocaleString('en-US');
+        showBrowserNotification(
+          isAr ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
+          isAr
+            ? `تم تسجيل بيع جديد للزبون "${newContract.customerName}" بقيمة (${priceFmt} د.ع) - مادة: ${newContract.itemName || 'مادة'}${Number(newContract.advancePayment) > 0 ? ` (المقدمة: ${advanceFmt} د.ع)` : ''} بواسطة ${newContract.repName || 'المندوب'}`
+            : `Sale recorded for "${newContract.customerName}" (${priceFmt} IQD) by ${newContract.repName || 'Rep'}`,
+          { tag: `sale_${newContract.id}` }
+        );
+
         showToast(isAr ? 'تمت إضافة الزبون والعقد وتعديل الكمية بالمخزن بنجاح!' : 'New customer & sale recorded!');
         if (ensuredListId && selectedListId !== 'all') {
           handleSelectListId(ensuredListId);
@@ -2833,7 +3018,28 @@ export default function App() {
         );
       }
 
+      knownEmpTxIdsRef.current.add(tempId);
       await processEmployeeDebtTransaction(employee, fundId, type, amount, currentRep?.name || '', note);
+
+      const amtFmt = Number(amount || 0).toLocaleString('en-US');
+      if (type === 'loan') {
+        showBrowserNotification(
+          isAr ? '💸 إشعار دين / سلفة جديدة' : '💸 New Debt / Advance Recorded',
+          isAr
+            ? `تم تسجيل سلفة/دين جديد بمبلغ (${amtFmt} د.ع) على حساب الموظف "${employee.name}"${note ? ` - ${note}` : ''}`
+            : `New loan/debt of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
+          { tag: `emp_debt_${optimisticTx.id}` }
+        );
+      } else {
+        showBrowserNotification(
+          isAr ? '💵 إشعار سداد دين موظف' : '💵 Debt Repayment Recorded',
+          isAr
+            ? `تم تسجيل سداد مبلغ (${amtFmt} د.ع) من دين الموظف "${employee.name}"${note ? ` - ${note}` : ''}`
+            : `Repayment of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
+          { tag: `emp_repay_${optimisticTx.id}` }
+        );
+      }
+
       showToast(
         type === 'loan'
           ? isAr ? `تم تسجيل سحبة دين ${amount.toLocaleString('en-US')} د.ع للموظف ${employee.name}` : 'Loan recorded'

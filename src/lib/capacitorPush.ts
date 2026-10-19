@@ -9,7 +9,7 @@ export interface PushNotificationPayload {
 
 const CHANNEL_ID = 'alkarrar_main_channel';
 let isChannelCreated = false;
-const notifiedTagsCache = new Set<string>();
+const notifiedTagsCache = new Map<string, number>();
 
 /**
  * Initializes native notification channels and permissions
@@ -144,16 +144,18 @@ export async function sendExternalNotification(
   }
 ): Promise<boolean> {
   try {
-    // Deduplication check: prevent firing identical notifications within short period
+    // Deduplication check: prevent firing identical notifications within 3 seconds
     const notifTag = options?.tag || `${title}_${body}`;
-    if (notifiedTagsCache.has(notifTag)) {
-      return false; // Already sent
+    const now = Date.now();
+    const lastSent = notifiedTagsCache.get(notifTag);
+    if (lastSent && now - lastSent < 3000) {
+      return false; // Throttled burst duplicate
     }
-    notifiedTagsCache.add(notifTag);
-    // Keep cache bounded
-    if (notifiedTagsCache.size > 200) {
-      const first = notifiedTagsCache.values().next().value;
-      if (first) notifiedTagsCache.delete(first);
+    notifiedTagsCache.set(notifTag, now);
+    if (notifiedTagsCache.size > 250) {
+      for (const [k, t] of notifiedTagsCache.entries()) {
+        if (now - t > 60000) notifiedTagsCache.delete(k);
+      }
     }
 
     // 1. Native Capacitor Android / iOS (APK)
