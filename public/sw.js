@@ -702,8 +702,8 @@ self.addEventListener('message', (event) => {
     const title = p.title || 'الكرار للتقسيط';
     const options = {
       body: p.body || '',
-      icon: p.icon || '/favicon.ico',
-      badge: p.badge || '/favicon.ico',
+      icon: p.icon || '/pwa-192x192.png',
+      badge: p.badge || '/favicon.png',
       tag: p.tag || `notif-${Date.now()}`,
       vibrate: p.vibrate || [200, 100, 200],
       data: p.data || {},

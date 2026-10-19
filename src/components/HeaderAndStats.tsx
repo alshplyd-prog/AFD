@@ -221,40 +221,53 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setIsExternalNotifGranted(Notification.permission === 'granted');
-    }
+    let isMounted = true;
+    const checkPerm = async () => {
+      try {
+        const { isExternalNotificationEnabled } = await import('../lib/capacitorPush');
+        const granted = await isExternalNotificationEnabled();
+        if (isMounted) setIsExternalNotifGranted(granted);
+      } catch (e) {
+        if (typeof window !== 'undefined' && 'Notification' in window && isMounted) {
+          setIsExternalNotifGranted(Notification.permission === 'granted');
+        }
+      }
+    };
+    checkPerm();
+    return () => {
+      isMounted = false;
+    };
   }, [isNotificationsOpen]);
 
   const handleEnableExternalNotifications = async () => {
     try {
-      if (typeof window === 'undefined' || !('Notification' in window)) {
-        setIsExternalNotifGranted(true);
-        alert(isAr ? 'تم تفعيل الإشعارات بنجاح' : 'Notifications enabled successfully');
-        return;
+      const granted = await requestExternalNotificationPermission();
+      setIsExternalNotifGranted(granted);
+      if (granted) {
+        await showBrowserNotification(
+          isAr ? 'الكرار للتقسيط' : 'Al-Karrar Installments',
+          isAr
+            ? 'تم تفعيل الإشعارات الخارجية على جهازك بنجاح! ستصلك تنبيهات المبيعات والمواعيد والتسديدات.'
+            : 'External device notifications enabled successfully!'
+        );
+      } else {
+        alert(isAr ? 'يرجى السماح بصلاحية الإشعارات من إعدادات جهازك' : 'Please allow notification permission in your device settings');
       }
-      const perm = await Notification.requestPermission().catch(() => 'granted');
-      const granted = perm === 'granted' || perm === 'default';
-      setIsExternalNotifGranted(true);
-      await showBrowserNotification(
-        isAr ? 'الكرار للتقسيط' : 'Al-Karrar Installments',
-        isAr
-          ? 'تم تفعيل الإشعارات الخارجية على جهازك بنجاح! ستصلك تنبيهات الأقساط والتسديدات.'
-          : 'External device notifications enabled successfully!'
-      );
     } catch (e) {
-      setIsExternalNotifGranted(true);
-      alert(isAr ? 'تم تفعيل الإشعارات بنجاح' : 'Notifications enabled successfully');
+      console.warn('handleEnableExternalNotifications error:', e);
     }
   };
 
   const handleTestExternalNotification = async () => {
-    await showBrowserNotification(
+    const success = await showBrowserNotification(
       isAr ? '🔔 إشعار خارجي تجريبي' : '🔔 Test External Notification',
       isAr
         ? 'تم استلام الإشعار الخارجي على شاشة جهازك بنجاح! نظام الإشعارات نشط ومستعد.'
         : 'External device notification received successfully!'
     );
+    if (!success && !isExternalNotifGranted) {
+      alert(isAr ? 'يرجى الضغط على زر تفعيل الإشعارات أولاً للسماح بها' : 'Please enable notifications first');
+    }
   };
 
   // Dedicated Quick Edit for Excess Payment from Notification
@@ -436,13 +449,19 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
       return false;
     };
 
-    // 1. New sales alerts: shown to everyone who has access to the customer list
+    // Strict list permission checker: non-admin reps can ONLY see items belonging to lists they have access to
+    const isRepAllowedList = (listId?: string | null): boolean => {
+      if (isSupervisorOrAdmin) return true;
+      if (!currentRep) return true;
+      if (currentRep.allowedListIds && currentRep.allowedListIds.includes('all')) return true;
+      if (!listId) return false;
+      if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;
+      return currentRep.allowedListIds.includes(listId);
+    };
+
+    // 1. New sales alerts: shown strictly to users with access to the customer list
     contracts.forEach((c) => {
-      const hasAccess =
-        isSupervisorOrAdmin ||
-        !currentRep?.allowedListIds ||
-        currentRep.allowedListIds.includes('all') ||
-        (c.listId && currentRep.allowedListIds.includes(c.listId));
+      const hasAccess = isRepAllowedList(c.listId);
 
       const displayRepName =
         c.repName === 'سيد نزار' || c.customerName?.includes('محمد خالد')
@@ -519,11 +538,8 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
       const targetContract = contracts.find(
         (con) => con.id === conflict.contractId || con.customerName === conflict.customerName
       );
-      const hasConflictAccess =
-        isSupervisorOrAdmin ||
-        !currentRep?.allowedListIds ||
-        currentRep.allowedListIds.includes('all') ||
-        (targetContract?.listId && currentRep.allowedListIds.includes(targetContract.listId));
+      const isMyConflict = Boolean(currentRep && conflict.repName === currentRep.name);
+      const hasConflictAccess = isSupervisorOrAdmin || isMyConflict || isRepAllowedList(targetContract?.listId);
 
       if (!hasConflictAccess) return;
 
@@ -587,9 +603,8 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
 
         const repNameOfPayment = lastPayment.repName || c.repName || (isAr ? 'المندوب' : 'Rep');
 
-        const hasListAccess = !currentRep || !currentRep.allowedListIds || currentRep.allowedListIds.length === 0 || currentRep.allowedListIds.includes('all') || (c.listId && currentRep.allowedListIds.includes(c.listId));
-        const isMyContract = currentRep && (c.repName === currentRep.name || lastPayment.repName === currentRep.name);
-        const hasAccess = isSupervisorOrAdmin || isMyContract || hasListAccess;
+        const isMyContract = Boolean(currentRep && (c.repName === currentRep.name || lastPayment.repName === currentRep.name));
+        const hasAccess = isSupervisorOrAdmin || isMyContract || isRepAllowedList(c.listId);
 
         if (hasAccess) {
           items.push({
@@ -623,7 +638,7 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
         // Check if representative has access to this appointment's contract/list
         const matchedApptContract = contracts.find((c) => c.id === app.contractId || (app.customerName && c.customerName.trim().toLowerCase() === app.customerName.trim().toLowerCase()));
         const apptListId = matchedApptContract?.listId || app.listId;
-        const hasListAccess = !currentRep || isSupervisorOrAdmin || !currentRep.allowedListIds || currentRep.allowedListIds.length === 0 || currentRep.allowedListIds.includes('all') || (apptListId && currentRep.allowedListIds.includes(apptListId));
+        const hasListAccess = isRepAllowedList(apptListId);
 
         if (hasListAccess && isAppointmentDueForNotification(app, contracts, now)) {
           const timeLabel = app.appointmentTime || app.dueTime ? ` [الساعة ${app.appointmentTime || app.dueTime}]` : '';

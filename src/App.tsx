@@ -1085,10 +1085,9 @@ export default function App() {
       const isSupervisorOrAdmin = !currentRep || currentRep.role === 'admin' || currentRep.role === 'supervisor';
       const isAssociatedRep = Boolean(currentRep && (c.repName === currentRep.name || associatedContract?.repName === currentRep.name));
       const isAllowedList = Boolean(
-        !currentRep?.allowedListIds ||
-        currentRep.allowedListIds.length === 0 ||
-        currentRep.allowedListIds.includes('all') ||
-        (associatedContract?.listId && currentRep.allowedListIds.includes(associatedContract.listId))
+        isSupervisorOrAdmin ||
+        (currentRep?.allowedListIds && currentRep.allowedListIds.includes('all')) ||
+        (associatedContract?.listId && currentRep?.allowedListIds && currentRep.allowedListIds.includes(associatedContract.listId))
       );
 
       const hasConflictAccess = isSupervisorOrAdmin || isAssociatedRep || isAllowedList;
@@ -1316,7 +1315,16 @@ export default function App() {
     return todayAllPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
   }, [todayAllPayments]);
 
-  const notifiedAppointmentsRef = useRef<Set<string>>(new Set());
+  const notifiedAppointmentsRef = useRef<Set<string>>((() => {
+    try {
+      const stored = localStorage.getItem('alkarrar_notified_appts_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return new Set<string>(parsed);
+      }
+    } catch {}
+    return new Set<string>();
+  })());
   const hasInitializedAppointmentsRef = useRef<boolean>(false);
 
   // Check appointments in real-time and alert ONLY AT THEIR EXACT TIME (وليس عند إضافة الموعد أو قبله)
@@ -1331,9 +1339,15 @@ export default function App() {
         if (app.status === 'completed' || app.status === 'cancelled') return;
 
         // Check if representative is allowed to see this appointment's list
+        const matchedContract = contractsWithLiveBalances.find((c) => c.id === app.contractId || (app.customerName && c.customerName.trim().toLowerCase() === app.customerName.trim().toLowerCase()));
+        const effectiveListId = app.listId || matchedContract?.listId;
+
         if (currentRep && currentRep.role !== 'admin' && currentRep.role !== 'supervisor') {
-          if (currentRep.allowedListIds && !currentRep.allowedListIds.includes('all')) {
-            if (app.listId && !currentRep.allowedListIds.includes(app.listId)) {
+          if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) {
+            return;
+          }
+          if (!currentRep.allowedListIds.includes('all')) {
+            if (!effectiveListId || !currentRep.allowedListIds.includes(effectiveListId)) {
               return;
             }
           }
@@ -1346,14 +1360,17 @@ export default function App() {
 
           if (!notifiedAppointmentsRef.current.has(alertKey)) {
             notifiedAppointmentsRef.current.add(alertKey);
+            try {
+              const arr = Array.from(notifiedAppointmentsRef.current).slice(-200);
+              localStorage.setItem('alkarrar_notified_appts_v2', JSON.stringify(arr));
+            } catch {}
 
             // If this is the initial load on app boot, record without blaring audio for old appointments
             if (!hasInitializedAppointmentsRef.current) {
               return;
             }
 
-            // Real-time alert right when the appointment time arrives!
-            playNotificationSound();
+            // Real-time alert right when the appointment time arrives - Sound + Text ONCE
             const timeLabel = apptTime ? ` [الساعة ${apptTime}]` : '';
             showToast(
               isAr
@@ -1364,7 +1381,8 @@ export default function App() {
               isAr ? 'تنبيه موعد مستحق الآن' : 'Appointment Due Now',
               isAr
                 ? `حان موعد الزبون "${app.customerName}"${app.note ? ` (${app.note})` : ''}${timeLabel}`
-                : `Appointment due for "${app.customerName}"${app.note ? ` (${app.note})` : ''}${timeLabel}`
+                : `Appointment due for "${app.customerName}"${app.note ? ` (${app.note})` : ''}${timeLabel}`,
+              { tag: alertKey }
             );
           }
         }

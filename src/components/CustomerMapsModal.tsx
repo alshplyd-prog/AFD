@@ -263,13 +263,14 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
     return unregister;
   }, [isOpen, isSidebarOpen, selectedCustomer, onClose]);
 
-  // Check if rep is allowed to see a given list
+  // Check if rep is allowed to see a given list - strict access control
   const isListAllowed = (listId?: string | null): boolean => {
     if (isAdmin) return true;
     if (!currentRep) return true;
     if (currentRep.role === 'admin' || currentRep.role === 'supervisor') return true;
-    if (!currentRep.allowedListIds || currentRep.allowedListIds.includes('all')) return true;
-    if (!listId) return true;
+    if (currentRep.allowedListIds && currentRep.allowedListIds.includes('all')) return true;
+    if (!listId) return false;
+    if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;
     return currentRep.allowedListIds.includes(listId);
   };
 

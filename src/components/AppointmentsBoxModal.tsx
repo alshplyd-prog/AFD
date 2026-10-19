@@ -65,14 +65,19 @@ export const AppointmentsBoxModal: React.FC<AppointmentsBoxModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Filter allowed appointments based on user access permissions
+  // Filter allowed appointments based strictly on user list access permissions
   const accessibleAppointments = appointments.filter((app) => {
     if (isAdmin) return true;
     if (!currentRep) return true;
     if (currentRep.role === 'admin' || currentRep.role === 'supervisor') return true;
-    if (!currentRep.allowedListIds || currentRep.allowedListIds.includes('all')) return true;
-    if (!app.listId) return true;
-    return currentRep.allowedListIds.includes(app.listId);
+    if (currentRep.allowedListIds && currentRep.allowedListIds.includes('all')) return true;
+    
+    // Strict restriction: representative must have explicit access to this appointment's list
+    const matchedContract = contracts.find((c) => c.id === app.contractId || (app.customerName && c.customerName.trim().toLowerCase() === app.customerName.trim().toLowerCase()));
+    const effectiveListId = app.listId || matchedContract?.listId;
+    if (!effectiveListId) return false;
+    if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;
+    return currentRep.allowedListIds.includes(effectiveListId);
   });
 
   // Calculate due status for each appointment (at its exact scheduled time only)

@@ -337,8 +337,17 @@ export function formatZeroBalanceCountdown(
 }
 
 
+let lastNotificationSoundTime = 0;
+
 export function playNotificationSound() {
   try {
+    const now = Date.now();
+    // Debounce audio trigger so it never plays repeatedly within 800ms
+    if (now - lastNotificationSoundTime < 800) {
+      return;
+    }
+    lastNotificationSoundTime = now;
+
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -368,66 +377,27 @@ export async function showBrowserNotification(
   }
 ): Promise<boolean> {
   try {
+    // Play sound once
     playNotificationSound();
 
-    const notifOptions = {
-      body: body || '',
-      icon: options?.icon || '/favicon.ico',
-      badge: options?.badge || '/favicon.ico',
-      tag: options?.tag || `alkarrar-${Date.now()}`,
+    // Delegate to unified APK/Web notification dispatcher
+    const { sendExternalNotification } = await import('./capacitorPush');
+    return await sendExternalNotification(title, body, {
+      tag: options?.tag,
+      icon: options?.icon || '/pwa-192x192.png',
+      badge: options?.badge || '/favicon.png',
+      data: options?.data,
       vibrate: options?.vibrate || [200, 100, 200],
-      data: options?.data || {},
-    };
-
-    // 1. Post message to Service Worker controller if available (Best for PWA / Android background)
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      try {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'SHOW_NOTIFICATION',
-          payload: {
-            title,
-            ...notifOptions,
-          },
-        });
-      } catch (postErr) {}
-    }
-
-    // 2. ServiceWorkerRegistration.showNotification fallback
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.ready.catch(() => null);
-        if (reg && typeof reg.showNotification === 'function') {
-          await reg.showNotification(title, notifOptions);
-          return true;
-        }
-      } catch (swErr) {
-        console.warn('SW showNotification error:', swErr);
-      }
-    }
-
-    // 3. Direct window.Notification fallback
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
-        try {
-          new Notification(title, notifOptions);
-          return true;
-        } catch (dirErr) {
-          console.warn('Direct Notification error:', dirErr);
-        }
-      } else {
-        const perm = await Notification.requestPermission().catch(() => 'denied');
-        if (perm === 'granted') {
-          try {
-            new Notification(title, notifOptions);
-            return true;
-          } catch (dirErr2) {}
-        }
-      }
-    }
+    });
   } catch (e) {
     console.warn('showBrowserNotification exception:', e);
   }
   return false;
+}
+
+export async function requestExternalNotificationPermission(): Promise<boolean> {
+  const { requestExternalNotificationPermission: req } = await import('./capacitorPush');
+  return await req();
 }
 
 export const WEEK_DAYS_AR = [
@@ -483,13 +453,6 @@ export function getNextDateForDayOfMonth(targetDayOfMonth: number): string {
   return `${targetYear}-${mStr}-${dStr}`;
 }
 
-export async function requestExternalNotificationPermission(): Promise<boolean> {
-  if (typeof window !== 'undefined' && 'Notification' in window) {
-    const res = await Notification.requestPermission();
-    return res === 'granted';
-  }
-  return false;
-}
 
 export function parseAppointmentDateTime(appointmentDateStr?: string, appointmentTimeStr?: string): Date | null {
   if (!appointmentDateStr) return null;

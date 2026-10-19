@@ -982,9 +982,14 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                   {isAr ? 'رقم الهاتف' : 'Phone Number'}
                 </label>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="tel"
+                  pattern="[0-9]*"
                   value={empPhone}
-                  onChange={(e) => setEmpPhone(e.target.value)}
+                  onChange={(e) => {
+                    const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+                    setEmpPhone(converted.replace(/\D/g, ''));
+                  }}
                   placeholder="07700000000"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 dir-ltr text-right"
                 />
