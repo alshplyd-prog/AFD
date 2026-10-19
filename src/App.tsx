@@ -972,25 +972,6 @@ export default function App() {
           valid.forEach((p) => {
             if (!knownPaymentIdsRef.current.has(p.id)) {
               knownPaymentIdsRef.current.add(p.id);
-              const matchedC = (contractsRef.current || []).find((c) => c.id === p.contractId);
-              const rep = currentRepRef.current;
-              const hasAccess =
-                !rep ||
-                rep.role === 'admin' ||
-                (rep.name && rep.name.includes('ضياء')) ||
-                rep.id === 'rep-1' ||
-                (rep.allowedListIds &&
-                  (rep.allowedListIds.includes('all') || (matchedC?.listId && rep.allowedListIds.includes(matchedC.listId))));
-              if (hasAccess) {
-                const amtFmt = Number(p.amountPaid || p.amount || 0).toLocaleString('en-US');
-                showBrowserNotification(
-                  isArRef.current ? '💰 إشعار تسديد قسط' : '💰 Installment Payment Received',
-                  isArRef.current
-                    ? `تم استلام دفعة بقيمة (${amtFmt} د.ع) للزبون "${p.customerName || matchedC?.customerName || 'زبون'}" بواسطة ${p.repName || 'المندوب'}`
-                    : `Payment of (${amtFmt} IQD) received for "${p.customerName || matchedC?.customerName}" by ${p.repName || 'Rep'}`,
-                  { tag: `payment_${p.id}` }
-                );
-              }
             }
           });
         }
@@ -1864,16 +1845,6 @@ export default function App() {
       }
 
       knownPaymentIdsRef.current.add(newPaymentId);
-
-      const paidFmt = Number(amount || 0).toLocaleString('en-US');
-      const remFmt = Number(newRemaining || 0).toLocaleString('en-US');
-      showBrowserNotification(
-        isAr ? '💰 إشعار تسديد قسط' : '💰 Installment Payment Recorded',
-        isAr
-          ? `تم استلام دفعة بقيمة (${paidFmt} د.ع) من الزبون "${contract.customerName}" (المتبقي: ${remFmt} د.ع) بواسطة ${currentRep?.name || 'المندوب'}`
-          : `Payment of (${paidFmt} IQD) recorded for "${contract.customerName}" (Remaining: ${remFmt} IQD)`,
-        { tag: `payment_${newPaymentId}` }
-      );
 
       showToast(
         hasGpsLocation
