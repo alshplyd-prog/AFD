@@ -376,7 +376,7 @@ export default function App() {
       showBrowserNotification(
         isAr ? '📅 إشعار موعد جديد' : '📅 New Appointment Scheduled',
         isAr
-          ? `تم تسجيل موعد للزبون "${saved.customerName || newAppt.customerName}" بتاريخ ${saved.appointmentDate || newAppt.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`
+          ? `"${saved.customerName || newAppt.customerName}" - بتاريخ ${saved.appointmentDate || newAppt.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`
           : `Appointment scheduled for "${saved.customerName || newAppt.customerName}" on ${saved.appointmentDate || newAppt.appointmentDate}`,
         { tag: `new_appt_${saved.id || Date.now()}` }
       );
@@ -921,11 +921,12 @@ export default function App() {
                   (rep.allowedListIds.includes('all') || (c.listId && rep.allowedListIds.includes(c.listId))));
               if (hasAccess) {
                 const priceFmt = Number(c.totalPrice || 0).toLocaleString('en-US');
+                const instFmt = Number(c.dailyInstallment || 0).toLocaleString('en-US');
                 showBrowserNotification(
                   isArRef.current ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
                   isArRef.current
-                    ? `للزبون "${c.customerName}" - بقيمة (${priceFmt} د.ع) - ${c.itemName || 'مادة'} (${c.repName || 'المندوب'})`
-                    : `New sale for "${c.customerName}" (${priceFmt} IQD) by ${c.repName || 'Rep'}`,
+                    ? `"${c.customerName}" - القسط: ${instFmt} د.ع - بقيمة (${priceFmt} د.ع) - ${c.itemName || 'مادة'} (${c.repName || 'المندوب'})`
+                    : `"${c.customerName}" - Installment: ${instFmt} IQD - Total: ${priceFmt} IQD by ${c.repName || 'Rep'}`,
                   { tag: `sale_${c.id}` }
                 );
               }
@@ -1167,7 +1168,7 @@ export default function App() {
                 showBrowserNotification(
                   isArRef.current ? '📅 إشعار موعد جديد' : '📅 New Appointment Scheduled',
                   isArRef.current
-                    ? `تم تسجيل موعد للزبون "${a.customerName}" بتاريخ ${a.appointmentDate}${a.appointmentTime ? ` الساعة ${a.appointmentTime}` : ''}${a.note ? ` (${a.note})` : ''}`
+                    ? `"${a.customerName}" - بتاريخ ${a.appointmentDate}${a.appointmentTime ? ` الساعة ${a.appointmentTime}` : ''}${a.note ? ` (${a.note})` : ''}`
                     : `Appointment scheduled for "${a.customerName}" on ${a.appointmentDate}`,
                   { tag: `new_appt_${a.id}` }
                 );
@@ -2282,11 +2283,12 @@ export default function App() {
 
         const priceFmt = Number(newContract.totalPrice || 0).toLocaleString('en-US');
         const advanceFmt = Number(newContract.advancePayment || 0).toLocaleString('en-US');
+        const instFmt = Number(newContract.dailyInstallment || 0).toLocaleString('en-US');
         showBrowserNotification(
           isAr ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
           isAr
-            ? `للزبون "${newContract.customerName}" - بقيمة (${priceFmt} د.ع) - ${newContract.itemName || 'مادة'}${Number(newContract.advancePayment) > 0 ? ` (المقدمة: ${advanceFmt} د.ع)` : ''} (${newContract.repName || 'المندوب'})`
-            : `Sale recorded for "${newContract.customerName}" (${priceFmt} IQD) by ${newContract.repName || 'Rep'}`,
+            ? `"${newContract.customerName}" - القسط: ${instFmt} د.ع - بقيمة (${priceFmt} د.ع) - ${newContract.itemName || 'مادة'}${Number(newContract.advancePayment) > 0 ? ` (المقدمة: ${advanceFmt} د.ع)` : ''} (${newContract.repName || 'المندوب'})`
+            : `"${newContract.customerName}" - Installment: ${instFmt} IQD - Total: ${priceFmt} IQD by ${newContract.repName || 'Rep'}`,
           { tag: `sale_${newContract.id}` }
         );
 

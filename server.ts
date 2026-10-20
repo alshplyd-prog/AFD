@@ -1698,9 +1698,11 @@ async function startServer() {
       console.log(`[POST /api/contracts] Inserted ${id} into PostgreSQL successfully.`);
 
       bumpSyncVersion();
+      const priceFmt = Number(saved.totalPrice || 0).toLocaleString('en-US');
+      const instFmt = Number(saved.dailyInstallment || 0).toLocaleString('en-US');
       broadcastPushNotification({
         title: '🛍️ إشعار مبيع جديد',
-        body: `للزبون "${saved.customerName}" - بقيمة (${Number(saved.totalPrice || 0).toLocaleString('en-US')} د.ع) - ${saved.itemName || 'مادة'} (${saved.repName || 'المندوب'})`,
+        body: `"${saved.customerName}" - القسط: ${instFmt} د.ع - بقيمة (${priceFmt} د.ع) - ${saved.itemName || 'مادة'} (${saved.repName || 'المندوب'})`,
         tag: `sale_${saved.id}`,
         type: 'sale',
         listId: saved.listId,
@@ -3742,13 +3744,33 @@ async function startServer() {
       });
 
       bumpSyncVersion();
-      broadcastPushNotification({
-        title: 'تنبيه تعارض الدفعات',
-        body: `دفعة معلقة للزبون "${saved.customerName}" تتجاوز المتبقي مضافة بواسطة المندوب ${saved.repName || 'المندوب'}`,
-        tag: `conflict_${saved.id}`,
-        type: 'conflict',
-        targetRepName: saved.repName,
-      }).catch(() => {});
+      if (saved.status === 'resolved') {
+        let listId = null;
+        if (saved.contractId && isPgConfigured()) {
+          try {
+            const rows = await executePg("SELECT list_id FROM sales WHERE id = $1", [saved.contractId]);
+            if (rows.length > 0) listId = rows[0].list_id;
+          } catch (e) {}
+        }
+        const excessFmt = Number(saved.excessAmount || 0).toLocaleString('en-US');
+        const acceptedFmt = Number(saved.acceptedAmount || 0).toLocaleString('en-US');
+        broadcastPushNotification({
+          title: '🔔 إشعار تسوية تصفير الحساب',
+          body: `تمت تسوية وتصفير حساب الزبون "${saved.customerName}". الواصل يطابق سعر البيع (${acceptedFmt} د.ع). المبلغ الفائض في حوزة المندوب "${saved.repName || 'المندوب'}": ${excessFmt} د.ع`,
+          tag: `settle_${saved.id}`,
+          type: 'conflict',
+          listId,
+          targetRepName: saved.repName,
+        }).catch(() => {});
+      } else {
+        broadcastPushNotification({
+          title: 'تنبيه تعارض الدفعات',
+          body: `دفعة معلقة للزبون "${saved.customerName}" تتجاوز المتبقي مضافة بواسطة المندوب ${saved.repName || 'المندوب'}`,
+          tag: `conflict_${saved.id}`,
+          type: 'conflict',
+          targetRepName: saved.repName,
+        }).catch(() => {});
+      }
       res.json({ success: true, conflict: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3782,6 +3804,30 @@ async function startServer() {
         console.warn("Postgres update payment_conflict warning:", err?.message || err);
       });
       bumpSyncVersion();
+
+      if (updates.status === 'resolved') {
+        const existing = (fileDb.get("payment_conflicts") || []).find((c: any) => c.id === id);
+        if (existing) {
+          let listId = null;
+          if (existing.contractId && isPgConfigured()) {
+            try {
+              const rows = await executePg("SELECT list_id FROM sales WHERE id = $1", [existing.contractId]);
+              if (rows.length > 0) listId = rows[0].list_id;
+            } catch (e) {}
+          }
+          const excessFmt = Number(existing.excessAmount || updates.excessAmount || 0).toLocaleString('en-US');
+          const acceptedFmt = Number(existing.acceptedAmount || updates.acceptedAmount || 0).toLocaleString('en-US');
+          broadcastPushNotification({
+            title: '🔔 إشعار تسوية تصفير الحساب',
+            body: `تمت تسوية وتصفير حساب الزبون "${existing.customerName}". الواصل يطابق سعر البيع (${acceptedFmt} د.ع). المبلغ الفائض في حوزة المندوب "${existing.repName || 'المندوب'}": ${excessFmt} د.ع`,
+            tag: `settle_${existing.id}`,
+            type: 'conflict',
+            listId,
+            targetRepName: existing.repName,
+          }).catch(() => {});
+        }
+      }
+
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3907,7 +3953,7 @@ async function startServer() {
       bumpSyncVersion();
       broadcastPushNotification({
         title: '📅 إشعار موعد جديد',
-        body: `تم تسجيل موعد للزبون "${saved.customerName}" بتاريخ ${saved.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`,
+        body: `"${saved.customerName}" - بتاريخ ${saved.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`,
         tag: `new_appt_${saved.id}`,
         type: 'appointment',
         listId: saved.listId,

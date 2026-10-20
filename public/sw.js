@@ -721,8 +721,9 @@ async function checkAndDispatchBackgroundNotifications(serverData, localSnapshot
 
       if (hasAccess) {
         const priceFmt = Number(c.totalPrice || 0).toLocaleString('en-US');
+        const instFmt = Number(c.dailyInstallment || c.daily_installment || 0).toLocaleString('en-US');
         self.registration.showNotification('🛍️ إشعار مبيع جديد', {
-          body: `للزبون "${c.customerName}" - بقيمة (${priceFmt} د.ع) - ${c.itemName || 'مادة'} (${c.repName || 'المندوب'})`,
+          body: `"${c.customerName}" - القسط: ${instFmt} د.ع - بقيمة (${priceFmt} د.ع) - ${c.itemName || 'مادة'} (${c.repName || 'المندوب'})`,
           icon: '/pwa-192x192.png',
           badge: '/favicon.png',
           tag: `sale_${c.id}`,
@@ -751,7 +752,7 @@ async function checkAndDispatchBackgroundNotifications(serverData, localSnapshot
 
       if (hasAccess) {
         self.registration.showNotification('📅 إشعار موعد جديد', {
-          body: `تم تسجيل موعد للزبون "${a.customerName}" بتاريخ ${a.appointmentDate}${a.appointmentTime ? ` الساعة ${a.appointmentTime}` : ''}${a.note ? ` (${a.note})` : ''}`,
+          body: `"${a.customerName}" - بتاريخ ${a.appointmentDate}${a.appointmentTime ? ` الساعة ${a.appointmentTime}` : ''}${a.note ? ` (${a.note})` : ''}`,
           icon: '/pwa-192x192.png',
           badge: '/favicon.png',
           tag: `new_appt_${a.id}`,
