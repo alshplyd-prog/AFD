@@ -722,7 +722,7 @@ async function checkAndDispatchBackgroundNotifications(serverData, localSnapshot
       if (hasAccess) {
         const priceFmt = Number(c.totalPrice || 0).toLocaleString('en-US');
         self.registration.showNotification('🛍️ إشعار مبيع جديد', {
-          body: `تم تسجيل بيع جديد للزبون "${c.customerName}" بقيمة (${priceFmt} د.ع) - مادة: ${c.itemName || 'مادة'} بواسطة ${c.repName || 'المندوب'}`,
+          body: `للزبون "${c.customerName}" - بقيمة (${priceFmt} د.ع) - ${c.itemName || 'مادة'} (${c.repName || 'المندوب'})`,
           icon: '/pwa-192x192.png',
           badge: '/favicon.png',
           tag: `sale_${c.id}`,

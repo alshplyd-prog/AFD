@@ -1700,7 +1700,7 @@ async function startServer() {
       bumpSyncVersion();
       broadcastPushNotification({
         title: '🛍️ إشعار مبيع جديد',
-        body: `تم تسجيل بيع جديد للزبون "${saved.customerName}" بقيمة (${Number(saved.totalPrice || 0).toLocaleString('en-US')} د.ع) - مادة: ${saved.itemName || 'مادة'} بواسطة ${saved.repName || 'المندوب'}`,
+        body: `للزبون "${saved.customerName}" - بقيمة (${Number(saved.totalPrice || 0).toLocaleString('en-US')} د.ع) - ${saved.itemName || 'مادة'} (${saved.repName || 'المندوب'})`,
         tag: `sale_${saved.id}`,
         type: 'sale',
         listId: saved.listId,

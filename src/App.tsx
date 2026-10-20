@@ -924,7 +924,7 @@ export default function App() {
                 showBrowserNotification(
                   isArRef.current ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
                   isArRef.current
-                    ? `تم تسجيل بيع جديد للزبون "${c.customerName}" بقيمة (${priceFmt} د.ع) - مادة: ${c.itemName || 'مادة'} بواسطة ${c.repName || 'المندوب'}`
+                    ? `للزبون "${c.customerName}" - بقيمة (${priceFmt} د.ع) - ${c.itemName || 'مادة'} (${c.repName || 'المندوب'})`
                     : `New sale for "${c.customerName}" (${priceFmt} IQD) by ${c.repName || 'Rep'}`,
                   { tag: `sale_${c.id}` }
                 );
@@ -2285,7 +2285,7 @@ export default function App() {
         showBrowserNotification(
           isAr ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
           isAr
-            ? `تم تسجيل بيع جديد للزبون "${newContract.customerName}" بقيمة (${priceFmt} د.ع) - مادة: ${newContract.itemName || 'مادة'}${Number(newContract.advancePayment) > 0 ? ` (المقدمة: ${advanceFmt} د.ع)` : ''} بواسطة ${newContract.repName || 'المندوب'}`
+            ? `للزبون "${newContract.customerName}" - بقيمة (${priceFmt} د.ع) - ${newContract.itemName || 'مادة'}${Number(newContract.advancePayment) > 0 ? ` (المقدمة: ${advanceFmt} د.ع)` : ''} (${newContract.repName || 'المندوب'})`
             : `Sale recorded for "${newContract.customerName}" (${priceFmt} IQD) by ${newContract.repName || 'Rep'}`,
           { tag: `sale_${newContract.id}` }
         );
