@@ -67,12 +67,13 @@ export async function initCapacitorPush(
 
       return true;
     } else {
-      // In Web / PWA browser: ensure service worker is active for web notifications
+      // In Web / PWA browser: ensure service worker is active for web notifications & push subscription
       if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
         try {
           if (!navigator.serviceWorker.controller) {
             await navigator.serviceWorker.register('/sw.js').catch(() => null);
           }
+          await registerWebPushSubscription();
         } catch (swErr) {
           console.warn('[Push] Web SW init notice:', swErr);
         }
@@ -82,6 +83,53 @@ export async function initCapacitorPush(
   } catch (err) {
     console.warn('[Push] initCapacitorPush error:', err);
     return false;
+  }
+}
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export async function registerWebPushSubscription(currentRep?: any): Promise<void> {
+  if (typeof window === 'undefined' || Capacitor.isNativePlatform()) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const keyRes = await fetch('/api/push-vapid-public-key').then(r => r.json()).catch(() => null);
+      if (!keyRes || !keyRes.publicKey) return;
+      const applicationServerKey = urlBase64ToUint8Array(keyRes.publicKey);
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      });
+    }
+
+    if (sub) {
+      await fetch('/api/push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: sub,
+          repId: currentRep?.id || null,
+          repName: currentRep?.name || null,
+          role: currentRep?.role || null,
+          allowedListIds: currentRep?.allowedListIds || [],
+        }),
+      }).catch(() => {});
+    }
+  } catch (err) {
+    console.warn('[Push] registerWebPushSubscription notice:', err);
   }
 }
 
@@ -120,7 +168,11 @@ export async function requestExternalNotificationPermission(): Promise<boolean> 
 
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const perm = await Notification.requestPermission().catch(() => 'denied');
-      return perm === 'granted';
+      if (perm === 'granted') {
+        await registerWebPushSubscription();
+        return true;
+      }
+      return false;
     }
   } catch (e) {
     console.warn('[Push] requestExternalNotificationPermission error:', e);

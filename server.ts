@@ -23,6 +23,7 @@ export function bumpSyncVersion() {
 }
 import { INITIAL_CONTRACTS } from "./src/data/initialContracts.ts";
 import fs from "fs";
+import webpush from "web-push";
 
 function mapContractRow(r: any) {
   const totalPrice = Number(r.total_price ?? r.totalPrice) || 0;
@@ -697,6 +698,276 @@ function mapConflictRow(r: any) {
   };
 }
 
+// ==========================================
+// Web Push Notifications System (Closed App / Background)
+// ==========================================
+let vapidKeys = {
+  publicKey: process.env.VAPID_PUBLIC_KEY || '',
+  privateKey: process.env.VAPID_PRIVATE_KEY || '',
+};
+
+const VAPID_KEY_FILE = path.join(process.cwd(), 'data', 'vapid_keys.json');
+const PUSH_SUBS_FILE = path.join(process.cwd(), 'data', 'push_subscriptions.json');
+
+async function initVapidKeys() {
+  try {
+    if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+      if (fs.existsSync(VAPID_KEY_FILE)) {
+        try {
+          const content = JSON.parse(fs.readFileSync(VAPID_KEY_FILE, 'utf8'));
+          if (content.publicKey && content.privateKey) {
+            vapidKeys = content;
+          }
+        } catch (e) {}
+      }
+    }
+    if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+      if (isPgConfigured()) {
+        try {
+          await executePg("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+          const rows = await executePg("SELECT value FROM system_settings WHERE key = 'vapid_keys'");
+          if (rows.length > 0 && rows[0].value) {
+            const parsed = JSON.parse(rows[0].value);
+            if (parsed.publicKey && parsed.privateKey) {
+              vapidKeys = parsed;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+    if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+      const generated = webpush.generateVAPIDKeys();
+      vapidKeys = generated;
+      try {
+        if (!fs.existsSync(path.dirname(VAPID_KEY_FILE))) {
+          fs.mkdirSync(path.dirname(VAPID_KEY_FILE), { recursive: true });
+        }
+        fs.writeFileSync(VAPID_KEY_FILE, JSON.stringify(vapidKeys, null, 2));
+      } catch (e) {}
+      if (isPgConfigured()) {
+        try {
+          await executePg(
+            `INSERT INTO system_settings (key, value) VALUES ('vapid_keys', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+            [JSON.stringify(vapidKeys)]
+          );
+        } catch (e) {}
+      }
+    }
+    if (vapidKeys.publicKey && vapidKeys.privateKey) {
+      webpush.setVapidDetails('mailto:support@alkarrar.com', vapidKeys.publicKey, vapidKeys.privateKey);
+      console.log('[WebPush] VAPID initialized. Public key length:', vapidKeys.publicKey.length);
+    }
+  } catch (err) {
+    console.warn('[WebPush] VAPID initialization notice:', err);
+  }
+}
+
+interface PushSubscriptionRecord {
+  id: string;
+  endpoint: string;
+  subscription: any;
+  repId?: string;
+  repName?: string;
+  role?: string;
+  allowedListIds?: string[];
+  updatedAt: number;
+}
+
+let pushSubsCache: Map<string, PushSubscriptionRecord> = new Map();
+
+function loadPushSubsFromFile(): Map<string, PushSubscriptionRecord> {
+  const map = new Map<string, PushSubscriptionRecord>();
+  try {
+    if (fs.existsSync(PUSH_SUBS_FILE)) {
+      const arr = JSON.parse(fs.readFileSync(PUSH_SUBS_FILE, 'utf8'));
+      if (Array.isArray(arr)) {
+        arr.forEach((item) => {
+          if (item && item.endpoint) map.set(item.endpoint, item);
+        });
+      }
+    }
+  } catch (e) {}
+  return map;
+}
+
+function savePushSubsToFile(map: Map<string, PushSubscriptionRecord>) {
+  try {
+    if (!fs.existsSync(path.dirname(PUSH_SUBS_FILE))) {
+      fs.mkdirSync(path.dirname(PUSH_SUBS_FILE), { recursive: true });
+    }
+    fs.writeFileSync(PUSH_SUBS_FILE, JSON.stringify(Array.from(map.values()), null, 2));
+  } catch (e) {}
+}
+
+async function initPushSubscriptionsTable() {
+  pushSubsCache = loadPushSubsFromFile();
+  if (isPgConfigured()) {
+    try {
+      await executePg(`
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          endpoint TEXT PRIMARY KEY,
+          subscription_json TEXT NOT NULL,
+          rep_id TEXT,
+          rep_name TEXT,
+          role TEXT,
+          allowed_list_ids TEXT,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      const rows = await executePg("SELECT * FROM push_subscriptions");
+      if (Array.isArray(rows)) {
+        rows.forEach((r: any) => {
+          try {
+            const subJson = JSON.parse(r.subscription_json);
+            let allowed: string[] = [];
+            try { allowed = r.allowed_list_ids ? JSON.parse(r.allowed_list_ids) : []; } catch (e) {
+              allowed = r.allowed_list_ids ? String(r.allowed_list_ids).split(',') : [];
+            }
+            pushSubsCache.set(r.endpoint, {
+              id: r.endpoint,
+              endpoint: r.endpoint,
+              subscription: subJson,
+              repId: r.rep_id,
+              repName: r.rep_name,
+              role: r.role,
+              allowedListIds: allowed,
+              updatedAt: new Date(r.updated_at || Date.now()).getTime(),
+            });
+          } catch (e) {}
+        });
+        savePushSubsToFile(pushSubsCache);
+      }
+    } catch (e) {
+      console.warn('[WebPush] PostgreSQL subscriptions table notice:', e);
+    }
+  }
+}
+
+async function savePushSubscription(record: PushSubscriptionRecord) {
+  pushSubsCache.set(record.endpoint, record);
+  savePushSubsToFile(pushSubsCache);
+  if (isPgConfigured()) {
+    try {
+      await executePg(
+        `INSERT INTO push_subscriptions (endpoint, subscription_json, rep_id, rep_name, role, allowed_list_ids, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         ON CONFLICT (endpoint) DO UPDATE SET 
+           subscription_json = EXCLUDED.subscription_json,
+           rep_id = EXCLUDED.rep_id,
+           rep_name = EXCLUDED.rep_name,
+           role = EXCLUDED.role,
+           allowed_list_ids = EXCLUDED.allowed_list_ids,
+           updated_at = NOW()`,
+        [
+          record.endpoint,
+          JSON.stringify(record.subscription),
+          record.repId || null,
+          record.repName || null,
+          record.role || null,
+          JSON.stringify(record.allowedListIds || []),
+        ]
+      ).catch(() => {});
+    } catch (e) {}
+  }
+}
+
+async function removePushSubscription(endpoint: string) {
+  pushSubsCache.delete(endpoint);
+  savePushSubsToFile(pushSubsCache);
+  if (isPgConfigured()) {
+    try {
+      await executePg("DELETE FROM push_subscriptions WHERE endpoint = $1", [endpoint]).catch(() => {});
+    } catch (e) {}
+  }
+}
+
+export async function broadcastPushNotification(options: {
+  title: string;
+  body: string;
+  tag?: string;
+  type: 'sale' | 'appointment' | 'conflict' | 'debt' | 'repay';
+  listId?: string | null;
+  targetRepId?: string | null;
+  targetRepName?: string | null;
+  data?: any;
+}) {
+  const { title, body, tag, type, listId, targetRepId, targetRepName, data } = options;
+  if (!vapidKeys.publicKey || !vapidKeys.privateKey) return;
+  const subs = Array.from(pushSubsCache.values());
+  if (subs.length === 0) return;
+
+  const payloadString = JSON.stringify({
+    title,
+    body,
+    tag: tag || `push_${Date.now()}`,
+    icon: '/pwa-192x192.png',
+    badge: '/favicon.png',
+    data: data || {},
+  });
+
+  const promises = subs.map(async (sub) => {
+    // 1. Sales: Anyone who has access to the customer list
+    if (type === 'sale') {
+      const hasAccess =
+        !sub.role ||
+        sub.role === 'admin' ||
+        (sub.repName && sub.repName.includes('ضياء')) ||
+        sub.repId === 'rep-1' ||
+        (sub.allowedListIds &&
+          (sub.allowedListIds.includes('all') || (listId && sub.allowedListIds.includes(listId))));
+      if (!hasAccess) return;
+    }
+    // 2. Appointments: Anyone who has access to the list
+    else if (type === 'appointment') {
+      const hasAccess =
+        !sub.role ||
+        sub.role === 'admin' ||
+        (sub.repName && sub.repName.includes('ضياء')) ||
+        sub.repId === 'rep-1' ||
+        (sub.allowedListIds &&
+          (sub.allowedListIds.includes('all') || (listId && sub.allowedListIds.includes(listId))));
+      if (!hasAccess) return;
+    }
+    // 3. Payment Conflicts: Admin/supervisor, or assigned rep, or list access
+    else if (type === 'conflict') {
+      const isSupervisorOrAdmin = !sub.role || sub.role === 'admin' || sub.role === 'supervisor';
+      const isAssigned = Boolean(targetRepName && sub.repName && targetRepName.trim().toLowerCase() === sub.repName.trim().toLowerCase());
+      const hasList = Boolean(
+        sub.allowedListIds &&
+        (sub.allowedListIds.includes('all') || (listId && sub.allowedListIds.includes(listId)))
+      );
+      if (!isSupervisorOrAdmin && !isAssigned && !hasList) return;
+    }
+    // 4. Debts and Return of Debt: ONLY for the representative who owns the debt/repayment!
+    else if (type === 'debt' || type === 'repay') {
+      const isOwner = Boolean(
+        (targetRepName && sub.repName && targetRepName.trim().toLowerCase() === sub.repName.trim().toLowerCase()) ||
+        (targetRepId && sub.repId && (
+          targetRepId === sub.repId ||
+          targetRepId === `rep-emp-${sub.repId}` ||
+          targetRepId === `rep_${sub.repId}` ||
+          sub.repId === `rep-emp-${targetRepId}` ||
+          sub.repId === `rep_${targetRepId}`
+        ))
+      );
+      if (!isOwner) return; // Non-owner gets NO notification!
+    }
+
+    try {
+      await webpush.sendNotification(sub.subscription, payloadString, {
+        TTL: 86400,
+        urgency: 'high',
+      });
+    } catch (err: any) {
+      if (err?.statusCode === 404 || err?.statusCode === 410) {
+        await removePushSubscription(sub.endpoint);
+      }
+    }
+  });
+
+  await Promise.allSettled(promises);
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -741,6 +1012,8 @@ async function startServer() {
       }
       await cleanupDuplicateEntities().catch((e) => console.warn("Deduplication cleanup notice:", e));
       await recalculateAllFundBalancesInPg().catch((e) => console.warn("Recalculate balances notice:", e));
+      await initVapidKeys().catch((e) => console.warn("Vapid init notice:", e));
+      await initPushSubscriptionsTable().catch((e) => console.warn("Push subs table notice:", e));
       return;
     })
     .catch((err) => console.warn("Background DB initialization notice:", err));
@@ -885,7 +1158,62 @@ async function startServer() {
   app.post("/api/admin/init-db", async (req, res) => {
     try {
       await initializeDatabaseSchema();
+      await initVapidKeys();
+      await initPushSubscriptionsTable();
       res.json({ success: true, message: 'Database schema and tables initialized successfully' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Web Push Notification Routes (Closed-App Background Notifications) ---
+  app.get("/api/push-vapid-public-key", (req, res) => {
+    res.json({ success: true, publicKey: vapidKeys.publicKey });
+  });
+
+  app.post("/api/push-subscribe", async (req, res) => {
+    try {
+      const { subscription, repId, repName, role, allowedListIds } = req.body || {};
+      if (!subscription || !subscription.endpoint) {
+        return res.status(400).json({ error: 'Invalid subscription' });
+      }
+      await savePushSubscription({
+        id: subscription.endpoint,
+        endpoint: subscription.endpoint,
+        subscription,
+        repId: repId || undefined,
+        repName: repName || undefined,
+        role: role || undefined,
+        allowedListIds: Array.isArray(allowedListIds) ? allowedListIds : [],
+        updatedAt: Date.now(),
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/push-unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body || {};
+      if (endpoint) {
+        await removePushSubscription(endpoint);
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/push-test", async (req, res) => {
+    try {
+      await broadcastPushNotification({
+        title: '🔔 إشعار تجريبي خارجي',
+        body: 'تم استلام الإشعار الخارجي بنجاح حتى عندما يكون التطبيق مغلقاً تماماً!',
+        tag: `test_${Date.now()}`,
+        type: 'sale',
+      });
+      res.json({ success: true, message: 'Test notification sent to all active subscriptions' });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1368,6 +1696,13 @@ async function startServer() {
       console.log(`[POST /api/contracts] Inserted ${id} into PostgreSQL successfully.`);
 
       bumpSyncVersion();
+      broadcastPushNotification({
+        title: '🛍️ إشعار مبيع جديد',
+        body: `تم تسجيل بيع جديد للزبون "${saved.customerName}" بقيمة (${Number(saved.totalPrice || 0).toLocaleString('en-US')} د.ع) - مادة: ${saved.itemName || 'مادة'} بواسطة ${saved.repName || 'المندوب'}`,
+        tag: `sale_${saved.id}`,
+        type: 'sale',
+        listId: saved.listId,
+      }).catch(() => {});
       res.json({ success: true, contract: saved });
     } catch (err: any) {
       console.error(`[POST /api/contracts] Error:`, err);
@@ -3282,6 +3617,18 @@ async function startServer() {
       );
 
       bumpSyncVersion();
+      const isLoan = saved.type === 'loan' || (saved.type as string) === 'debt' || (saved.type as string) === 'سلفة' || (saved.type as string) === 'دين';
+      const amtFmt = Number(saved.amount || 0).toLocaleString('en-US');
+      broadcastPushNotification({
+        title: isLoan ? '💸 إشعار دين / سلفة' : '💵 إشعار سداد دين',
+        body: isLoan
+          ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حسابك "${et.employeeName || saved.repName || 'المندوب'}"${saved.notes ? ` - ${saved.notes}` : ''}`
+          : `تم سداد مبلغ (${amtFmt} د.ع) من دينك "${et.employeeName || saved.repName || 'المندوب'}"${saved.notes ? ` - ${saved.notes}` : ''}`,
+        tag: `emp_${isLoan ? 'debt' : 'repay'}_${saved.id}`,
+        type: isLoan ? 'debt' : 'repay',
+        targetRepId: saved.employeeId,
+        targetRepName: et.employeeName || saved.repName,
+      }).catch(() => {});
       res.json({ success: true, transaction: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3392,6 +3739,13 @@ async function startServer() {
       });
 
       bumpSyncVersion();
+      broadcastPushNotification({
+        title: 'تنبيه تعارض الدفعات',
+        body: `دفعة معلقة للزبون "${saved.customerName}" تتجاوز المتبقي مضافة بواسطة المندوب ${saved.repName || 'المندوب'}`,
+        tag: `conflict_${saved.id}`,
+        type: 'conflict',
+        targetRepName: saved.repName,
+      }).catch(() => {});
       res.json({ success: true, conflict: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3548,6 +3902,13 @@ async function startServer() {
       }
 
       bumpSyncVersion();
+      broadcastPushNotification({
+        title: '📅 إشعار موعد جديد',
+        body: `تم تسجيل موعد للزبون "${saved.customerName}" بتاريخ ${saved.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`,
+        tag: `new_appt_${saved.id}`,
+        type: 'appointment',
+        listId: saved.listId,
+      }).catch(() => {});
       res.json({ success: true, appointment: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

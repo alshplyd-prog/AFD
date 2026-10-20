@@ -2935,10 +2935,6 @@ export default function App() {
     amount: number,
     note?: string
   ) => {
-    if (currentRep && currentRep.role !== 'admin') {
-      showToast(isAr ? 'عذراً، فقط المدير يمكنه إضافة أو تعديل الديون والراجع' : 'Only admin can manage debts');
-      return;
-    }
     try {
       const now = new Date().toISOString();
       const tempId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
