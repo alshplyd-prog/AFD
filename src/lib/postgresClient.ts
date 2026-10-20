@@ -3098,10 +3098,11 @@ export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3
     tx = {
       id: `emptx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       employeeId: arg1.id,
+      employeeName: arg1.name || arg1.repName || arg5 || '',
       fundId: arg2,
       type: arg3,
       amount: Number(arg4) || 0,
-      repName: arg5 || '',
+      repName: arg5 || arg1.name || arg1.repName || '',
       notes: arg6 || '',
       createdAt: new Date().toISOString(),
     };

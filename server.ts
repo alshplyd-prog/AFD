@@ -938,10 +938,12 @@ export async function broadcastPushNotification(options: {
       );
       if (!isSupervisorOrAdmin && !isAssigned && !hasList) return;
     }
-    // 4. Debts and Return of Debt: ONLY for the representative who owns the debt/repayment!
+    // 4. Debts and Return of Debt: For Admin/Supervisor or the representative who owns the debt/repayment
     else if (type === 'debt' || type === 'repay') {
+      const isSupervisorOrAdmin = !sub.role || sub.role === 'admin' || sub.role === 'supervisor';
       const isOwner = Boolean(
-        (targetRepName && sub.repName && targetRepName.trim().toLowerCase() === sub.repName.trim().toLowerCase()) ||
+        isSupervisorOrAdmin ||
+        (targetRepName && sub.repName && (targetRepName.trim().toLowerCase() === sub.repName.trim().toLowerCase() || sub.repName.trim().toLowerCase().includes(targetRepName.trim().toLowerCase()) || targetRepName.trim().toLowerCase().includes(sub.repName.trim().toLowerCase()))) ||
         (targetRepId && sub.repId && (
           targetRepId === sub.repId ||
           targetRepId === `rep-emp-${sub.repId}` ||
@@ -950,7 +952,7 @@ export async function broadcastPushNotification(options: {
           sub.repId === `rep_${targetRepId}`
         ))
       );
-      if (!isOwner) return; // Non-owner gets NO notification!
+      if (!isOwner) return;
     }
 
     try {
@@ -3602,11 +3604,12 @@ async function startServer() {
       const saved = fileDb.upsert("employee_transactions", {
         id,
         employeeId: et.employeeId || '',
+        employeeName: et.employeeName || et.repName || '',
         fundId: et.fundId || '',
         type: et.type || 'debt',
         amount: Number(et.amount) || 0,
         notes: et.notes || '',
-        repName: et.repName || '',
+        repName: et.repName || et.employeeName || '',
         createdAt: et.createdAt || new Date().toISOString()
       });
 
