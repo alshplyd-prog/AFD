@@ -635,10 +635,221 @@ async function reconcileDatabaseInBackground() {
 
     // 5. Notify any connected clients to update their UI
     await notifyClientsToSync('BACKGROUND_DATA_UPDATED', { snapshot: updatedSnapshot });
+
+    // 6. External Background Notifications Dispatcher (Triggers even when the app/browser is completely closed!)
+    try {
+      await checkAndDispatchBackgroundNotifications(serverData, localSnapshot, db);
+    } catch (notifErr) {
+      console.warn('[SW] Background notification dispatch error:', notifErr);
+    }
   } catch (err) {
     console.warn('[Service Worker] Background reconciliation notice:', err);
   } finally {
     isSwReconciling = false;
+  }
+}
+
+// Check and trigger OS notifications in background when app is closed
+async function checkAndDispatchBackgroundNotifications(serverData, localSnapshot, db) {
+  if (!serverData || typeof self.registration?.showNotification !== 'function') return;
+
+  // 1. Load already notified IDs from IndexedDB
+  let notifiedIds = new Set();
+  let isFirstRun = false;
+  try {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get('__meta_notified_record_ids__');
+    const result = await new Promise((r) => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
+    if (result && Array.isArray(result.payload)) {
+      notifiedIds = new Set(result.payload);
+    } else {
+      isFirstRun = true;
+    }
+  } catch (e) {}
+
+  // 2. Load active sales rep configuration from IndexedDB
+  let currentRep = null;
+  try {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get('__meta_current_rep__');
+    const result = await new Promise((r) => { req.onsuccess = () => r(req.result); req.onerror = () => r(null); });
+    if (result && result.payload) {
+      currentRep = result.payload;
+    }
+  } catch (e) {}
+
+  // If this is the initial population, seed all existing IDs without spamming notifications
+  if (isFirstRun) {
+    const allExistingIds = [];
+    if (Array.isArray(serverData.contracts)) serverData.contracts.forEach((c) => c && c.id && allExistingIds.push(c.id));
+    if (Array.isArray(serverData.appointments)) serverData.appointments.forEach((a) => a && a.id && allExistingIds.push(a.id));
+    if (Array.isArray(serverData.employeeTransactions)) serverData.employeeTransactions.forEach((t) => t && t.id && allExistingIds.push(t.id));
+    if (Array.isArray(serverData.paymentConflicts)) serverData.paymentConflicts.forEach((c) => c && c.id && allExistingIds.push(`${c.id}_${c.status}`));
+
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.put({
+        id: '__meta_notified_record_ids__',
+        type: '__META_CONFIG__',
+        payload: allExistingIds,
+        status: 'synced',
+        timestamp: Date.now(),
+      });
+      await new Promise((r) => { tx.oncomplete = r; tx.onerror = r; });
+    } catch (e) {}
+    return;
+  }
+
+  const newNotifiedIds = [];
+
+  // A. Sales (Contracts) -> Anyone who has access to the customer list
+  if (Array.isArray(serverData.contracts)) {
+    for (const c of serverData.contracts) {
+      if (!c || !c.id || notifiedIds.has(c.id)) continue;
+      newNotifiedIds.push(c.id);
+
+      const hasAccess =
+        !currentRep ||
+        currentRep.role === 'admin' ||
+        (currentRep.name && currentRep.name.includes('ضياء')) ||
+        currentRep.id === 'rep-1' ||
+        (currentRep.allowedListIds &&
+          (currentRep.allowedListIds.includes('all') || (c.listId && currentRep.allowedListIds.includes(c.listId))));
+
+      if (hasAccess) {
+        const priceFmt = Number(c.totalPrice || 0).toLocaleString('en-US');
+        self.registration.showNotification('🛍️ إشعار مبيع جديد', {
+          body: `تم تسجيل بيع جديد للزبون "${c.customerName}" بقيمة (${priceFmt} د.ع) - مادة: ${c.itemName || 'مادة'} بواسطة ${c.repName || 'المندوب'}`,
+          icon: '/pwa-192x192.png',
+          badge: '/favicon.png',
+          tag: `sale_${c.id}`,
+          vibrate: [200, 100, 200],
+          renotify: true,
+        }).catch(() => {});
+      }
+    }
+  }
+
+  // B. Appointments -> Anyone who has access to the customer list
+  if (Array.isArray(serverData.appointments)) {
+    for (const a of serverData.appointments) {
+      if (!a || !a.id || notifiedIds.has(a.id)) continue;
+      newNotifiedIds.push(a.id);
+
+      const matchedC = (serverData.contracts || []).find((c) => c.id === a.contractId || (a.customerName && c.customerName === a.customerName));
+      const effectiveListId = a.listId || matchedC?.listId;
+      const hasAccess =
+        !currentRep ||
+        currentRep.role === 'admin' ||
+        (currentRep.name && currentRep.name.includes('ضياء')) ||
+        currentRep.id === 'rep-1' ||
+        (currentRep.allowedListIds &&
+          (currentRep.allowedListIds.includes('all') || (effectiveListId && currentRep.allowedListIds.includes(effectiveListId))));
+
+      if (hasAccess) {
+        self.registration.showNotification('📅 إشعار موعد جديد', {
+          body: `تم تسجيل موعد للزبون "${a.customerName}" بتاريخ ${a.appointmentDate}${a.appointmentTime ? ` الساعة ${a.appointmentTime}` : ''}${a.note ? ` (${a.note})` : ''}`,
+          icon: '/pwa-192x192.png',
+          badge: '/favicon.png',
+          tag: `new_appt_${a.id}`,
+          vibrate: [200, 100, 200],
+          renotify: true,
+        }).catch(() => {});
+      }
+    }
+  }
+
+  // C. Payment Conflicts -> Anyone who has access to the list or assigned rep
+  if (Array.isArray(serverData.paymentConflicts)) {
+    for (const c of serverData.paymentConflicts) {
+      if (!c || !c.id || c.status !== 'pending_review') continue;
+      const conflictKey = `${c.id}_${c.status}`;
+      if (notifiedIds.has(conflictKey)) continue;
+      newNotifiedIds.push(conflictKey);
+
+      const matchedC = (serverData.contracts || []).find((con) => con.id === c.contractId || con.customerName === c.customerName);
+      const isSupervisorOrAdmin = !currentRep || currentRep.role === 'admin' || currentRep.role === 'supervisor';
+      const isAssociatedRep = Boolean(currentRep && (c.repName === currentRep.name || matchedC?.repName === currentRep.name));
+      const isAllowedList = Boolean(
+        isSupervisorOrAdmin ||
+        (currentRep?.allowedListIds && currentRep.allowedListIds.includes('all')) ||
+        (matchedC?.listId && currentRep?.allowedListIds && currentRep.allowedListIds.includes(matchedC.listId))
+      );
+
+      if (isSupervisorOrAdmin || isAssociatedRep || isAllowedList) {
+        self.registration.showNotification('تنبيه تعارض الدفعات', {
+          body: `دفعة معلقة للزبون "${c.customerName}" تتجاوز المتبقي مضافة بواسطة المندوب ${c.repName || 'المندوب'}`,
+          icon: '/pwa-192x192.png',
+          badge: '/favicon.png',
+          tag: `conflict_${c.id}`,
+          vibrate: [200, 100, 200],
+          renotify: true,
+        }).catch(() => {});
+      }
+    }
+  }
+
+  // D. Debts / Advances / Repayments -> ONLY for the representative who owns the debt/repayment
+  if (Array.isArray(serverData.employeeTransactions)) {
+    for (const t of serverData.employeeTransactions) {
+      if (!t || !t.id || notifiedIds.has(t.id)) continue;
+      newNotifiedIds.push(t.id);
+
+      const isTargetRep = Boolean(
+        currentRep && (
+          (t.employeeName && currentRep.name && t.employeeName.trim().toLowerCase() === currentRep.name.trim().toLowerCase()) ||
+          t.employeeId === currentRep.id ||
+          t.employeeId === `rep-emp-${currentRep.id}` ||
+          t.employeeId === `rep_${currentRep.id}`
+        )
+      );
+
+      if (isTargetRep) {
+        const amtFmt = Number(t.amount || 0).toLocaleString('en-US');
+        if (t.type === 'loan') {
+          self.registration.showNotification('💸 إشعار دين / سلفة', {
+            body: `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حسابك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`,
+            icon: '/pwa-192x192.png',
+            badge: '/favicon.png',
+            tag: `emp_debt_${t.id}`,
+            vibrate: [200, 100, 200],
+            renotify: true,
+          }).catch(() => {});
+        } else {
+          self.registration.showNotification('💵 إشعار سداد دين', {
+            body: `تم سداد مبلغ (${amtFmt} د.ع) من دينك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`,
+            icon: '/pwa-192x192.png',
+            badge: '/favicon.png',
+            tag: `emp_repay_${t.id}`,
+            vibrate: [200, 100, 200],
+            renotify: true,
+          }).catch(() => {});
+        }
+      }
+    }
+  }
+
+  // E. Installments / Payments: Strictly cancelled / no notification per user request.
+
+  // 4. Save updated notified IDs back to IndexedDB
+  if (newNotifiedIds.length > 0) {
+    const updatedNotified = Array.from(notifiedIds).concat(newNotifiedIds);
+    const trimmed = updatedNotified.slice(-5000);
+    try {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.put({
+        id: '__meta_notified_record_ids__',
+        type: '__META_CONFIG__',
+        payload: trimmed,
+        status: 'synced',
+        timestamp: Date.now(),
+      });
+      await new Promise((r) => { tx.oncomplete = r; tx.onerror = r; });
+    } catch (e) {}
   }
 }
 
@@ -702,8 +913,8 @@ self.addEventListener('message', (event) => {
     const title = p.title || 'الكرار للتقسيط';
     const options = {
       body: p.body || '',
-      icon: p.icon || '/favicon.ico',
-      badge: p.badge || '/favicon.ico',
+      icon: p.icon || '/pwa-192x192.png',
+      badge: p.badge || '/favicon.png',
       tag: p.tag || `notif-${Date.now()}`,
       vibrate: p.vibrate || [200, 100, 200],
       data: p.data || {},
@@ -715,6 +926,31 @@ self.addEventListener('message', (event) => {
       });
     }
   }
+});
+
+// Standard Web Push Event (triggers even when browser/app is completely closed)
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { title: 'الكرار للتقسيط', body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'الكرار للتقسيط';
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/pwa-192x192.png',
+    badge: data.badge || '/favicon.png',
+    tag: data.tag || `push-${Date.now()}`,
+    vibrate: [200, 100, 200],
+    data: data.data || {},
+    renotify: true,
+  };
+  event.waitUntil(
+    self.registration && typeof self.registration.showNotification === 'function'
+      ? self.registration.showNotification(title, options)
+      : Promise.resolve()
+  );
 });
 
 // Notification click listener: brings the window/tab to focus when clicked

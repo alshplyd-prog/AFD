@@ -699,6 +699,35 @@ export async function mirrorLocalSnapshotToIndexedDb(immediate = false): Promise
 }
 
 /**
+ * Persists current sales rep to IndexedDB so the Service Worker can access it when the app is closed
+ */
+export async function saveCurrentRepToIndexedDb(rep: any): Promise<void> {
+  if (typeof indexedDB === 'undefined') return;
+  try {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('alkarrar_sync_db', 2);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    if (db.objectStoreNames.contains('pending_actions')) {
+      const tx = db.transaction('pending_actions', 'readwrite');
+      const store = tx.objectStore('pending_actions');
+      store.put({
+        id: '__meta_current_rep__',
+        type: '__META_CONFIG__',
+        payload: rep || null,
+        status: 'synced',
+        timestamp: Date.now(),
+      });
+      await new Promise((r) => {
+        tx.oncomplete = r;
+        tx.onerror = r;
+      });
+    }
+  } catch (e) {}
+}
+
+/**
  * Loads snapshot from IndexedDB into localStorage safely without overwriting pending local modifications
  */
 export async function loadSnapshotFromIndexedDbIfAvailable(): Promise<boolean> {

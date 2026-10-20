@@ -145,6 +145,7 @@ import {
   deleteAllCustomersAndPayments,
   deleteAllEmployees,
   loadSnapshotFromIndexedDbIfAvailable,
+  saveCurrentRepToIndexedDb,
   generateUniqueId,
   reorderFundsInDatabase,
   reorderCustomerListsInDatabase,
@@ -1098,15 +1099,21 @@ export default function App() {
           if (!knownEmpTxIdsRef.current.has(t.id)) {
             knownEmpTxIdsRef.current.add(t.id);
             const rep = currentRepRef.current;
-            const isTargetRep = rep && (t.employeeName === rep.name || t.employeeId === rep.id || t.employeeId === `rep-emp-${rep.id}`);
-            const isAdmin = !rep || rep.role === 'admin' || (rep.name && rep.name.includes('ضياء')) || rep.id === 'rep-1';
-            if (isAdmin || isTargetRep) {
+            const isTargetRep = Boolean(
+              rep && (
+                (t.employeeName && rep.name && t.employeeName.trim().toLowerCase() === rep.name.trim().toLowerCase()) ||
+                t.employeeId === rep.id ||
+                t.employeeId === `rep-emp-${rep.id}` ||
+                t.employeeId === `rep_${rep.id}`
+              )
+            );
+            if (isTargetRep) {
               const amtFmt = Number(t.amount || 0).toLocaleString('en-US');
               if (t.type === 'loan') {
                 showBrowserNotification(
                   isArRef.current ? '💸 إشعار دين / سلفة' : '💸 New Debt / Advance',
                   isArRef.current
-                    ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حساب "${t.employeeName || 'موظف'}"${t.note ? ` - ${t.note}` : ''}`
+                    ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حسابك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`
                     : `New debt of (${amtFmt} IQD) for "${t.employeeName}"`,
                   { tag: `emp_debt_${t.id}` }
                 );
@@ -1114,7 +1121,7 @@ export default function App() {
                 showBrowserNotification(
                   isArRef.current ? '💵 إشعار سداد دين' : '💵 Debt Repayment',
                   isArRef.current
-                    ? `تم سداد مبلغ (${amtFmt} د.ع) من دين "${t.employeeName || 'موظف'}"${t.note ? ` - ${t.note}` : ''}`
+                    ? `تم سداد مبلغ (${amtFmt} د.ع) من دينك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`
                     : `Repayment of (${amtFmt} IQD) from "${t.employeeName}"`,
                   { tag: `emp_repay_${t.id}` }
                 );
@@ -1199,8 +1206,10 @@ export default function App() {
   useEffect(() => {
     if (currentRep) {
       localStorage.setItem(REP_STORAGE_KEY, JSON.stringify(currentRep));
+      saveCurrentRepToIndexedDb(currentRep).catch(() => {});
     } else {
       localStorage.removeItem(REP_STORAGE_KEY);
+      saveCurrentRepToIndexedDb(null).catch(() => {});
     }
   }, [currentRep]);
 
@@ -2992,23 +3001,34 @@ export default function App() {
       knownEmpTxIdsRef.current.add(tempId);
       await processEmployeeDebtTransaction(employee, fundId, type, amount, currentRep?.name || '', note);
 
-      const amtFmt = Number(amount || 0).toLocaleString('en-US');
-      if (type === 'loan') {
-        showBrowserNotification(
-          isAr ? '💸 إشعار دين / سلفة جديدة' : '💸 New Debt / Advance Recorded',
-          isAr
-            ? `تم تسجيل سلفة/دين جديد بمبلغ (${amtFmt} د.ع) على حساب الموظف "${employee.name}"${note ? ` - ${note}` : ''}`
-            : `New loan/debt of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
-          { tag: `emp_debt_${optimisticTx.id}` }
-        );
-      } else {
-        showBrowserNotification(
-          isAr ? '💵 إشعار سداد دين موظف' : '💵 Debt Repayment Recorded',
-          isAr
-            ? `تم تسجيل سداد مبلغ (${amtFmt} د.ع) من دين الموظف "${employee.name}"${note ? ` - ${note}` : ''}`
-            : `Repayment of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
-          { tag: `emp_repay_${optimisticTx.id}` }
-        );
+      const isTargetRep = Boolean(
+        currentRep && (
+          (employee.name && currentRep.name && employee.name.trim().toLowerCase() === currentRep.name.trim().toLowerCase()) ||
+          employee.id === currentRep.id ||
+          employee.id === `rep-emp-${currentRep.id}` ||
+          employee.id === `rep_${currentRep.id}`
+        )
+      );
+
+      if (isTargetRep) {
+        const amtFmt = Number(amount || 0).toLocaleString('en-US');
+        if (type === 'loan') {
+          showBrowserNotification(
+            isAr ? '💸 إشعار دين / سلفة جديدة' : '💸 New Debt / Advance Recorded',
+            isAr
+              ? `تم تسجيل سلفة/دين جديد بمبلغ (${amtFmt} د.ع) على حسابك "${employee.name}"${note ? ` - ${note}` : ''}`
+              : `New loan/debt of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
+            { tag: `emp_debt_${optimisticTx.id}` }
+          );
+        } else {
+          showBrowserNotification(
+            isAr ? '💵 إشعار سداد دين موظف' : '💵 Debt Repayment Recorded',
+            isAr
+              ? `تم تسجيل سداد مبلغ (${amtFmt} د.ع) من دينك "${employee.name}"${note ? ` - ${note}` : ''}`
+              : `Repayment of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
+            { tag: `emp_repay_${optimisticTx.id}` }
+          );
+        }
       }
 
       showToast(

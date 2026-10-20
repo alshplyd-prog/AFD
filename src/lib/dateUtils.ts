@@ -696,5 +696,66 @@ export function isAppointmentDueForNotification(
   return false;
 }
 
+/**
+ * Calculates number of days starting from the second day of the sale
+ * (Day of sale = 0 days, 2nd day = 1 day, 3rd day = 2 days, etc.)
+ */
+export function getDaysSinceSaleSecondDay(saleDateStr?: string, targetDateStr?: string): number {
+  if (!saleDateStr) return 0;
+  const saleD = saleDateStr.split('T')[0].trim();
+  if (!saleD) return 0;
+  const targetD = (targetDateStr ? targetDateStr.split('T')[0].trim() : '') || getLocalDateString();
+  const [sY, sM, sD] = saleD.split('-').map(Number);
+  const [tY, tM, tD] = targetD.split('-').map(Number);
+  if (!sY || !sM || !sD || !tY || !tM || !tD) return 0;
+  const sUtc = Date.UTC(sY, sM - 1, sD);
+  const tUtc = Date.UTC(tY, tM - 1, tD);
+  const diffDays = Math.floor((tUtc - sUtc) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+}
+
+/**
+ * Calculates the accrued/overdue accumulated amount for a contract:
+ * Formula: (dailyInstallment * days starting second day of sale) - totalPaid
+ * If accumulated >= remaining balance, returns isOverdueDueAll: true and displayValue: 'م'
+ */
+export function calculateAccumulatedInstallment(
+  contract: {
+    startDate?: string;
+    createdAt?: string;
+    dailyInstallment?: number;
+    totalPaid?: number;
+    totalPrice?: number;
+    advancePayment?: number;
+  },
+  targetDateStr?: string
+): {
+  days: number;
+  accumulated: number;
+  remaining: number;
+  isOverdueDueAll: boolean;
+  displayValue: string;
+} {
+  const saleDateStr = contract.startDate || (contract.createdAt ? contract.createdAt.split('T')[0] : '');
+  const days = getDaysSinceSaleSecondDay(saleDateStr, targetDateStr);
+  const installment = Number(contract.dailyInstallment || 0);
+  const totalPaid = Number(contract.totalPaid || 0);
+  const totalPrice = Number(contract.totalPrice || 0);
+  const advancePayment = Number(contract.advancePayment || 0);
+  const netFinanced = Math.max(0, totalPrice - advancePayment);
+  const remaining = Math.max(0, netFinanced - totalPaid);
+  const accumulated = Math.round((installment * days) - totalPaid);
+  const isOverdueDueAll = remaining > 0 && accumulated >= remaining;
+  const displayValue = isOverdueDueAll ? 'م' : (accumulated > 0 ? accumulated.toLocaleString('en-US') : '0');
+
+  return {
+    days,
+    accumulated,
+    remaining,
+    isOverdueDueAll,
+    displayValue,
+  };
+}
+
 
 
