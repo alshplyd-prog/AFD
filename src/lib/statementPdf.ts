@@ -74,7 +74,7 @@ export function openStatementPrintWindow(data: StatementPrintData) {
           ${isZero ? `<br/><span style="font-size: 8px; color: #d97706; font-weight: bold;">${formatZeroBalanceCountdown(c, true)}</span>` : ''}
         </td>
         <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: 900; font-size: 11px; color: ${accInfo.isOverdueDueAll ? '#b91c1c' : '#b45309'}; background-color: ${accInfo.isOverdueDueAll ? '#fee2e2' : 'transparent'};">
-          ${accInfo.isOverdueDueAll ? '<b style="color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:12px;">م</b>' : (accInfo.accumulated > 0 ? accInfo.accumulated.toLocaleString('en-US') : '0')}
+          ${accInfo.isOverdueDueAll ? '<b style="color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:10px;">منتهي</b>' : (accInfo.accumulated > 0 ? accInfo.accumulated.toLocaleString('en-US') : '0')}
         </td>
         <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; font-size: 11px; color: #1e3a8a;">${(c.dailyInstallment || 0).toLocaleString('en-US')}</td>
         <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; font-size: 11px; color: #047857;">${(c.totalPaid || 0).toLocaleString('en-US')}</td>

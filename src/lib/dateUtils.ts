@@ -717,7 +717,7 @@ export function getDaysSinceSaleSecondDay(saleDateStr?: string, targetDateStr?: 
 /**
  * Calculates the accrued/overdue accumulated amount for a contract:
  * Formula: (dailyInstallment * days starting second day of sale) - totalPaid
- * If accumulated >= remaining balance, returns isOverdueDueAll: true and displayValue: 'م'
+ * If accumulated >= remaining balance, returns isOverdueDueAll: true and displayValue: 'منتهي'
  */
 export function calculateAccumulatedInstallment(
   contract: {
@@ -746,7 +746,7 @@ export function calculateAccumulatedInstallment(
   const remaining = Math.max(0, netFinanced - totalPaid);
   const accumulated = Math.round((installment * days) - totalPaid);
   const isOverdueDueAll = remaining > 0 && accumulated >= remaining;
-  const displayValue = isOverdueDueAll ? 'م' : (accumulated > 0 ? accumulated.toLocaleString('en-US') : '0');
+  const displayValue = isOverdueDueAll ? 'منتهي' : (accumulated > 0 ? accumulated.toLocaleString('en-US') : '0');
 
   return {
     days,

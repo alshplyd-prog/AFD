@@ -467,7 +467,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               ${((c.remainingBalance || 0) <= 0 || c.status === 'completed' || remaining <= 0) ? `<br/><span style="font-size:8px;color:#d97706;font-weight:bold;">${formatZeroBalanceCountdown(c, isAr)}</span>` : ''}
             </td>
             <td class="num-cell" style="font-weight:900;color:${accInfo.isOverdueDueAll ? '#b91c1c' : '#b45309'};background:${accInfo.isOverdueDueAll ? '#fee2e2' : 'transparent'};">
-              ${accInfo.isOverdueDueAll ? '<b style="color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:12px;">م</b>' : (accInfo.accumulated > 0 ? accInfo.accumulated.toLocaleString('en-US') : '0')}
+              ${accInfo.isOverdueDueAll ? '<b style="color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:11px;">منتهي</b>' : (accInfo.accumulated > 0 ? accInfo.accumulated.toLocaleString('en-US') : '0')}
             </td>
             <td class="num-cell inst-cell">${(c.dailyInstallment || 0).toLocaleString('en-US')}</td>
             <td class="num-cell paid-cell">${totalPaid.toLocaleString('en-US')}</td>
@@ -1322,8 +1322,8 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
                         <td className="px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-xs sm:text-sm">
                           {accInfo.isOverdueDueAll ? (
-                            <span className="inline-block px-1.5 py-0.5 rounded font-black text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300">
-                              م
+                            <span className="inline-block px-1.5 py-0.5 rounded font-black text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300 text-xs">
+                              منتهي
                             </span>
                           ) : (
                             accInfo.accumulated > 0 ? (
@@ -1481,8 +1481,8 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
                           <td className="px-0.5 sm:px-1.5 py-0.5 sm:py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-[10px] sm:text-xs md:text-sm whitespace-nowrap">
                             {accInfo.isOverdueDueAll ? (
-                              <span className="inline-block px-1.5 py-0.5 rounded font-black text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300">
-                                م
+                              <span className="inline-block px-1.5 py-0.5 rounded font-black text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300 text-[10px] sm:text-xs">
+                                منتهي
                               </span>
                             ) : (
                               accInfo.accumulated > 0 ? (
