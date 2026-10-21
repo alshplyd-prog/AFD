@@ -256,6 +256,46 @@ async function recalculateAllFundBalancesInPg() {
             rep_name = EXCLUDED.rep_name
       `).catch(() => {});
 
+      // 3.5 Clean duplicate or orphan employee debt transactions in fund_transactions
+      await executePg(`
+        DELETE FROM fund_transactions
+        WHERE id LIKE 'ft_emp_tx_%'
+           OR (
+             id LIKE 'ft_emp_%' 
+             AND SUBSTRING(id FROM 8) NOT IN (
+               SELECT id FROM employee_transactions
+               WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = employee_transactions.id)
+             )
+           )
+      `).catch(() => {});
+
+      // Ensure all active employee transactions have a corresponding fund_transactions record
+      await executePg(`
+        INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+        SELECT 
+          'ft_emp_' || et.id,
+          et.fund_id,
+          CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') THEN 'employee_loan' ELSE 'employee_repay' END,
+          COALESCE(et.amount, 0),
+          CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') 
+            THEN 'دين / سلفة للموظف (' || COALESCE(et.employee_name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+            ELSE 'راجع دين / تسديد من الموظف (' || COALESCE(et.employee_name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+          END,
+          COALESCE(et.rep_name, 'الإدارة'),
+          COALESCE(et.created_at, NOW()::text)
+        FROM employee_transactions et
+        WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = et.id)
+          AND COALESCE(et.amount, 0) > 0
+          AND et.fund_id IS NOT NULL 
+          AND et.fund_id != ''
+        ON CONFLICT (id) DO UPDATE 
+        SET amount = EXCLUDED.amount, 
+            fund_id = EXCLUDED.fund_id,
+            type = EXCLUDED.type,
+            note = EXCLUDED.note,
+            rep_name = EXCLUDED.rep_name
+      `).catch(() => {});
+
       // 4. Compute accurate fund balances based on all fund transactions
       const dbFunds = await executePg("SELECT id FROM cash_funds WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = cash_funds.id)").catch(() => []);
       for (const f of dbFunds) {
@@ -263,9 +303,9 @@ async function recalculateAllFundBalancesInPg() {
         const txRes = await executePg(`
           SELECT COALESCE(SUM(
             CASE 
-              WHEN type IN ('deposit', 'installment', 'transfer_in') AND fund_id = $1 THEN amount
+              WHEN type IN ('deposit', 'installment', 'transfer_in', 'employee_repay') AND fund_id = $1 THEN amount
               WHEN type = 'transfer' AND target_fund_id = $1 THEN amount
-              WHEN type IN ('withdraw', 'transfer_out', 'transfer', 'expense') AND fund_id = $1 THEN -amount
+              WHEN type IN ('withdraw', 'transfer_out', 'transfer', 'expense', 'employee_loan') AND fund_id = $1 THEN -amount
               ELSE 0 
             END
           ), 0) as total
@@ -281,13 +321,22 @@ async function recalculateAllFundBalancesInPg() {
     // Also update fileDb funds & transactions
     const filePayments = fileDb.get<any>("payments") || [];
     const fileFundTxs = fileDb.get<any>("fund_transactions") || [];
+    const fileEmpTxs = fileDb.get<any>("employee_transactions") || [];
     const activePaymentIds = new Set(filePayments.filter((p: any) => Number(p.amountPaid ?? p.amount) > 0).map((p: any) => String(p.id)));
+    const activeEmpTxIds = new Set(fileEmpTxs.map((t: any) => String(t.id)));
 
-    // Clean orphan installment transactions
+    // Clean orphan installment & duplicate employee debt transactions
     let updatedTxs = fileFundTxs.filter((tx: any) => {
       if (tx && tx.id && String(tx.id).startsWith("ft_pay_")) {
         const pId = String(tx.id).replace("ft_pay_", "");
         return activePaymentIds.has(pId);
+      }
+      if (tx && tx.id && String(tx.id).startsWith("ft_emp_tx_")) {
+        return false;
+      }
+      if (tx && tx.id && String(tx.id).startsWith("ft_emp_")) {
+        const empTxId = String(tx.id).replace("ft_emp_", "");
+        return activeEmpTxIds.has(empTxId);
       }
       return true;
     });
@@ -331,6 +380,36 @@ async function recalculateAllFundBalancesInPg() {
       }
     }
 
+    // Ensure 1:1 synchronization for active employee debt transactions
+    for (const et of fileEmpTxs) {
+      if (!et || Number(et.amount) <= 0 || !et.fundId) continue;
+      const ftId = `ft_emp_${et.id}`;
+      const isLoan = et.type === 'loan' || et.type === 'debt' || et.type === 'سلفة' || et.type === 'دين';
+      const existingTxIdx = updatedTxs.findIndex((tx: any) => tx.id === ftId);
+      const amount = Number(et.amount) || 0;
+      const empName = et.employeeName || et.repName || 'الموظف';
+      const ftObj = {
+        id: ftId,
+        fundId: et.fundId,
+        type: isLoan ? 'employee_loan' : 'employee_repay',
+        amount,
+        note: isLoan
+          ? `دين / سلفة للموظف (${empName})${et.notes ? ` - ${et.notes}` : ''}`
+          : `راجع دين / تسديد من الموظف (${empName})${et.notes ? ` - ${et.notes}` : ''}`,
+        repName: et.repName || 'الإدارة',
+        createdAt: et.createdAt || new Date().toISOString()
+      };
+      if (existingTxIdx >= 0) {
+        if (updatedTxs[existingTxIdx].amount !== amount || updatedTxs[existingTxIdx].fundId !== et.fundId) {
+          updatedTxs[existingTxIdx] = { ...updatedTxs[existingTxIdx], ...ftObj };
+          txsChanged = true;
+        }
+      } else {
+        updatedTxs.push(ftObj);
+        txsChanged = true;
+      }
+    }
+
     if (paymentsChanged) {
       fileDb.setAll("payments", filePayments);
     }
@@ -346,9 +425,9 @@ async function recalculateAllFundBalancesInPg() {
         const total = fundTxs.reduce((sum: number, tx: any) => {
           const amt = Number(tx.amount) || 0;
           if (tx.fundId === fund.id) {
-            if (tx.type === 'deposit' || tx.type === 'installment' || tx.type === 'transfer_in') {
+            if (tx.type === 'deposit' || tx.type === 'installment' || tx.type === 'transfer_in' || tx.type === 'employee_repay') {
               return sum + amt;
-            } else if (tx.type === 'withdraw' || tx.type === 'transfer_out' || tx.type === 'transfer' || tx.type === 'expense') {
+            } else if (tx.type === 'withdraw' || tx.type === 'transfer_out' || tx.type === 'transfer' || tx.type === 'expense' || tx.type === 'employee_loan') {
               return sum - amt;
             }
           } else if (tx.targetFundId === fund.id && tx.type === 'transfer') {
@@ -941,9 +1020,11 @@ export async function broadcastPushNotification(options: {
     // 4. Debts and Return of Debt: For Admin/Supervisor or the representative who owns the debt/repayment
     else if (type === 'debt' || type === 'repay') {
       const isSupervisorOrAdmin = !sub.role || sub.role === 'admin' || sub.role === 'supervisor';
+      const normTarget = (targetRepName || '').trim().toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const normSub = (sub.repName || '').trim().toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
       const isOwner = Boolean(
         isSupervisorOrAdmin ||
-        (targetRepName && sub.repName && (targetRepName.trim().toLowerCase() === sub.repName.trim().toLowerCase() || sub.repName.trim().toLowerCase().includes(targetRepName.trim().toLowerCase()) || targetRepName.trim().toLowerCase().includes(sub.repName.trim().toLowerCase()))) ||
+        (normTarget && normSub && (normTarget === normSub || normSub.includes(normTarget) || normTarget.includes(normSub))) ||
         (targetRepId && sub.repId && (
           targetRepId === sub.repId ||
           targetRepId === `rep-emp-${sub.repId}` ||
@@ -3608,32 +3689,67 @@ async function startServer() {
         employeeId: et.employeeId || '',
         employeeName: et.employeeName || et.repName || '',
         fundId: et.fundId || '',
-        type: et.type || 'debt',
+        type: et.type || 'loan',
         amount: Number(et.amount) || 0,
-        notes: et.notes || '',
+        notes: et.notes || et.note || '',
+        note: et.notes || et.note || '',
         repName: et.repName || et.employeeName || '',
         createdAt: et.createdAt || new Date().toISOString()
       });
 
       await executePg(
-        `INSERT INTO employee_transactions (id, employee_id, fund_id, type, amount, notes, rep_name, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
-        [id, saved.employeeId, saved.fundId, saved.type, saved.amount, saved.notes, saved.repName, saved.createdAt]
+        `INSERT INTO employee_transactions (id, employee_id, fund_id, type, amount, notes, note, rep_name, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         ON CONFLICT (id) DO UPDATE SET
+           amount = EXCLUDED.amount, type = EXCLUDED.type, notes = EXCLUDED.notes, fund_id = EXCLUDED.fund_id`,
+        [id, saved.employeeId, saved.fundId, saved.type, saved.amount, saved.notes, saved.notes, saved.repName, saved.createdAt]
       );
 
-      bumpSyncVersion();
       const isLoan = saved.type === 'loan' || (saved.type as string) === 'debt' || (saved.type as string) === 'سلفة' || (saved.type as string) === 'دين';
-      const amtFmt = Number(saved.amount || 0).toLocaleString('en-US');
+      const amount = Number(saved.amount) || 0;
+      const empName = et.employeeName || saved.repName || 'الموظف';
+      const ftId = `ft_emp_${id}`;
+      const ftType = isLoan ? 'employee_loan' : 'employee_repay';
+      const ftNote = isLoan
+        ? `دين / سلفة للموظف (${empName})${saved.notes ? ` - ${saved.notes}` : ''}`
+        : `راجع دين / تسديد من الموظف (${empName})${saved.notes ? ` - ${saved.notes}` : ''}`;
+
+      if (saved.fundId && amount > 0) {
+        if (isPgConfigured()) {
+          await executePg(
+            `INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)
+             ON CONFLICT (id) DO UPDATE SET amount = EXCLUDED.amount, note = EXCLUDED.note, type = EXCLUDED.type`,
+            [ftId, saved.fundId, ftType, amount, ftNote, saved.repName || 'الإدارة', saved.createdAt]
+          ).catch(() => {});
+        }
+        fileDb.upsert("fund_transactions", {
+          id: ftId,
+          fundId: saved.fundId,
+          type: ftType,
+          amount,
+          note: ftNote,
+          repName: saved.repName || 'الإدارة',
+          createdAt: saved.createdAt
+        });
+
+        // Adjust fund balance: if loan -> decreases (-amount), if repay -> increases (+amount)
+        await adjustFundBalance(saved.fundId, isLoan ? -amount : +amount);
+      }
+
+      bumpSyncVersion();
+      const amtFmt = amount.toLocaleString('en-US');
       broadcastPushNotification({
-        title: isLoan ? '💸 إشعار دين / سلفة' : '💵 إشعار سداد دين',
+        title: isLoan ? '💸 إشعار دين جديد' : '💵 إشعار راجع دين',
         body: isLoan
-          ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حسابك "${et.employeeName || saved.repName || 'المندوب'}"${saved.notes ? ` - ${saved.notes}` : ''}`
-          : `تم سداد مبلغ (${amtFmt} د.ع) من دينك "${et.employeeName || saved.repName || 'المندوب'}"${saved.notes ? ` - ${saved.notes}` : ''}`,
+          ? `تم تسجيل دين بمبلغ (${amtFmt} د.ع) على "${empName}"${saved.notes ? ` (${saved.notes})` : ''} بواسطة ${saved.repName || 'الإدارة'}`
+          : `تم تسجيل راجع دين بمبلغ (${amtFmt} د.ع) من "${empName}"${saved.notes ? ` (${saved.notes})` : ''} بواسطة ${saved.repName || 'الإدارة'}`,
         tag: `emp_${isLoan ? 'debt' : 'repay'}_${saved.id}`,
         type: isLoan ? 'debt' : 'repay',
         targetRepId: saved.employeeId,
-        targetRepName: et.employeeName || saved.repName,
+        targetRepName: empName,
       }).catch(() => {});
+
       res.json({ success: true, transaction: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3644,11 +3760,48 @@ async function startServer() {
     try {
       const { id } = req.params;
       const updates = req.body;
+      let existing = (fileDb.get<any>("employee_transactions") || []).find((x: any) => x.id === id);
+      if (!existing && isPgConfigured()) {
+        const rows = await executePg("SELECT * FROM employee_transactions WHERE id = $1 LIMIT 1", [id]).catch(() => []);
+        if (rows && rows.length > 0) {
+          existing = {
+            id: rows[0].id,
+            fundId: rows[0].fund_id,
+            amount: Number(rows[0].amount) || 0,
+            type: rows[0].type,
+            notes: rows[0].notes || rows[0].note,
+            repName: rows[0].rep_name
+          };
+        }
+      }
+
+      const oldAmount = Number(existing?.amount) || 0;
+      const newAmount = Number(updates.amount !== undefined ? updates.amount : oldAmount);
+      const diff = newAmount - oldAmount;
+      const isLoan = (existing?.type || updates.type) === 'loan' || (existing?.type || updates.type) === 'debt';
+      const fundId = updates.fundId || existing?.fundId;
+
       fileDb.update("employee_transactions", id, updates);
       await executePg(
         `UPDATE employee_transactions SET amount = COALESCE($1, amount), notes = COALESCE($2, notes) WHERE id = $3`,
-        [updates.amount, updates.notes, id]
+        [updates.amount, updates.notes || updates.note, id]
       );
+
+      // Adjust fund balance by diff
+      if (fundId && diff !== 0) {
+        await adjustFundBalance(fundId, isLoan ? -diff : +diff);
+      }
+
+      // Update linked fund transaction
+      const ftId = `ft_emp_${id}`;
+      const ftNote = isLoan
+        ? `دين / سلفة للموظف (${updates.employeeName || existing?.employeeName || 'الموظف'})${updates.notes ? ` - ${updates.notes}` : ''}`
+        : `راجع دين / تسديد من الموظف (${updates.employeeName || existing?.employeeName || 'الموظف'})${updates.notes ? ` - ${updates.notes}` : ''}`;
+      fileDb.update<any>("fund_transactions", ftId, { amount: newAmount, note: ftNote } as any);
+      if (isPgConfigured()) {
+        await executePg(`UPDATE fund_transactions SET amount = $1, note = $2 WHERE id = $3`, [newAmount, ftNote, ftId]).catch(() => {});
+      }
+
       bumpSyncVersion();
       res.json({ success: true });
     } catch (err: any) {
@@ -3677,6 +3830,39 @@ async function startServer() {
   app.delete("/api/employee-transactions/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      let existing = (fileDb.get<any>("employee_transactions") || []).find((x: any) => x.id === id);
+      if (!existing && isPgConfigured()) {
+        const rows = await executePg("SELECT * FROM employee_transactions WHERE id = $1 LIMIT 1", [id]).catch(() => []);
+        if (rows && rows.length > 0) {
+          existing = {
+            id: rows[0].id,
+            fundId: rows[0].fund_id,
+            amount: Number(rows[0].amount) || 0,
+            type: rows[0].type,
+            notes: rows[0].notes || rows[0].note,
+            repName: rows[0].rep_name,
+            createdAt: rows[0].created_at
+          };
+        }
+      }
+
+      if (existing && existing.amount && existing.fundId) {
+        const isLoan = existing.type === 'loan' || (existing.type as string) === 'debt' || (existing.type as string) === 'سلفة' || (existing.type as string) === 'دين';
+        const amount = Number(existing.amount) || 0;
+        // On deletion of loan: fund balance increases (+amount). On deletion of repay: fund balance decreases (-amount).
+        await adjustFundBalance(existing.fundId, isLoan ? +amount : -amount);
+      }
+
+      // Delete linked fund transactions
+      const ftId = `ft_emp_${id}`;
+      const ftIdAlt = `ft_emptx_${id}`;
+      fileDb.delete("fund_transactions", ftId);
+      fileDb.delete("fund_transactions", ftIdAlt);
+      if (isPgConfigured()) {
+        await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'fund_transactions'), ($2, 'fund_transactions') ON CONFLICT (record_id) DO NOTHING`, [ftId, ftIdAlt]).catch(() => {});
+        await executePg(`DELETE FROM fund_transactions WHERE id = $1 OR id = $2`, [ftId, ftIdAlt]).catch(() => {});
+      }
+
       fileDb.delete("employee_transactions", id);
       await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'employee_transactions') ON CONFLICT (record_id) DO NOTHING`, [id]).catch(() => {});
       await executePg(`DELETE FROM employee_transactions WHERE id = $1`, [id]).catch(() => {});
@@ -5453,11 +5639,14 @@ async function startServer() {
           const notes = payload.notes || payload.note || '';
           const txDate = payload.date || payload.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0];
           const createdAt = payload.createdAt || payload.created_at || new Date().toISOString();
+          const empName = payload.employeeName || payload.employee_name || repName || 'الموظف';
+          const isLoan = type === 'loan' || (type as string) === 'debt' || (type as string) === 'سلفة' || (type as string) === 'دين';
 
           const saved = fileDb.upsert("employee_transactions", {
             ...payload,
             id,
             employeeId: empId,
+            employeeName: empName,
             fundId,
             repName,
             type,
@@ -5469,12 +5658,61 @@ async function startServer() {
           });
 
           await executePg(
-            `INSERT INTO employee_transactions (id, employee_id, rep_name, type, amount, notes, note, date, created_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            `INSERT INTO employee_transactions (id, employee_id, fund_id, rep_name, type, amount, notes, note, date, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
              ON CONFLICT (id) DO UPDATE SET
-               amount = EXCLUDED.amount, type = EXCLUDED.type, notes = EXCLUDED.notes`,
-            [id, empId, repName, type, amount, notes, notes, txDate, createdAt]
+               amount = EXCLUDED.amount, type = EXCLUDED.type, notes = EXCLUDED.notes, fund_id = EXCLUDED.fund_id`,
+            [id, empId, fundId, repName, type, amount, notes, notes, txDate, createdAt]
           ).catch((err) => console.warn("Error inserting employee_tx in PG sync:", err));
+
+          // Manage linked fund transaction
+          const ftId = `ft_emp_${id}`;
+          const ftType = isLoan ? 'employee_loan' : 'employee_repay';
+          const ftNote = isLoan
+            ? `دين / سلفة للموظف (${empName})${notes ? ` - ${notes}` : ''}`
+            : `راجع دين / تسديد من الموظف (${empName})${notes ? ` - ${notes}` : ''}`;
+
+          let ftAlreadyExists = (fileDb.get<any>("fund_transactions") || []).some((x: any) => x.id === ftId);
+          if (fundId && amount > 0) {
+            if (isPgConfigured()) {
+              const res = await executePg(
+                `INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7)
+                 ON CONFLICT (id) DO UPDATE SET amount = EXCLUDED.amount, note = EXCLUDED.note, type = EXCLUDED.type
+                 RETURNING id`,
+                [ftId, fundId, ftType, amount, ftNote, repName || 'الإدارة', createdAt]
+              ).catch(() => []);
+              if (!res || res.length === 0) ftAlreadyExists = true;
+            }
+            fileDb.upsert("fund_transactions", {
+              id: ftId,
+              fundId,
+              type: ftType,
+              amount,
+              note: ftNote,
+              repName: repName || 'الإدارة',
+              createdAt
+            });
+
+            if (!skipBalanceRecalc && !ftAlreadyExists) {
+              await adjustFundBalance(fundId, isLoan ? -amount : +amount);
+            }
+          }
+
+          if (!ftAlreadyExists) {
+            const amtFmt = amount.toLocaleString('en-US');
+            broadcastPushNotification({
+              title: isLoan ? '💸 إشعار دين جديد' : '💵 إشعار راجع دين',
+              body: isLoan
+                ? `تم تسجيل دين بمبلغ (${amtFmt} د.ع) على "${empName}"${notes ? ` (${notes})` : ''} بواسطة ${payload.recordedBy || repName || 'الإدارة'}`
+                : `تم تسجيل راجع دين بمبلغ (${amtFmt} د.ع) من "${empName}"${notes ? ` (${notes})` : ''} بواسطة ${payload.recordedBy || repName || 'الإدارة'}`,
+              tag: `emp_${isLoan ? 'debt' : 'repay'}_${id}`,
+              type: isLoan ? 'debt' : 'repay',
+              targetRepId: empId,
+              targetRepName: empName,
+            }).catch(() => {});
+          }
+
           return true;
         }
 
@@ -5482,6 +5720,35 @@ async function startServer() {
         case 'DELETE_EMPLOYEE_TRANSACTION': {
           const id = typeof payload === 'string' ? payload : payload?.id;
           if (!id) return true;
+
+          let existing = (fileDb.get<any>("employee_transactions") || []).find((x: any) => x.id === id);
+          if (!existing && isPgConfigured()) {
+            const rows = await executePg("SELECT * FROM employee_transactions WHERE id = $1 LIMIT 1", [id]).catch(() => []);
+            if (rows && rows.length > 0) {
+              existing = {
+                id: rows[0].id,
+                fundId: rows[0].fund_id,
+                amount: Number(rows[0].amount) || 0,
+                type: rows[0].type
+              };
+            }
+          }
+
+          if (existing && existing.amount && existing.fundId && !skipBalanceRecalc) {
+            const isLoan = existing.type === 'loan' || (existing.type as string) === 'debt' || (existing.type as string) === 'سلفة' || (existing.type as string) === 'دين';
+            const amount = Number(existing.amount) || 0;
+            await adjustFundBalance(existing.fundId, isLoan ? +amount : -amount);
+          }
+
+          const ftId = `ft_emp_${id}`;
+          const ftIdAlt = `ft_emptx_${id}`;
+          fileDb.delete("fund_transactions", ftId);
+          fileDb.delete("fund_transactions", ftIdAlt);
+          if (isPgConfigured()) {
+            await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'fund_transactions'), ($2, 'fund_transactions') ON CONFLICT (record_id) DO NOTHING`, [ftId, ftIdAlt]).catch(() => {});
+            await executePg(`DELETE FROM fund_transactions WHERE id = $1 OR id = $2`, [ftId, ftIdAlt]).catch(() => {});
+          }
+
           await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'employee_transactions') ON CONFLICT (record_id) DO NOTHING`, [id]).catch(() => {});
           fileDb.delete("employee_transactions", id);
           await executePg(`DELETE FROM employee_transactions WHERE id = $1`, [id]).catch(() => {});

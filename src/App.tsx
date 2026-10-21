@@ -1101,12 +1101,13 @@ export default function App() {
             knownEmpTxIdsRef.current.add(t.id);
             const rep = currentRepRef.current;
             const isTargetRep = Boolean(
-              rep && (
-                (t.employeeName && rep.name && t.employeeName.trim().toLowerCase() === rep.name.trim().toLowerCase()) ||
-                t.employeeId === rep.id ||
-                t.employeeId === `rep-emp-${rep.id}` ||
-                t.employeeId === `rep_${rep.id}`
-              )
+              !rep ||
+              rep.role === 'admin' ||
+              rep.role === 'supervisor' ||
+              (t.employeeName && rep.name && t.employeeName.trim().toLowerCase() === rep.name.trim().toLowerCase()) ||
+              t.employeeId === rep.id ||
+              t.employeeId === `rep-emp-${rep.id}` ||
+              t.employeeId === `rep_${rep.id}`
             );
             if (isTargetRep) {
               const amtFmt = Number(t.amount || 0).toLocaleString('en-US');
@@ -1114,15 +1115,15 @@ export default function App() {
                 showBrowserNotification(
                   isArRef.current ? '💸 إشعار دين / سلفة' : '💸 New Debt / Advance',
                   isArRef.current
-                    ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حسابك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`
+                    ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) لـ "${t.employeeName || 'الموظف'}"${t.note ? ` - ${t.note}` : ''}`
                     : `New debt of (${amtFmt} IQD) for "${t.employeeName}"`,
                   { tag: `emp_debt_${t.id}` }
                 );
               } else {
                 showBrowserNotification(
-                  isArRef.current ? '💵 إشعار سداد دين' : '💵 Debt Repayment',
+                  isArRef.current ? '💵 إشعار راجع دين' : '💵 Debt Repayment',
                   isArRef.current
-                    ? `تم سداد مبلغ (${amtFmt} د.ع) من دينك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`
+                    ? `تم تسجيل سداد/راجع دين بمبلغ (${amtFmt} د.ع) من "${t.employeeName || 'الموظف'}"${t.note ? ` - ${t.note}` : ''}`
                     : `Repayment of (${amtFmt} IQD) from "${t.employeeName}"`,
                   { tag: `emp_repay_${t.id}` }
                 );
@@ -2937,18 +2938,37 @@ export default function App() {
     amount: number,
     note?: string
   ) => {
+    if (currentRep && currentRep.role !== 'admin') {
+      showToast(isAr ? 'عفواً، إضافة الديون وسدادها مخصص للمدير حصراً' : 'Only admin can process debt transactions');
+      return;
+    }
+
+    if (fundId && type === 'loan') {
+      const targetFund = funds.find((f) => f.id === fundId);
+      const fundBal = Number(targetFund?.balance) || 0;
+      if (amount > fundBal) {
+        showToast(
+          isAr
+            ? `عذراً، رصيد الصندوق المحدد (${targetFund?.name || 'الصندوق'}: ${fundBal.toLocaleString('en-US')} د.ع) غير كافٍ لصرف هذا الدين!`
+            : `Insufficient fund balance (${fundBal.toLocaleString('en-US')} IQD)!`
+        );
+        return;
+      }
+    }
+
     try {
       const now = new Date().toISOString();
       const tempId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const empName = employee.name || 'الموظف';
       const optimisticTx: EmployeeTransaction = {
         id: tempId,
         employeeId: employee.id,
-        employeeName: employee.name,
+        employeeName: empName,
         fundId,
         type,
         amount,
         date: now,
-        recordedBy: currentRep?.name || '',
+        recordedBy: currentRep?.name || 'الإدارة',
         note: note || (type === 'loan' ? 'سلفة / دين' : 'تسديد دين'),
         createdAt: now,
       };
@@ -2958,10 +2978,10 @@ export default function App() {
 
       // 2. Optimistically update employee debtBalance
       setEmployees((prev) => {
-        const found = prev.some((e) => e.id === employee.id || (e.name || '').trim().toLowerCase() === (employee?.name || '').trim().toLowerCase());
+        const found = prev.some((e) => e.id === employee.id || (e.name || '').trim().toLowerCase() === (empName || '').trim().toLowerCase());
         if (found) {
           return prev.map((e) => {
-            if (e.id === employee.id || (e.name || '').trim().toLowerCase() === (employee?.name || '').trim().toLowerCase()) {
+            if (e.id === employee.id || (e.name || '').trim().toLowerCase() === (empName || '').trim().toLowerCase()) {
               const prevDebt = Number(e.debtBalance ?? e.totalDebt ?? 0);
               const newDebt = type === 'loan' ? prevDebt + amount : Math.max(0, prevDebt - amount);
               return { ...e, debtBalance: newDebt, totalDebt: newDebt };
@@ -2982,13 +3002,13 @@ export default function App() {
         }
       });
 
-      // 3. Optimistically update cash fund balance
+      // 3. Optimistically update cash fund balance (loan: decreases, repay: increases)
       if (fundId) {
         setFunds((prev) =>
           prev.map((f) => {
             if (f.id === fundId) {
               const currentBal = Number(f.balance) || 0;
-              const newBal = type === 'loan' ? currentBal - amount : currentBal + amount;
+              const newBal = type === 'loan' ? Math.max(0, currentBal - amount) : currentBal + amount;
               return { ...f, balance: newBal };
             }
             return f;
@@ -2996,43 +3016,48 @@ export default function App() {
         );
       }
 
+      // 4. Add operation to Fund Transactions (حركات الصندوق)
+      const ftId = `ft_emp_${tempId}`;
+      const ftNote = type === 'loan'
+        ? `دين / سلفة للموظف (${empName})${note ? ` - ${note}` : ''}`
+        : `راجع دين / تسديد من الموظف (${empName})${note ? ` - ${note}` : ''}`;
+      const newFt: FundTransaction = {
+        id: ftId,
+        fundId,
+        type: type === 'loan' ? 'employee_loan' : 'employee_repay',
+        amount,
+        note: ftNote,
+        repName: currentRep?.name || empName,
+        createdAt: now,
+      };
+      setFundTransactions((prev) => [newFt, ...prev]);
+
       knownEmpTxIdsRef.current.add(tempId);
-      await processEmployeeDebtTransaction(employee, fundId, type, amount, currentRep?.name || '', note);
+      await processEmployeeDebtTransaction(optimisticTx);
 
-      const isTargetRep = Boolean(
-        currentRep && (
-          (employee.name && currentRep.name && employee.name.trim().toLowerCase() === currentRep.name.trim().toLowerCase()) ||
-          employee.id === currentRep.id ||
-          employee.id === `rep-emp-${currentRep.id}` ||
-          employee.id === `rep_${currentRep.id}`
-        )
-      );
-
-      if (isTargetRep) {
-        const amtFmt = Number(amount || 0).toLocaleString('en-US');
-        if (type === 'loan') {
-          showBrowserNotification(
-            isAr ? '💸 إشعار دين / سلفة جديدة' : '💸 New Debt / Advance Recorded',
-            isAr
-              ? `تم تسجيل سلفة/دين جديد بمبلغ (${amtFmt} د.ع) على حسابك "${employee.name}"${note ? ` - ${note}` : ''}`
-              : `New loan/debt of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
-            { tag: `emp_debt_${optimisticTx.id}` }
-          );
-        } else {
-          showBrowserNotification(
-            isAr ? '💵 إشعار سداد دين موظف' : '💵 Debt Repayment Recorded',
-            isAr
-              ? `تم تسجيل سداد مبلغ (${amtFmt} د.ع) من دينك "${employee.name}"${note ? ` - ${note}` : ''}`
-              : `Repayment of (${amtFmt} IQD) recorded for employee "${employee.name}"`,
-            { tag: `emp_repay_${optimisticTx.id}` }
-          );
-        }
+      const amtFmt = Number(amount || 0).toLocaleString('en-US');
+      if (type === 'loan') {
+        showBrowserNotification(
+          isAr ? '💸 إشعار دين جديد' : '💸 New Debt Recorded',
+          isAr
+            ? `تم تسجيل دين بمبلغ (${amtFmt} د.ع) على "${empName}"${note ? ` (${note})` : ''} بواسطة ${currentRep?.name || 'الإدارة'}`
+            : `New loan/debt of (${amtFmt} IQD) recorded for "${empName}"`,
+          { tag: `emp_debt_${optimisticTx.id}` }
+        );
+      } else {
+        showBrowserNotification(
+          isAr ? '💵 إشعار راجع دين' : '💵 Debt Repayment Recorded',
+          isAr
+            ? `تم تسجيل راجع دين بمبلغ (${amtFmt} د.ع) من "${empName}"${note ? ` (${note})` : ''} بواسطة ${currentRep?.name || 'الإدارة'}`
+            : `Repayment of (${amtFmt} IQD) recorded from "${empName}"`,
+          { tag: `emp_repay_${optimisticTx.id}` }
+        );
       }
 
       showToast(
         type === 'loan'
-          ? isAr ? `تم تسجيل سحبة دين ${amount.toLocaleString('en-US')} د.ع للموظف ${employee.name}` : 'Loan recorded'
-          : isAr ? `تم تسجيل سداد مبلغ ${amount.toLocaleString('en-US')} د.ع من الموظف ${employee.name}` : 'Repay recorded'
+          ? isAr ? `تم تسجيل سحبة دين ${amount.toLocaleString('en-US')} د.ع للموظف ${empName}` : 'Loan recorded'
+          : isAr ? `تم تسجيل سداد مبلغ ${amount.toLocaleString('en-US')} د.ع من الموظف ${empName}` : 'Repay recorded'
       );
     } catch (err) {
       console.error('Failed debt tx:', err);
@@ -3057,13 +3082,13 @@ export default function App() {
         })
       );
 
-      // Optimistically revert fund balance
+      // Optimistically revert fund balance (حذف الدين يزداد رصيد الصندوق، حذف الراجع ينقص رصيد الصندوق)
       if (tx.fundId) {
         setFunds((prev) =>
           prev.map((f) => {
             if (f.id === tx.fundId) {
               const currentBal = Number(f.balance) || 0;
-              const newBal = tx.type === 'loan' ? currentBal + tx.amount : currentBal - tx.amount;
+              const newBal = tx.type === 'loan' ? currentBal + tx.amount : Math.max(0, currentBal - tx.amount);
               return { ...f, balance: newBal };
             }
             return f;
@@ -3071,8 +3096,13 @@ export default function App() {
         );
       }
 
+      // Remove linked fund transaction from local state
+      const targetFtId = `ft_emp_${tx.id}`;
+      const targetFtIdAlt = `ft_emptx_${tx.id}`;
+      setFundTransactions((prev) => prev.filter((ft) => ft.id !== targetFtId && ft.id !== targetFtIdAlt && ft.id !== tx.id));
+
       await deleteEmployeeDebtTransaction(tx, employee);
-      showToast(isAr ? 'تم حذف حركة الدين بنجاح' : 'Debt transaction deleted');
+      showToast(isAr ? 'تم حذف حركة الدين وتعديل حركة ورصيد الصندوق بنجاح' : 'Debt transaction and fund movements deleted');
     } catch (err) {
       console.error('Failed to delete debt tx:', err);
       showToast(isAr ? 'حدث خطأ أثناء حذف حركة الدين' : 'Error deleting debt transaction');
@@ -3090,7 +3120,7 @@ export default function App() {
 
       // Optimistically update transaction in local state
       setEmployeeTransactions((prev) =>
-        prev.map((t) => (t.id === tx.id ? { ...t, amount: newAmount, note: newNote } : t))
+        prev.map((t) => (t.id === tx.id ? { ...t, amount: newAmount, note: newNote, notes: newNote } : t))
       );
 
       // Optimistically update employee debtBalance
@@ -3105,13 +3135,13 @@ export default function App() {
         })
       );
 
-      // Optimistically update fund balance
+      // Optimistically update fund balance (loan decreases by diff, repay increases by diff)
       if (tx.fundId) {
         setFunds((prev) =>
           prev.map((f) => {
             if (f.id === tx.fundId) {
               const currentBal = Number(f.balance) || 0;
-              const newBal = tx.type === 'loan' ? currentBal - diff : currentBal + diff;
+              const newBal = tx.type === 'loan' ? Math.max(0, currentBal - diff) : currentBal + diff;
               return { ...f, balance: newBal };
             }
             return f;
@@ -3119,8 +3149,25 @@ export default function App() {
         );
       }
 
+      // Update linked fund transaction in local state
+      const targetFtId = `ft_emp_${tx.id}`;
+      const targetFtIdAlt = `ft_emptx_${tx.id}`;
+      const empName = employee.name || 'الموظف';
+      const ftNote = tx.type === 'loan'
+        ? `دين / سلفة للموظف (${empName})${newNote ? ` - ${newNote}` : ''}`
+        : `راجع دين / تسديد من الموظف (${empName})${newNote ? ` - ${newNote}` : ''}`;
+
+      setFundTransactions((prev) =>
+        prev.map((ft) => {
+          if (ft.id === targetFtId || ft.id === targetFtIdAlt || ft.id === tx.id) {
+            return { ...ft, amount: newAmount, note: ftNote };
+          }
+          return ft;
+        })
+      );
+
       await updateEmployeeDebtTransaction(tx, employee, newAmount, newNote);
-      showToast(isAr ? 'تم تعديل حركة الدين بنجاح' : 'Debt transaction updated');
+      showToast(isAr ? 'تم تعديل حركة الدين وحركة الصندوق بنجاح' : 'Debt transaction updated');
     } catch (err) {
       console.error('Failed to update debt tx:', err);
       showToast(isAr ? 'حدث خطأ أثناء تعديل حركة الدين' : 'Error updating debt transaction');

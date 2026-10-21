@@ -231,6 +231,7 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
   };
 
   const handleOpenDebtModal = (emp: Employee, defaultType: 'loan' | 'repay' = 'loan') => {
+    if (!isAdmin) return;
     setSelectedEmpForDebt(emp);
     setDebtType(defaultType);
     setDebtAmount('');
@@ -245,6 +246,19 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
     const amount = Number(debtAmount);
     const selectedFund = debtFundId || funds[0]?.id;
     if (!selectedEmpForDebt || amount <= 0 || !selectedFund) return;
+
+    if (debtType === 'loan') {
+      const fund = funds.find((f) => f.id === selectedFund);
+      const fundBal = Number(fund?.balance) || 0;
+      if (amount > fundBal) {
+        setDebtError(
+          isAr
+            ? `عذراً، رصيد الصندوق المحدد (${fund?.name || ''}: ${fundBal.toLocaleString('en-US')} د.ع) غير كافٍ لصرف هذا الدين!`
+            : `Insufficient fund balance (${fundBal.toLocaleString('en-US')} IQD)!`
+        );
+        return;
+      }
+    }
 
     if (debtType === 'repay') {
       const currentBalance = computeEmployeeDebtBalance(selectedEmpForDebt, transactions);
@@ -408,29 +422,6 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                 </span>
               </div>
 
-              {/* Action Buttons for Representative: New Debt and Return Debt */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleOpenDebtModal(directEmp as Employee, 'loan')}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
-                  title={isAr ? 'تسجيل دين أو سلفة جديدة' : 'New Loan'}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{isAr ? 'دين جديد' : 'New Loan'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleOpenDebtModal(directEmp as Employee, 'repay')}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
-                  title={isAr ? 'تسجيل سداد أو راجع دين' : 'Return Debt'}
-                >
-                  <ArrowDownLeft className="w-3.5 h-3.5" />
-                  <span>{isAr ? 'راجع دين' : 'Return Debt'}</span>
-                </button>
-              </div>
-
               {onSyncDebtBalances && (
                 <button
                   type="button"
@@ -580,26 +571,29 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDebtModal(emp, 'loan')}
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
-                          title={isAr ? 'تسجيل دين أو سلفة جديدة' : 'New Loan'}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>{isAr ? 'دين جديد' : 'New Loan'}</span>
-                        </button>
+                        {isAdmin && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDebtModal(emp, 'loan')}
+                              className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                              title={isAr ? 'تسجيل دين أو سلفة جديدة' : 'New Loan'}
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>{isAr ? 'دين جديد' : 'New Loan'}</span>
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDebtModal(emp, 'repay')}
-                          className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
-                          title={isAr ? 'تسجيل سداد أو راجع دين' : 'Return Debt'}
-                        >
-                          <ArrowDownLeft className="w-3.5 h-3.5" />
-                          <span>{isAr ? 'راجع دين' : 'Return Debt'}</span>
-                        </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDebtModal(emp, 'repay')}
+                              className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                              title={isAr ? 'تسجيل سداد أو راجع دين' : 'Return Debt'}
+                            >
+                              <ArrowDownLeft className="w-3.5 h-3.5" />
+                              <span>{isAr ? 'راجع دين' : 'Return Debt'}</span>
+                            </button>
+                          </>
+                        )}
 
                         {/* History / Details Modal Button */}
                         <button
@@ -644,9 +638,8 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
 
           {filteredEmployees.length === 0 && (

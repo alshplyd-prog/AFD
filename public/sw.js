@@ -441,17 +441,7 @@ async function flushPendingActionsInBackground() {
       } catch (e) {}
       console.log(`[Service Worker] Successfully uploaded & saved ${processedIds.length} offline actions to PostgreSQL in background!`);
 
-      // Show background notification only when items were genuinely synced
-      try {
-        if (self.Notification && self.Notification.permission === 'granted') {
-          self.registration.showNotification('الكرار للموبايل - تمت المزامنة', {
-            body: `تم رفع ${processedIds.length} عملية وحفظها في قاعدة البيانات بنجاح في الخلفية.`,
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            tag: 'sync-notification',
-          });
-        }
-      } catch (notifErr) {}
+      // Sync completed silently in background without showing disturbing field sync notification
     } else {
       // Re-register background sync tag to retry when network becomes available
       if ('sync' in self.registration) {
@@ -800,19 +790,20 @@ async function checkAndDispatchBackgroundNotifications(serverData, localSnapshot
       newNotifiedIds.push(t.id);
 
       const isTargetRep = Boolean(
-        currentRep && (
-          (t.employeeName && currentRep.name && t.employeeName.trim().toLowerCase() === currentRep.name.trim().toLowerCase()) ||
-          t.employeeId === currentRep.id ||
-          t.employeeId === `rep-emp-${currentRep.id}` ||
-          t.employeeId === `rep_${currentRep.id}`
-        )
+        !currentRep ||
+        currentRep.role === 'admin' ||
+        currentRep.role === 'supervisor' ||
+        (t.employeeName && currentRep.name && t.employeeName.trim().toLowerCase() === currentRep.name.trim().toLowerCase()) ||
+        t.employeeId === currentRep.id ||
+        t.employeeId === `rep-emp-${currentRep.id}` ||
+        t.employeeId === `rep_${currentRep.id}`
       );
 
       if (isTargetRep) {
         const amtFmt = Number(t.amount || 0).toLocaleString('en-US');
         if (t.type === 'loan') {
           self.registration.showNotification('💸 إشعار دين / سلفة', {
-            body: `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) على حسابك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`,
+            body: `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) لـ "${t.employeeName || 'الموظف'}"${t.note ? ` - ${t.note}` : ''}`,
             icon: '/pwa-192x192.png',
             badge: '/favicon.png',
             tag: `emp_debt_${t.id}`,
@@ -820,8 +811,8 @@ async function checkAndDispatchBackgroundNotifications(serverData, localSnapshot
             renotify: true,
           }).catch(() => {});
         } else {
-          self.registration.showNotification('💵 إشعار سداد دين', {
-            body: `تم سداد مبلغ (${amtFmt} د.ع) من دينك "${t.employeeName || 'المندوب'}"${t.note ? ` - ${t.note}` : ''}`,
+          self.registration.showNotification('💵 إشعار راجع دين', {
+            body: `تم تسجيل سداد/راجع دين بمبلغ (${amtFmt} د.ع) من "${t.employeeName || 'الموظف'}"${t.note ? ` - ${t.note}` : ''}`,
             icon: '/pwa-192x192.png',
             badge: '/favicon.png',
             tag: `emp_repay_${t.id}`,

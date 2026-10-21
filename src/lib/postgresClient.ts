@@ -3094,7 +3094,10 @@ export const deleteEmployeeFromFirestore = deleteEmployeeFromDatabase;
 
 export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any, arg6?: any) => {
   let tx: any = {};
-  if (typeof arg1 === 'object' && arg1?.id && typeof arg2 === 'string') {
+  if (typeof arg1 === 'object' && (arg1?.employeeId || arg1?.employee_id)) {
+    tx = { ...arg1 };
+    tx.id = tx.id || `emptx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  } else if (typeof arg1 === 'object' && arg1?.id && typeof arg2 === 'string') {
     tx = {
       id: `emptx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       employeeId: arg1.id,
@@ -3104,6 +3107,7 @@ export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3
       amount: Number(arg4) || 0,
       repName: arg5 || arg1.name || arg1.repName || '',
       notes: arg6 || '',
+      note: arg6 || '',
       createdAt: new Date().toISOString(),
     };
   } else if (arg1) {
@@ -3112,7 +3116,10 @@ export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3
   } else {
     return;
   }
+
+  // Update local cache optimistically
   updateLocalCacheItem('employee_transactions', tx);
+
   const qPromise = addToPendingQueue('CREATE_EMPLOYEE_TRANSACTION', tx);
   saveToPostgres('employee-transactions', 'POST', tx, qPromise);
 };
@@ -3120,8 +3127,10 @@ export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3
 export const deleteEmployeeDebtTransaction = async (id: string | any, ..._rest: any[]) => {
   const docId = typeof id === 'string' ? id : id?.id;
   if (!docId) return;
+
   markRecordAsDeleted(docId, 'employee_transactions');
   removeLocalCacheItem('employee_transactions', docId);
+
   const qPromise = addToPendingQueue('DELETE_EMPLOYEE_TRANSACTION', { id: docId });
   saveToPostgres(`employee-transactions/${docId}`, 'DELETE', undefined, qPromise);
 };
