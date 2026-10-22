@@ -64,9 +64,9 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
 
   const [isInventoryPickerOpen, setIsInventoryPickerOpen] = useState(false);
 
-  const isAdmin = currentRep?.role === 'admin';
+  const isAdminOrSupervisor = currentRep?.role === 'admin' || currentRep?.role === 'supervisor' || !currentRep;
   const isEditingExistingContract = Boolean(editingContract && editingContract.id);
-  const isNonAdminEdit = !isAdmin && isEditingExistingContract;
+  const isNonAdminEdit = !isAdminOrSupervisor && isEditingExistingContract;
 
   const currentEditingKeyRef = React.useRef<string | null>(null);
   const isInitializedForCurrentKeyRef = React.useRef(false);
@@ -123,7 +123,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
       setItemName(editingContract.itemName || '');
       setTotalPrice(editingContract.totalPrice ? editingContract.totalPrice.toString() : '');
       setDailyInstallment(editingContract.dailyInstallment ? editingContract.dailyInstallment.toString() : '');
-      setStartDate((isAdmin || !editingContract.id) ? (editingContract.startDate || getLocalDateString()) : (editingContract.startDate || getLocalDateString()));
+      setStartDate((isAdminOrSupervisor || !editingContract.id) ? (editingContract.startDate || getLocalDateString()) : (editingContract.startDate || getLocalDateString()));
       setRepName(editingContract.repName || currentRep?.name || 'مندوب');
     } else {
       setCustomerName('');
@@ -409,7 +409,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
         advancePayment: 0,
         remainingBalance: calculatedRemaining,
         dailyInstallment: Number(dailyInstallment),
-        startDate: isAdmin ? startDate : (editingContract?.startDate || getLocalDateString()),
+        startDate: isAdminOrSupervisor ? startDate : (editingContract?.startDate || getLocalDateString()),
         notes: '',
         repName: repName.trim() || currentRep?.name || 'مندوب',
         status: calculatedRemaining === 0 ? 'completed' : (editingContract?.status || 'active'),
@@ -553,7 +553,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
             {/* GPS Location Button and Badge */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-1.5">
-                {(isAdmin || !editingContract?.id || !editingContract?.latitude || Number(editingContract?.latitude) === 0) && (
+                {(isAdminOrSupervisor || !editingContract?.id || !editingContract?.latitude || Number(editingContract?.latitude) === 0) && (
                   <button
                     type="button"
                     onClick={handleGetGpsLocation}
@@ -588,7 +588,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               {latitude != null && longitude != null && !isNaN(Number(latitude)) && !isNaN(Number(longitude)) && Number(latitude) !== 0 ? (
                 <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-2 py-1 rounded-lg text-[10px] text-emerald-800 dark:text-emerald-300 font-bold">
                   <span>📍 {Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)}</span>
-                  {isAdmin ? (
+                  {isAdminOrSupervisor ? (
                     <button
                       type="button"
                       onClick={handleClearLocation}
@@ -747,7 +747,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
             <div>
               <label className="block font-bold text-slate-800 dark:text-slate-200 mb-0.5 text-[11px] flex items-center justify-between">
                 <span>{isAr ? 'السعر الكلي (د.ع) *' : 'Total Price *'}</span>
-                {!isAdmin && Boolean(editingContract) && (
+                {!isAdminOrSupervisor && Boolean(editingContract) && (
                   <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
                     <Lock className="w-2.5 h-2.5 shrink-0" />
                     <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
@@ -757,12 +757,12 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               <input
                 type="number"
                 value={totalPrice}
-                disabled={!isAdmin && Boolean(editingContract)}
+                disabled={!isAdminOrSupervisor && Boolean(editingContract)}
                 onChange={handleTotalPriceChange}
                 onBlur={handleTotalPriceBlur}
                 placeholder="1500000"
                 className={`w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dir-ltr text-xs ${
-                  !isAdmin && Boolean(editingContract)
+                  !isAdminOrSupervisor && Boolean(editingContract)
                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
                     : 'bg-white dark:bg-slate-900'
                 }`}
@@ -806,7 +806,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
           <div>
             <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
               <span>{isAr ? 'تاريخ بداية البيع' : 'Start Date'}</span>
-              {!isAdmin && (
+              {!isAdminOrSupervisor && (
                 <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
                   <Lock className="w-2.5 h-2.5 shrink-0" />
                   <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
@@ -818,10 +818,10 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               <input
                 type="date"
                 value={startDate}
-                disabled={!isAdmin}
+                disabled={!isAdminOrSupervisor}
                 onChange={(e) => setStartDate(e.target.value)}
                 className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                  !isAdmin
+                  !isAdminOrSupervisor
                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
                     : 'bg-slate-50 dark:bg-slate-900/50'
                 }`}

@@ -37,14 +37,15 @@ export async function exportToExcelFile({
       const sheetData = [sheet.headers, ...sheet.rows];
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
-      // Enable Right-to-Left (RTL) for Arabic sheets
-      ws['!views'] = [{ rightToLeft: true }];
+      // Enable Right-to-Left (RTL) for Arabic sheets across all spreadsheet applications
+      ws['!views'] = [{ rightToLeft: true, RTL: true }];
+      (ws as any)['!sheetPr'] = { rightToLeft: true, RTL: true };
 
       // Set column widths if provided or calculate auto widths
       if (sheet.colWidths && sheet.colWidths.length > 0) {
-        ws['!cols'] = sheet.colWidths.map((w) => ({ wch: w }));
+        ws['!cols'] = sheet.colWidths.map((w) => ({ wch: Math.max(w, 10) }));
       } else {
-        // Auto-calculate column widths
+        // Auto-calculate generous column widths
         const maxCols = Math.max(sheet.headers.length, ...sheet.rows.map((r) => r.length));
         const colWidths: { wch: number }[] = [];
         for (let colIdx = 0; colIdx < maxCols; colIdx++) {
@@ -56,13 +57,17 @@ export async function exportToExcelFile({
               if (len > maxLen) maxLen = len;
             }
           });
-          colWidths.push({ wch: Math.max(maxLen + 4, 12) });
+          colWidths.push({ wch: Math.max(maxLen + 4, 14) });
         }
         ws['!cols'] = colWidths;
       }
 
       XLSX.utils.book_append_sheet(wb, ws, sheet.sheetName || 'Sheet1');
     });
+
+    // Configure Workbook level RTL
+    (wb as any).Workbook = (wb as any).Workbook || {};
+    (wb as any).Workbook.Views = [{ RTL: true }];
 
     const cleanFilename = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
 
@@ -75,7 +80,7 @@ export async function exportToExcelFile({
     // 3. CAPACITOR NATIVE (Android APK / iOS)
     if (Capacitor.isNativePlatform()) {
       try {
-        // Write file to Cache directory first
+        // Write file strictly to temporary Cache directory (auto-purged, not saved to persistent user storage)
         const writeResult = await Filesystem.writeFile({
           path: cleanFilename,
           data: base64Data,
@@ -88,29 +93,20 @@ export async function exportToExcelFile({
           directory: Directory.Cache,
         })).uri;
 
-        // Share or open with native apps
+        // Share Excel file directly to native share chooser (WhatsApp, Telegram, Excel, Drive, etc.)
         if (await Share.canShare().then((res) => res.value).catch(() => true)) {
           await Share.share({
             title: title || cleanFilename,
             text: text || 'ملف كشف الحسابات (Excel)',
-            url: fileUri,
-            dialogTitle: 'فتح أو مشاركة كشف Excel',
+            files: [fileUri],
+            dialogTitle: title || 'مشاركة كشف Excel',
           });
           return { success: true, method: 'capacitor_share' };
         }
-      } catch (capErr) {
-        console.warn('Capacitor Filesystem/Share error, trying Documents directory save:', capErr);
-        try {
-          // Fallback: save directly to Documents
-          await Filesystem.writeFile({
-            path: cleanFilename,
-            data: base64Data,
-            directory: Directory.Documents,
-            recursive: true,
-          });
-          return { success: true, method: 'capacitor_documents' };
-        } catch (docErr) {
-          console.warn('Failed saving to Documents:', docErr);
+      } catch (capErr: any) {
+        console.warn('Capacitor Filesystem/Share error:', capErr);
+        if (capErr?.name === 'AbortError' || capErr?.message?.includes('cancel')) {
+          return { success: true, method: 'user_cancelled' };
         }
       }
     }
@@ -128,19 +124,33 @@ export async function exportToExcelFile({
           return { success: true, method: 'navigator_share_file' };
         }
       } catch (shareErr: any) {
-        if (shareErr?.name === 'AbortError') {
+        if (shareErr?.name === 'AbortError' || shareErr?.message?.includes('cancel')) {
           return { success: true, method: 'user_cancelled' };
         }
-        console.warn('Navigator share file failed, falling back to download:', shareErr);
+        console.warn('Navigator share file failed:', shareErr);
       }
     }
 
-    // 5. Standard Browser Blob Download
+    // 5. Clipboard Fallback
+    try {
+      const tsvContent = sheets
+        .map((s) => [`--- ${s.sheetName} ---`, s.headers.join('\t'), ...s.rows.map((r) => r.join('\t'))].join('\n'))
+        .join('\n\n');
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(tsvContent);
+        return { success: true, method: 'clipboard_copy' };
+      }
+    } catch (clipErr) {
+      console.warn('Clipboard writeText unavailable or permission denied, using Blob URL fallback:', clipErr);
+    }
+
+    // 6. Blob URL fallback (For desktop web or iframe where clipboard permission is restricted)
     try {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = cleanFilename;
+      link.target = '_blank';
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
@@ -152,40 +162,10 @@ export async function exportToExcelFile({
       }, 2000);
       return { success: true, method: 'blob_download' };
     } catch (blobErr) {
-      console.warn('Blob URL download failed, trying Data URI:', blobErr);
+      console.warn('Blob URL fallback failed:', blobErr);
     }
 
-    // 6. Data URI fallback
-    try {
-      const dataUri = `data:${mimeType};base64,${base64Data}`;
-      const link = document.createElement('a');
-      link.href = dataUri;
-      link.download = cleanFilename;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        try {
-          document.body.removeChild(link);
-        } catch (e) {}
-      }, 2000);
-      return { success: true, method: 'data_uri' };
-    } catch (dataErr) {
-      console.error('Data URI download failed:', dataErr);
-    }
-
-    // 7. Ultimate Clipboard Fallback
-    try {
-      const tsvContent = sheets
-        .map((s) => [s.headers.join('\t'), ...s.rows.map((r) => r.join('\t'))].join('\n'))
-        .join('\n\n');
-      await navigator.clipboard.writeText(tsvContent);
-      return { success: true, method: 'clipboard_copy' };
-    } catch (clipErr) {
-      console.error('Clipboard fallback failed:', clipErr);
-    }
-
-    return { success: false, method: 'none', error: 'جميع طرق التصدير غير مدعومة على هذا المتصفح' };
+    return { success: false, method: 'none', error: 'جميع طرق التصدير والمشاركة غير مدعومة على هذا المتصفح' };
   } catch (err: any) {
     console.error('Export to Excel error:', err);
     return { success: false, method: 'error', error: err?.message || 'فشل التصدير' };

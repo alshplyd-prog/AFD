@@ -1433,7 +1433,7 @@ export default function App() {
       const allowedSet = new Set(currentRep.allowedListIds);
       return payments.filter((p) => {
         const c = contractsWithLiveBalances.find((con) => con.id === p.contractId);
-        return c?.listId ? allowedSet.has(c.listId) : true;
+        return c?.listId ? allowedSet.has(c.listId) : false;
       });
     }
 
@@ -2254,8 +2254,8 @@ export default function App() {
 
       if (editingId) {
         const existingContract = contracts.find((c) => c.id === editingId);
-        const isAdmin = currentRep?.role === 'admin';
-        const dataToSave = (!isAdmin && existingContract)
+        const isAdminOrSupervisor = currentRep?.role === 'admin' || currentRep?.role === 'supervisor' || !currentRep;
+        const dataToSave = (!isAdminOrSupervisor && existingContract)
           ? {
               ...existingContract,
               dailyInstallment: finalData.dailyInstallment,
@@ -2265,7 +2265,7 @@ export default function App() {
         setContracts((prev) => prev.map((c) => (c.id === editingId ? { ...c, ...dataToSave } : c)));
         await updateContractInFirestore(editingId, dataToSave);
         showToast(
-          !isAdmin
+          !isAdminOrSupervisor
             ? (isAr ? 'تم تعديل قيمة القسط بنجاح' : 'Installment rate updated successfully')
             : (isAr ? 'تم تعديل بيانات الزبون والعقد بنجاح' : 'Contract updated successfully')
         );
