@@ -28,6 +28,454 @@
     "amount": 775000
   },
   {
+    "id": "pay_58598aef-01fd-4616-8b89-56e15afa8d15",
+    "contractId": "contract_1790067206694_5lkps",
+    "customerName": "يوسف رزاق احمد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T18:56:38.946Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_1f569562-b221-4e74-a287-bdbca66bf343",
+    "contractId": "contract_1790066985689_rlje8",
+    "customerName": "ابراهيم عناد عبد",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:49:55.384Z",
+    "isEdited": false,
+    "amount": 6000
+  },
+  {
+    "id": "pay_73f644d8-2641-482c-ae05-1077db8cf0b2",
+    "contractId": "contract_1791719413342_o13ow",
+    "customerName": "سجاد قاسم جبر",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:40:48.911Z",
+    "isEdited": false,
+    "amount": 5000
+  },
+  {
+    "id": "pay_da62d1e4-ed35-4b87-8b47-6f08e52404de",
+    "contractId": "contract_1791719479124_bgq6j",
+    "customerName": "امير احمد يحيى",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:35:36.619Z",
+    "isEdited": false,
+    "amount": 5000
+  },
+  {
+    "id": "pay_80ba4cfc-2e9d-4e06-a2e5-ff1e25e572fc",
+    "contractId": "contract_1790068034398_77e0w",
+    "customerName": "مرتضى محمد عباس",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:16:11.289Z",
+    "isEdited": false,
+    "amount": 15000
+  },
+  {
+    "id": "pay_c1ba95b8-378a-4d1f-8d05-b44cfb98d3e7",
+    "contractId": "contract_1790072556698_i5059",
+    "customerName": "رحيم حمزه بجاي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T13:50:36.587Z",
+    "isEdited": false,
+    "amount": 5000
+  },
+  {
+    "id": "pay_6ae5030b-6fd4-4a94-ae59-82db325f5f44",
+    "contractId": "contract_1792149137851_6g649",
+    "customerName": "علي كريم عبد عون",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:44:23.891Z",
+    "isEdited": false,
+    "amount": 12000
+  },
+  {
+    "id": "pay_5be5aa38-87fd-435c-971c-919e183b05bd",
+    "contractId": "contract_1791619048835_tf79q",
+    "customerName": "اثير صباح عبود",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:29:44.646Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_c8dd0d27-669d-4227-bb10-abe97a5cf4a2",
+    "contractId": "contract_1792159601227_37k70",
+    "customerName": "حسين عبد حسن",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:04:41.704Z",
+    "isEdited": false,
+    "amount": 12000
+  },
+  {
+    "id": "pay_96410b58-7676-48f0-8047-ee8a3251820d",
+    "contractId": "contract_1792439905263_4lg50",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:00:07.782Z",
+    "isEdited": false,
+    "amount": 4000
+  },
+  {
+    "id": "pay_92279b33-cfaa-4f38-aa05-4fbae418c22e",
+    "contractId": "contract_1791875234960_pekxp",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T06:59:59.348Z",
+    "isEdited": false,
+    "amount": 12000
+  },
+  {
+    "id": "pay_933ff1a1-0408-4f77-b39b-69ec8681ae61",
+    "contractId": "contract_1790067398505_69ynx",
+    "customerName": "محمد ربيع خرجان",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:20:41.054Z",
+    "isEdited": false,
+    "amount": 6000
+  },
+  {
+    "id": "pay_b5716ce7-c7b1-47a1-bc44-0d9f4f54a1a2",
+    "contractId": "contract_1790067981560_ayym0",
+    "customerName": "رضا جميل حسين",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:20:25.633Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_ced3fd14-8485-4aa1-84df-df85015446af",
+    "contractId": "contract_1790067087992_wxyvu",
+    "customerName": "ماهر حسن دعاش 1",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:18:54.450Z",
+    "isEdited": false,
+    "amount": 6000
+  },
+  {
+    "id": "pay_4ef7b36d-1bd0-4aa9-87f7-b7083b0fb7d9",
+    "contractId": "contract_1790066049492_13kqv",
+    "customerName": "علي ماهر حسن",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:18:41.020Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_14b499d7-c97a-4e94-bc8f-6137081268c6",
+    "contractId": "contract_1791719348133_zkshm",
+    "customerName": "حسام عبدالكريم عاجل 2",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:17:37.256Z",
+    "isEdited": false,
+    "amount": 35000
+  },
+  {
+    "id": "pay_029ca132-adca-4aea-bd00-5ae9700e0556",
+    "contractId": "contract_1790066878599_lsq7k",
+    "customerName": "محمد عبدالكاضم عاجل 1",
+    "amountPaid": 45000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:17:19.839Z",
+    "isEdited": false,
+    "amount": 45000
+  },
+  {
+    "id": "pay_6a0ba24e-28fd-40bf-bdec-7e1c6eeed47d",
+    "contractId": "contract_1790066158966_wgvz2",
+    "customerName": "حسام عبدالكاضم عاجل",
+    "amountPaid": 24000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:17:07.985Z",
+    "isEdited": false,
+    "amount": 24000
+  },
+  {
+    "id": "pay_e173a2c2-2ffd-4ac9-8d98-51306945cbb7",
+    "contractId": "contract_1790067728041_j42xx",
+    "customerName": "ليث صدام حسين",
+    "amountPaid": 3000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:05:53.422Z",
+    "isEdited": false,
+    "amount": 3000
+  },
+  {
+    "id": "pay_2ccac907-973b-4875-b42d-bc977717c0eb",
+    "contractId": "contract_1790066112555_zspa1",
+    "customerName": "زيد فالح عبد حاجم",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:04:57.294Z",
+    "isEdited": false,
+    "amount": 20000
+  },
+  {
+    "id": "pay_63b4aaad-efa6-47d2-a547-47664e28db91",
+    "contractId": "contract_1790067032599_ggibz",
+    "customerName": "عرفان هاشم مصطفى 3",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T18:43:32.936Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_2832cea6-8768-4320-b527-108b5bf4edaf",
+    "contractId": "contract_1792516758791_3npz9",
+    "customerName": "كريم محمد علي",
+    "amountPaid": 1500,
+    "paymentDate": "2026-10-22",
+    "repName": "ضياء المحاسب",
+    "note": "",
+    "fundId": "fund_1787412701870_5rh61",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:37:43.806Z",
+    "isEdited": false,
+    "amount": 1500
+  },
+  {
+    "id": "pay_afa6fc2b-0c8f-4adf-b3e2-8d483fe84a28",
+    "contractId": "contract_1790068836134_rekdk",
+    "customerName": "علي محمد جاسم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:28:09.820Z",
+    "isEdited": false,
+    "amount": 5000
+  },
+  {
+    "id": "pay_bb5fa8d9-7728-4929-bcb0-e1f79196c7e9",
+    "contractId": "contract_1790068729469_4ybbp",
+    "customerName": "عبدالكريم حسن سلمان 2",
+    "amountPaid": 30000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:19:33.668Z",
+    "isEdited": false,
+    "amount": 30000
+  },
+  {
+    "id": "pay_9d441af9-9e62-4774-b65d-5fe1f25f0fde",
+    "contractId": "contract_1790068780485_r6dj6",
+    "customerName": "علي رسول جابر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:07:16.906Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_3aa35b09-2976-42c7-b139-7c9293c898e1",
+    "contractId": "contract_1790067206694_5lkps",
+    "customerName": "يوسف رزاق احمد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:00:06.003Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_54d01d2e-544c-4d19-804d-ed8bcf98f679",
+    "contractId": "contract_1790065790388_b80hu",
+    "customerName": "مصطفى رزاق مجهول",
+    "amountPaid": 30000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:46:00.622Z",
+    "isEdited": false,
+    "amount": 30000
+  },
+  {
+    "id": "pay_048bbb6d-3dee-4f6a-b527-34f7db9e8c85",
+    "contractId": "contract_1790066813431_gcduh",
+    "customerName": "حيدر كريم حجيل",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:43:48.989Z",
+    "isEdited": false,
+    "amount": 25000
+  },
+  {
+    "id": "pay_9508adbc-5490-47f3-8a8a-280ac74ff24f",
+    "contractId": "contract_1791719413342_o13ow",
+    "customerName": "سجاد قاسم جبر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:42:56.598Z",
+    "isEdited": false,
+    "amount": 10000
+  },
+  {
+    "id": "pay_17cd4568-5649-43fa-abea-b66efe7853ba",
+    "contractId": "contract_1790065684076_hkvzn",
+    "customerName": "حسن مسلم كاضم",
+    "amountPaid": 8000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:33:55.421Z",
+    "isEdited": false,
+    "amount": 8000
+  },
+  {
+    "id": "pay_7af56412-a339-4440-a11a-0e7e887d7eba",
+    "contractId": "contract_1790064700810_j6w5e",
+    "customerName": "سعد راضي كاضم",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:32:06.512Z",
+    "isEdited": false,
+    "amount": 6000
+  },
+  {
+    "id": "pay_8addd1d2-644d-4a79-87e7-174bb0197d9c",
+    "contractId": "contract_1790068034398_77e0w",
+    "customerName": "مرتضى محمد عباس",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:15:33.923Z",
+    "isEdited": false,
+    "amount": 15000
+  },
+  {
     "id": "pay_ddf7228a-5942-49e8-a395-ac170960bb9c",
     "contractId": "contract_1790065886436_ahhsh",
     "customerName": "سناء نوري طاهر",
@@ -752,7 +1200,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T22:05:33.960Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 30000
   },
   {
     "id": "pay_67412d4f-0ef2-4394-a229-09ba951cd837",
@@ -765,7 +1214,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T16:34:23.758Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_86dfa6b4-b55d-4192-af55-dbb0fc05b7d4",
@@ -778,7 +1228,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T16:34:10.650Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 45000
   },
   {
     "id": "pay_b20574d3-9eec-468b-b8a1-8ff67b261016",
@@ -791,7 +1242,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T16:33:51.696Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 24000
   },
   {
     "id": "pay_8c6371e3-6549-4934-9d51-f2e33da59a94",
@@ -804,7 +1256,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T16:17:04.297Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_852cf597-5fa9-4db0-ba63-d5fa7a22bd62",
@@ -817,7 +1270,8 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:54:33.017Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 30000
   },
   {
     "id": "pay_cbedffd1-0607-436e-a75e-b65a2142a390",
@@ -830,7 +1284,8 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:43:53.346Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_e07fd1bf-b230-4dd5-8626-d2c36428391a",
@@ -857,7 +1312,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:20:39.899Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_f447617a-55c5-494e-9adf-fa0b7afe2f01",
@@ -884,7 +1340,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:20:17.336Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_dad4ebc3-2d63-44e1-9607-9ba5ba0de644",
@@ -911,7 +1368,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:07:41.776Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_725ab9ae-3bee-4fd8-9c21-57dc42c44c7f",
@@ -924,7 +1382,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:04:09.236Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 7000
   },
   {
     "id": "pay_84dac67e-172a-4d89-8f22-fc139c5063f6",
@@ -937,7 +1396,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:03:38.811Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_189d138a-d2da-4755-abba-736a341539ae",
@@ -950,7 +1410,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:03:33.934Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_e283e487-fa50-4fbb-be34-5e0ab15e2153",
@@ -977,7 +1438,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:02:34.669Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_82bfdd4a-c797-4de8-9165-97847127e5a0",
@@ -990,7 +1452,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:02:21.167Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_0e44f432-3723-42f1-9e23-54856210e8e5",
@@ -1003,7 +1466,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T14:33:58.586Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_ed0e8f74-d846-4d58-abc8-ffabedd86e25",
@@ -1030,7 +1494,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-20T14:19:07.930Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_7fc8f1f8-71a7-4b4a-8f2d-90965632c051",
@@ -1043,7 +1508,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T14:16:00.049Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_448c0cdc-89af-4042-8c0f-de87418bd4b7",
@@ -1056,7 +1522,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T14:10:31.783Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_a5bd757d-0612-4f2d-b763-01915a00558a",
@@ -1069,7 +1536,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T13:56:46.962Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_412909de-41ce-485c-92cd-271dfe5cadb0",
@@ -1082,7 +1550,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-20T08:12:12.411Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_d70229d9-7c29-43fa-82a0-c64feacc1341",
@@ -1109,7 +1578,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-20T06:55:23.557Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_cd4071f1-8889-478b-a70c-1df929cd535f",
@@ -1136,7 +1606,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-20T06:48:43.209Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_09fa4ddb-7c7b-4eac-af44-959242869ed0",
@@ -1149,7 +1620,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T21:37:49.265Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 3000
   },
   {
     "id": "pay_c746c5fa-7ac5-4315-a877-1b43ef5e37eb",
@@ -1162,7 +1634,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T21:37:30.021Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 8000
   },
   {
     "id": "pay_3c40c9c1-8f95-4c22-bc08-cd5d0daf226a",
@@ -1175,7 +1648,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T17:54:49.955Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_a35a552a-7457-43ba-9cb3-2fbc9b502e1c",
@@ -1188,7 +1662,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T17:54:12.434Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_5c3bcf90-fa6b-460c-bd73-767c804c3aab",
@@ -1201,7 +1676,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T17:53:55.487Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_cd829d4c-569a-422a-9f05-697ccd4170ea",
@@ -1214,7 +1690,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T17:53:48.387Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_0e26892e-360a-41fc-accb-898640ac0ca9",
@@ -1227,7 +1704,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T17:50:44.403Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_25536fb2-3d85-40a0-949a-41fbdf5bd87e",
@@ -1240,7 +1718,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T17:49:26.842Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_eede4e43-dcaa-47e2-83e3-a039d0cd3654",
@@ -1253,7 +1732,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T16:24:39.125Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 16000
   },
   {
     "id": "pay_f4e92a2c-b0de-47f0-9eb1-1aaed0ce0d5d",
@@ -1266,7 +1746,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T16:23:41.820Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_63b34292-2e33-40a9-8f11-9b6545e203aa",
@@ -1279,7 +1760,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T16:23:09.486Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 45000
   },
   {
     "id": "pay_1c8b2f38-3eb8-4fe8-827a-615fb9b87e6c",
@@ -1292,7 +1774,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T16:22:37.535Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_71bb35ab-e8cb-48e2-a860-5d3701e1e723",
@@ -1305,7 +1788,8 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-19T16:02:56.743Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_c4c1f816-34c5-41f3-a465-05f02ea405d9",
@@ -1318,7 +1802,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:57:02.856Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_3e42c0d3-1f38-409b-bf9f-4c1dbc773deb",
@@ -1329,11 +1814,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9583517,
-    "longitude": 44.9374983,
     "updatedAt": null,
     "createdAt": "2026-10-19T15:45:23.161Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 30000
   },
   {
     "id": "pay_cb54a5f6-588f-4e10-b737-1f7a4fdc52b1",
@@ -1344,11 +1828,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.957655,
-    "longitude": 44.937295,
     "updatedAt": null,
     "createdAt": "2026-10-19T15:42:04.726Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 24000
   },
   {
     "id": "pay_7a579a37-2788-4132-94a0-6a6d02ab1dda",
@@ -1361,7 +1844,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:30:56.948Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_b0ec16ce-8ddc-47f6-a663-3425f2009ed2",
@@ -1374,7 +1858,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:22:02.214Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_dcfef482-d3ca-4618-933d-9b64a591732c",
@@ -1387,7 +1872,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:21:48.691Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_d143b4c5-d1dd-4ea5-b69e-f81ca71b13e4",
@@ -1400,7 +1886,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:21:17.451Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_d89fd629-3abc-42ef-b713-545c5bc54b72",
@@ -1413,7 +1900,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:14:31.641Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_fdfdd6be-7f31-4d10-a8d1-e727488f775f",
@@ -1426,7 +1914,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:14:11.253Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_e2414b49-9e62-4458-bf4c-e908de338426",
@@ -1439,7 +1928,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:13:35.359Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_cc4a9531-b543-4fd3-8228-d82401c528cc",
@@ -1452,7 +1942,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:12:48.068Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 7000
   },
   {
     "id": "pay_19095e2e-941b-49ce-88f2-e2768f7c9853",
@@ -1465,7 +1956,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T15:06:51.533Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_92076f21-1350-4147-9624-1dabc62ba4b9",
@@ -1478,7 +1970,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T14:55:09.204Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_fd9a06a2-f06b-494e-b0f9-024a4c56b245",
@@ -1491,7 +1984,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T14:48:56.229Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_72d64aee-1df0-4c01-b605-d71dd6e83a8d",
@@ -1504,7 +1998,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T14:45:57.086Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_2e7857bc-4c58-45cc-8381-0e4fcac86efe",
@@ -1517,7 +2012,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T14:40:26.448Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_fc88a99c-ddbb-4be1-bad3-1b4fb2119d82",
@@ -1530,7 +2026,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-19T14:27:07.406Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_7fb269a3-2453-4e59-8f52-4448fc815ca5",
@@ -1543,7 +2040,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-19T14:20:54.817Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_88166aa0-2771-4bca-ab1f-92908e607c57",
@@ -1556,7 +2054,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-19T14:20:03.177Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_2b89f3f3-f2ed-4f27-bd69-8e74eceae225",
@@ -1569,7 +2068,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-19T08:07:46.877Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_bc760cc8-db6e-4307-9afb-d3ad08b130e5",
@@ -1582,7 +2082,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-19T07:07:10.214Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_62f7ad7b-9b6e-4dca-af9a-e7464703e5c9",
@@ -1595,7 +2096,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-19T07:02:35.918Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_8e44bf0f-1a98-4408-a499-7bce7f11297c",
@@ -1608,7 +2110,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T19:32:10.232Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 3000
   },
   {
     "id": "pay_a7556a0c-8d6f-4ff9-b6cc-49d5377b91b1",
@@ -1621,7 +2124,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T19:31:55.195Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_3b01245a-0925-4973-a244-adf3cd9c53cf",
@@ -1634,7 +2138,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:43:29.123Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_dc7ad4da-2baa-4fcf-81cc-62bcf6372dcb",
@@ -1647,7 +2152,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:43:07.386Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_3a728fc9-9153-4387-bebb-ab1fea18d7e8",
@@ -1660,7 +2166,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:42:51.015Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_a670c171-06fd-4576-a11f-994fa0cf45d8",
@@ -1673,7 +2180,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:42:34.799Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_d915be57-a46d-4b87-8e78-dc21504b5739",
@@ -1684,11 +2192,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9848147,
-    "longitude": 44.9375934,
     "updatedAt": null,
     "createdAt": "2026-10-18T17:40:44.230Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 100000
   },
   {
     "id": "pay_9b575997-4bd5-4776-8783-04f2ca6bb92b",
@@ -1701,7 +2208,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:39:50.835Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_8cb39321-ef17-435a-9688-18b14a5afd35",
@@ -1714,7 +2222,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:39:42.779Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_38700d24-8804-48b4-8736-c32ec3cc9f60",
@@ -1727,7 +2236,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:39:30.071Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_255b9ae2-b06e-4380-abb0-e0d6abe5d548",
@@ -1740,7 +2250,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:36:26.239Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_5c70cac7-0ca4-4270-b141-cc6fbd272f2a",
@@ -1753,7 +2264,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:26:00.202Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 16000
   },
   {
     "id": "pay_1f8f38e0-4fbd-4d69-9045-2d7c332117b7",
@@ -1766,7 +2278,8 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:17:35.588Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_61a5e980-72b5-4af5-9001-424f7dbd4525",
@@ -1779,7 +2292,8 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:16:50.996Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_3644ddcd-84e8-46ef-b9ee-6da4fcb6d03c",
@@ -1792,7 +2306,8 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:14:23.287Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 30000
   },
   {
     "id": "pay_9b515209-dd16-40fb-b57f-27ad8a3b91bd",
@@ -1805,7 +2320,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T17:10:57.839Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_ab675f93-e544-4435-ac07-3c68ee2bb9b4",
@@ -1816,11 +2332,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.984805,
-    "longitude": 44.9375886,
     "updatedAt": null,
     "createdAt": "2026-10-18T17:06:50.136Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_0463ce5e-3aeb-462a-a146-2ed3b02e9493",
@@ -1833,7 +2348,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:57:51.627Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_004f9234-c707-49e7-9289-792caf895246",
@@ -1846,7 +2362,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:35:15.465Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_490e3dac-b6fd-4a46-b1d5-ec7911c41eaa",
@@ -1859,7 +2376,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:28:56.755Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_cfc27cc7-94e2-49e6-b145-58ef9ec39152",
@@ -1872,7 +2390,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:28:30.316Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_24b1672b-ddbc-417f-b253-3418e30c43fa",
@@ -1885,7 +2404,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:28:13.057Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_8ab336be-212e-4ab5-9a03-e45d62430b11",
@@ -1898,7 +2418,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:26:16.821Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_83c508fc-8f51-4e5d-986e-e09c592ceed4",
@@ -1911,7 +2432,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:23:32.619Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_41b4257f-7950-46b6-89b4-0e2c44495487",
@@ -1924,7 +2446,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:23:28.743Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_b38b1033-0cc2-438f-a163-a84cf4a327fa",
@@ -1937,7 +2460,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:21:13.944Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_8c814956-bea5-4d63-b84c-6d46455bf617",
@@ -1950,7 +2474,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T15:08:58.522Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_05551816-c720-4f96-a0fc-9f4c801614ab",
@@ -1963,7 +2488,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-18T14:50:57.198Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_c87e4c58-cce6-4368-b386-fab5488fca01",
@@ -1976,7 +2502,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-18T14:29:00.883Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_31029cbf-96e6-405b-bacb-bd03e86732e7",
@@ -1989,7 +2516,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-18T07:37:28.401Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_36b9be4d-935b-4fe3-b521-99a9da4eba07",
@@ -2002,7 +2530,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-18T07:19:18.227Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_1f7127d3-135f-49ef-9c5e-aa4458613f84",
@@ -2015,7 +2544,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-18T06:52:45.995Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_5c6026b6-c43c-4418-890e-ae6a439be240",
@@ -2028,7 +2558,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-18T06:49:55.083Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_016b7a9c-7e9a-44c6-a950-474a6d633f8b",
@@ -2054,7 +2585,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T19:17:15.584Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_db4980c2-c768-4ac6-9f49-c8acfc75a277",
@@ -2067,7 +2599,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T19:16:56.078Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 3000
   },
   {
     "id": "pay_20c5a84e-a866-440b-989c-bfd6675802ec",
@@ -2093,7 +2626,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T19:01:45.673Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_6ef064b7-1555-47c1-9cb3-71aedae22f41",
@@ -2104,11 +2638,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9846488,
-    "longitude": 44.9374775,
     "updatedAt": null,
     "createdAt": "2026-10-17T17:38:16.513Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 32000
   },
   {
     "id": "pay_044165ec-5034-4eee-a8b8-c91dfa8c22ab",
@@ -2134,11 +2667,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9848133,
-    "longitude": 44.9375953,
     "updatedAt": null,
     "createdAt": "2026-10-17T17:37:05.390Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_cc2e06ff-07fe-4524-8abd-c8aba79573ec",
@@ -2149,11 +2681,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9848123,
-    "longitude": 44.9375978,
     "updatedAt": null,
     "createdAt": "2026-10-17T17:36:48.170Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_728ccb20-cc49-4097-923d-a299dc7edccb",
@@ -2166,7 +2697,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T17:36:28.990Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_2a43ddf6-c495-4739-aa7b-5500a2f67c50",
@@ -2207,11 +2739,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9846875,
-    "longitude": 44.9374992,
     "updatedAt": null,
     "createdAt": "2026-10-17T17:27:15.149Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_90a1ac91-c9d3-4a93-a5db-d63f1d0b8246",
@@ -2222,11 +2753,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9848099,
-    "longitude": 44.9375842,
     "updatedAt": null,
     "createdAt": "2026-10-17T16:23:24.163Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_1368e774-7e43-4305-9504-ccb2423b84eb",
@@ -2267,11 +2797,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.97364,
-    "longitude": 44.952015,
     "updatedAt": null,
     "createdAt": "2026-10-17T15:04:28.656Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_45b254f6-48d5-4c1c-8f01-e5d6cad85b30",
@@ -2312,11 +2841,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9716033,
-    "longitude": 44.9663383,
     "updatedAt": null,
     "createdAt": "2026-10-17T14:53:04.155Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_dd770c34-a05c-4a73-beff-0a0b878fcf23",
@@ -2327,11 +2855,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9716033,
-    "longitude": 44.9663383,
     "updatedAt": null,
     "createdAt": "2026-10-17T14:52:41.738Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_24a65fe0-a2ae-4c76-9481-64f90cacede6",
@@ -2357,11 +2884,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9743133,
-    "longitude": 44.9657083,
     "updatedAt": null,
     "createdAt": "2026-10-17T14:46:40.092Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_06fe930c-336b-4506-8a19-3076c1df50cb",
@@ -2404,7 +2930,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T14:40:46.150Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_3f303957-1b2b-427e-9c8d-6f13bd7f3e1a",
@@ -2430,11 +2957,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.975005,
-    "longitude": 44.9650017,
     "updatedAt": null,
     "createdAt": "2026-10-17T14:39:19.421Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_1ceb2a9f-4265-4983-98ec-de73a0d28d6e",
@@ -2458,11 +2984,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9947283,
-    "longitude": 44.9564617,
     "updatedAt": null,
     "createdAt": "2026-10-17T13:45:14.372Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_e7e0b726-66f1-40a3-ad50-0efd5e0f838c",
@@ -2473,11 +2998,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9882367,
-    "longitude": 44.9460167,
     "updatedAt": null,
     "createdAt": "2026-10-17T13:33:24.984Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_1acbcede-48b3-482d-83cd-ca615ebfcddb",
@@ -2516,11 +3040,10 @@
     "repName": "هيثم",
     "note": "",
     "fundId": "fund_1791618782897_u79cy",
-    "latitude": 31.9858117,
-    "longitude": 44.9117602,
     "updatedAt": null,
     "createdAt": "2026-10-17T07:00:34.816Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_591ae0f5-7c32-4fb0-8ba5-7759bde6d740",
@@ -2533,7 +3056,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-17T06:48:19.239Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_26a9b0df-363c-4e2b-9fd9-00f62160891e",
