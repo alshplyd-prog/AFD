@@ -1168,6 +1168,47 @@ async function startServer() {
     });
   });
 
+  // Temporary storage for shared statement PDFs
+  app.post("/api/save-statement-pdf", (req, res) => {
+    try {
+      const { filename, base64Data } = req.body || {};
+      if (!base64Data) {
+        return res.status(400).json({ error: "No PDF data" });
+      }
+      const sharedDir = path.resolve(process.cwd(), "public", "shared_pdfs");
+      if (!fs.existsSync(sharedDir)) {
+        fs.mkdirSync(sharedDir, { recursive: true });
+      }
+      const safeName = (filename || "statement").replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, "_");
+      const finalName = safeName.endsWith(".pdf") ? safeName : `${safeName}.pdf`;
+      const filePath = path.join(sharedDir, finalName);
+      const buffer = Buffer.from(base64Data, "base64");
+      fs.writeFileSync(filePath, buffer);
+      const fileUrl = `/shared_pdfs/${encodeURIComponent(finalName)}`;
+      return res.json({ success: true, url: fileUrl });
+    } catch (e: any) {
+      console.warn("Error saving statement PDF:", e);
+      return res.status(500).json({ error: "Failed to save PDF" });
+    }
+  });
+
+  // Explicit download / inline view route for shared PDFs
+  app.get("/shared_pdfs/:filename", (req, res) => {
+    try {
+      const filename = req.params.filename;
+      const sharedDir = path.resolve(process.cwd(), "public", "shared_pdfs");
+      const filePath = path.join(sharedDir, filename);
+      if (fs.existsSync(filePath)) {
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(filename)}"`);
+        return fs.createReadStream(filePath).pipe(res);
+      }
+      return res.status(404).send("PDF not found");
+    } catch (e) {
+      return res.status(500).send("Error reading PDF");
+    }
+  });
+
   // Welcome message settings API
   app.get("/api/settings/welcome", async (req, res) => {
     try {

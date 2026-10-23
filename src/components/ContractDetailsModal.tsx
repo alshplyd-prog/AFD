@@ -22,7 +22,8 @@ import {
   Navigation,
   LocateFixed,
   MapPinned,
-  ExternalLink
+  ExternalLink,
+  MessageCircle,
 } from 'lucide-react';
 import { InstallmentContract, PaymentRecord, Language, SalesRepresentative, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
@@ -32,6 +33,7 @@ import { normalizeEntityName } from '../lib/nameHelpers';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { updateCustomerLocation } from '../lib/postgresClient';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
+import { sharePaymentReceiptWhatsApp } from '../lib/pdfShareHelper';
 
 interface ContractDetailsModalProps {
   contract: InstallmentContract | null;
@@ -746,9 +748,26 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
                               )}
                             </td>
 
-                            {/* Actions: Print, Edit, Delete */}
+                            {/* Actions: WhatsApp Share, Print, Edit, Delete */}
                             <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-1.5">
+                                {/* WhatsApp Text Receipt Share button */}
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    await sharePaymentReceiptWhatsApp({
+                                      payment: p,
+                                      contract,
+                                      allPayments: payments,
+                                      shopTitle: 'الكرار للموبايل والتقسيط',
+                                    });
+                                  }}
+                                  className="p-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center"
+                                  title={isAr ? 'مشاركة وصل نصي للدفعة عبر واتساب' : 'Share text receipt via WhatsApp'}
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </button>
+
                                 {/* Print Receipt button - matches screenshot styling */}
                                 <button
                                   type="button"

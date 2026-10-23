@@ -3,11 +3,13 @@
  */
 
 export const CANDIDATE_SERVERS: string[] = [
+  'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
+  'https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
   'https://ais-dev-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app',
   'https://ais-pre-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app',
 ];
 
-const DEFAULT_REMOTE_SERVER = 'https://ais-dev-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app';
+const DEFAULT_REMOTE_SERVER = 'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app';
 const SERVER_URL_STORAGE_KEY = 'alkarrar_backend_server_url';
 
 export function getCustomServerUrl(): string {
