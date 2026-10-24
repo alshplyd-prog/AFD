@@ -1039,6 +1039,7 @@ function mapRow(tableName: string, r: any): any {
       canMoveCustomer: isDhia ? true : (r.can_move_customer !== false && r.canMoveCustomer !== false),
       canSell: isDhia ? true : (r.can_sell !== false && r.canSell !== false),
       allowedListIds: isDhia ? ['all'] : allowed,
+      avatarUrl: r.avatar_url ?? r.avatarUrl ?? '',
     };
   }
 

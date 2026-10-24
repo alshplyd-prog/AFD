@@ -58,11 +58,36 @@ export function isNativeOrApkEnvironment(): boolean {
 }
 
 export function getApiBaseUrl(): string {
-  if (typeof window !== 'undefined' && window.location.origin && (window.location.origin.startsWith('http://') || window.location.origin.startsWith('https://')) && !window.location.origin.includes('file://')) {
+  const isNative = isNativeOrApkEnvironment();
+  if (!isNative && typeof window !== 'undefined' && window.location.origin && 
+      (window.location.origin.startsWith('http://') || window.location.origin.startsWith('https://')) && 
+      !window.location.origin.includes('localhost') && 
+      !window.location.origin.includes('127.0.0.1') && 
+      !window.location.origin.includes('file://')) {
     return window.location.origin;
   }
+  if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
+    return activeWorkingServer;
+  }
   const custom = getCustomServerUrl();
-  if (custom) return custom;
+  if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) return custom;
+  return DEFAULT_REMOTE_SERVER;
+}
+
+export function getPublicShareBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location.origin && 
+      (window.location.origin.startsWith('http://') || window.location.origin.startsWith('https://')) && 
+      !window.location.origin.includes('localhost') && 
+      !window.location.origin.includes('127.0.0.1') && 
+      !window.location.origin.includes('capacitor://') && 
+      !window.location.origin.includes('file://')) {
+    return window.location.origin;
+  }
+  if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
+    return activeWorkingServer;
+  }
+  const custom = getCustomServerUrl();
+  if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) return custom;
   return DEFAULT_REMOTE_SERVER;
 }
 
@@ -104,13 +129,14 @@ export async function fetchWithFallback(
   if (isNative) {
     // In native APK / Capacitor environment, NEVER try localhost or relative URLs because there is no API server on the device!
     // Immediately target the remote cloud servers!
-    if (activeWorkingServer) {
+    if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
       const activeUrl = `${activeWorkingServer}${cleanEndpoint}`;
       if (!urlsToTry.includes(activeUrl)) urlsToTry.push(activeUrl);
     }
-    const primaryUrl = getFullApiUrl(cleanEndpoint);
-    if (!urlsToTry.includes(primaryUrl)) {
-      urlsToTry.push(primaryUrl);
+    const custom = getCustomServerUrl();
+    if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) {
+      const customUrl = `${custom}${cleanEndpoint}`;
+      if (!urlsToTry.includes(customUrl)) urlsToTry.push(customUrl);
     }
     for (const server of CANDIDATE_SERVERS) {
       const candidateUrl = `${server}${cleanEndpoint}`;

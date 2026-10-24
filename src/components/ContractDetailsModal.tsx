@@ -274,7 +274,7 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
             onRecordPayment(contract, amount, paymentNote || '', undefined, true, {
               latitude: res.location.latitude,
               longitude: res.location.longitude,
-              address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('ar-EG')})`
+              address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('en-CA')})`
             });
             setCustomAmount('');
             setPaymentNote('');
@@ -302,7 +302,7 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
           onRecordPayment(contract, amount, paymentNote || '', undefined, true, {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('ar-EG')})`
+            address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('en-CA')})`
           });
         },
         () => {

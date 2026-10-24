@@ -6,7 +6,7 @@ import { Share } from '@capacitor/share';
 import { numberToArabicWords } from './tafqeet';
 import { getPaymentFormattedDateAndTime } from './dateUtils';
 import { InstallmentContract, PaymentRecord } from '../types';
-import { fetchWithFallback, getApiBaseUrl } from './apiConfig';
+import { fetchWithFallback, getApiBaseUrl, getPublicShareBaseUrl } from './apiConfig';
 import { getPaymentReceiptBalances } from './paymentCalculator';
 
 /**
@@ -192,50 +192,50 @@ export async function generateSinglePaymentReceiptPdfBlob({
   const { dateStr, timeStr } = getPaymentFormattedDateAndTime(payment, true);
 
   const htmlContent = `
-    <div style="width: 450px; padding: 22px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; border: 2px solid #0f766e; border-radius: 16px; margin: 0 auto; box-sizing: border-box;">
-      <div style="text-align: center; border-bottom: 2px dashed #0f766e; padding-bottom: 12px; margin-bottom: 14px;">
-        <div style="font-size: 18px; font-weight: 900; color: #0f766e;">وصل استلام قسط رسمي</div>
+    <div style="width: 750px; padding: 40px 36px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; border: 4px solid #0f766e; border-radius: 24px; margin: 0 auto; box-sizing: border-box;">
+      <div style="text-align: center; border-bottom: 3px dashed #0f766e; padding-bottom: 20px; margin-bottom: 24px;">
+        <div style="font-size: 34px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">وصل استلام قسط رسمي</div>
       </div>
 
-      <div style="font-size: 13.5px; line-height: 2; color: #1e293b;">
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 4px 0;">
-          <span style="font-weight: bold; color: #475569;">اسم الزبون:</span>
-          <span style="font-weight: 900; color: #0f172a;">${customerName}</span>
+      <div style="font-size: 24px; line-height: 2.2; color: #1e293b;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0;">
+          <span style="font-weight: bold; color: #475569; font-size: 24px;">اسم الزبون:</span>
+          <span style="font-weight: 900; color: #0f172a; font-size: 28px;">${customerName}</span>
         </div>
         ${itemName && itemName !== '—' ? `
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 4px 0;">
-          <span style="font-weight: bold; color: #475569;">المادة:</span>
-          <span style="font-weight: bold; color: #334155;">${itemName}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0;">
+          <span style="font-weight: bold; color: #475569; font-size: 24px;">المادة:</span>
+          <span style="font-weight: bold; color: #334155; font-size: 25px;">${itemName}</span>
         </div>
         ` : ''}
         ${totalPrice > 0 ? `
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 4px 0;">
-          <span style="font-weight: bold; color: #475569;">المبلغ الكلي:</span>
-          <span style="font-weight: bold; color: #0284c7; direction: ltr;">${totalPrice.toLocaleString('en-US')} د.ع</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0;">
+          <span style="font-weight: bold; color: #475569; font-size: 24px;">المبلغ الكلي:</span>
+          <span style="font-weight: 900; color: #0284c7; direction: ltr; font-size: 26px;">${totalPrice.toLocaleString('en-US')} د.ع</span>
         </div>
         ` : ''}
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 4px 0; color: #047857;">
-          <span style="font-weight: bold;">مجموع الواصل الكلي:</span>
-          <span style="font-weight: 900; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0; color: #047857;">
+          <span style="font-weight: bold; font-size: 24px;">مجموع الواصل الكلي:</span>
+          <span style="font-weight: 900; direction: ltr; font-size: 28px;">${totalPaid.toLocaleString('en-US')} د.ع</span>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; color: #0f766e; font-weight: 900; font-size: 16px; margin: 10px 0; background: #f0fdf4; border: 1.5px solid #a7f3d0; padding: 8px 12px; border-radius: 10px;">
-          <span>مبلغ الدفعة رقماً:</span>
-          <span style="direction: ltr; font-size: 18px;">${paidAmount.toLocaleString('en-US')} د.ع</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; color: #0f766e; font-weight: 900; margin: 18px 0; background: #f0fdf4; border: 2.5px solid #a7f3d0; padding: 16px 20px; border-radius: 16px;">
+          <span style="font-size: 28px;">مبلغ الدفعة رقماً:</span>
+          <span style="direction: ltr; font-size: 36px; font-weight: 900; color: #047857;">${paidAmount.toLocaleString('en-US')} د.ع</span>
         </div>
-        <div style="font-size: 12.5px; color: #047857; font-weight: bold; background: #f8fafc; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px;">
-          <span>المبلغ كتابة:</span> ${amountInWords}
+        <div style="font-size: 22px; color: #047857; font-weight: bold; background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 12px 18px; border-radius: 14px; margin-bottom: 14px;">
+          <span>المبلغ كتابة:</span> <span style="font-weight: 900; color: #0f172a;">${amountInWords}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 4px 0; color: #b91c1c;">
-          <span style="font-weight: bold;">المبلغ المتبقي:</span>
-          <span style="font-weight: 900; direction: ltr;">${remaining.toLocaleString('en-US')} د.ع</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0; color: #b91c1c;">
+          <span style="font-weight: bold; font-size: 24px;">المبلغ المتبقي:</span>
+          <span style="font-weight: 900; direction: ltr; font-size: 28px;">${remaining.toLocaleString('en-US')} د.ع</span>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 4px 0; color: #64748b; font-size: 12px; margin-top: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; color: #64748b; font-size: 22px; margin-top: 6px;">
           <span style="font-weight: bold;">تاريخ التسديد:</span>
-          <span style="font-weight: bold; direction: ltr;">${dateStr} ${timeStr}</span>
+          <span style="font-weight: 900; direction: ltr; color: #334155; font-size: 22px;">${dateStr} ${timeStr}</span>
         </div>
       </div>
 
-      <div style="text-align: center; border-top: 2px dashed #0f766e; padding-top: 10px; margin-top: 14px; font-size: 12.5px; font-weight: 900; color: #0f766e;">
+      <div style="text-align: center; border-top: 3px dashed #0f766e; padding-top: 18px; margin-top: 24px; font-size: 24px; font-weight: 900; color: #0f766e;">
         وصل رسمي معتمد
       </div>
     </div>
@@ -283,13 +283,21 @@ export async function sharePaymentReceiptWhatsApp({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: safePdfName, base64Data }),
-    });
+    }, 15000);
 
-    if (uploadRes.ok) {
+    if (uploadRes && uploadRes.ok) {
       const data = await uploadRes.json();
       if (data?.url) {
-        const baseUrl = getApiBaseUrl().replace(/\/+$/, '');
-        const pdfPublicUrl = `${baseUrl}${data.url}`;
+        let serverOrigin = '';
+        if (uploadRes.url && (uploadRes.url.startsWith('http://') || uploadRes.url.startsWith('https://')) && !uploadRes.url.includes('localhost') && !uploadRes.url.includes('127.0.0.1')) {
+          try {
+            serverOrigin = new URL(uploadRes.url).origin;
+          } catch (e) {}
+        }
+        if (!serverOrigin) {
+          serverOrigin = getPublicShareBaseUrl();
+        }
+        const pdfPublicUrl = `${serverOrigin.replace(/\/+$/, '')}${data.url}`;
         receiptText += `\n\n📄 *رابط الوصل (PDF):*\n${pdfPublicUrl}`;
       }
     }
@@ -755,13 +763,21 @@ export async function shareCustomerPaymentsPdf({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename: safePdfName, base64Data }),
-        });
+        }, 15000);
 
-        if (uploadRes.ok) {
+        if (uploadRes && uploadRes.ok) {
           const data = await uploadRes.json();
           if (data?.url) {
-            const baseUrl = getApiBaseUrl().replace(/\/+$/, '');
-            pdfPublicUrl = `${baseUrl}${data.url}`;
+            let serverOrigin = '';
+            if (uploadRes.url && (uploadRes.url.startsWith('http://') || uploadRes.url.startsWith('https://')) && !uploadRes.url.includes('localhost') && !uploadRes.url.includes('127.0.0.1')) {
+              try {
+                serverOrigin = new URL(uploadRes.url).origin;
+              } catch (e) {}
+            }
+            if (!serverOrigin) {
+              serverOrigin = getPublicShareBaseUrl();
+            }
+            pdfPublicUrl = `${serverOrigin.replace(/\/+$/, '')}${data.url}`;
           }
         }
       } catch (uploadErr) {
@@ -771,7 +787,7 @@ export async function shareCustomerPaymentsPdf({
       // Exact user instruction: "ارسل رابط بي دي اف بس لاتكتب ويا شرح فقط اكتب  لعرض تسديدات  افتح الرابط ادناه"
       const messageText = pdfPublicUrl
         ? `لعرض تسديدات  افتح الرابط ادناه:\n${pdfPublicUrl}`
-        : 'لعرض تسديدات  افتح الرابط ادناه';
+        : `لعرض تسديدات  افتح الرابط ادناه:\n${getPublicShareBaseUrl()}`;
 
       // 1. If running inside Android APK with native interface
       const nativeAndroid =

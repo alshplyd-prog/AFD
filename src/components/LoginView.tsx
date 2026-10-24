@@ -409,23 +409,34 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onVie
 
             {/* Account Info Header */}
             <div className="text-center mb-3 xs:mb-5 mt-1">
-              <div
-                className={`inline-flex p-2.5 xs:p-3 sm:p-3.5 rounded-xl xs:rounded-2xl mb-2 xs:mb-3 border ${
-                  pinModalRep.role === 'admin'
-                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                    : pinModalRep.role === 'supervisor'
-                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                    : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                }`}
-              >
-                {pinModalRep.role === 'admin' ? (
-                  <Shield className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8" />
-                ) : pinModalRep.role === 'supervisor' ? (
-                  <Shield className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8" />
-                ) : (
-                  <UserCheck className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8" />
-                )}
-              </div>
+              {pinModalRep.avatarUrl ? (
+                <div className="inline-block relative mb-2 xs:mb-3">
+                  <img
+                    src={pinModalRep.avatarUrl}
+                    alt={pinModalRep.name}
+                    referrerPolicy="no-referrer"
+                    className="w-16 h-16 xs:w-20 xs:h-20 rounded-3xl object-cover border-4 border-amber-500/60 shadow-xl"
+                  />
+                </div>
+              ) : (
+                <div
+                  className={`inline-flex p-2.5 xs:p-3 sm:p-3.5 rounded-xl xs:rounded-2xl mb-2 xs:mb-3 border ${
+                    pinModalRep.role === 'admin'
+                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                      : pinModalRep.role === 'supervisor'
+                      ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                      : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                  }`}
+                >
+                  {pinModalRep.role === 'admin' ? (
+                    <Shield className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8" />
+                  ) : pinModalRep.role === 'supervisor' ? (
+                    <Shield className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8" />
+                  ) : (
+                    <UserCheck className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8" />
+                  )}
+                </div>
+              )}
               <h3 className="text-base xs:text-lg font-black text-white">{pinModalRep.name}</h3>
               <p className="text-[11px] xs:text-xs text-amber-400 font-bold mt-0.5 flex items-center justify-center gap-1">
                 <Lock className="w-3 h-3 xs:w-3.5 xs:h-3.5" />

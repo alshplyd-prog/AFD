@@ -943,6 +943,19 @@ public class MainActivity extends BridgeActivity {
                 if (cleanPhone == null || cleanPhone.isEmpty()) return false;
 
                 String encodedMsg = Uri.encode(message != null ? message : "");
+
+                // 1. Direct native whatsapp:// URI intent (preserves full message and link directly)
+                try {
+                    Uri nativeUri = Uri.parse("whatsapp://send?phone=" + cleanPhone + "&text=" + encodedMsg);
+                    Intent nativeIntent = new Intent(Intent.ACTION_VIEW, nativeUri);
+                    nativeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(nativeIntent);
+                    return true;
+                } catch (Throwable nativeErr) {
+                    Log.d(TAG, "whatsapp:// URI fallback: " + nativeErr.getMessage());
+                }
+
+                // 2. HTTPS wa.me fallback
                 String uriStr = "https://wa.me/" + cleanPhone + (encodedMsg.isEmpty() ? "" : "?text=" + encodedMsg);
                 Uri uri = Uri.parse(uriStr);
 

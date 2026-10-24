@@ -3195,6 +3195,22 @@ async function startServer() {
     }
   });
 
+  app.post("/api/reps/:id/avatar", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { avatarUrl } = req.body;
+      fileDb.update("reps", id, { avatarUrl: avatarUrl || '' } as any);
+      await executePg(
+        `UPDATE reps SET avatar_url = $1 WHERE id = $2`,
+        [avatarUrl || '', id]
+      );
+      bumpSyncVersion();
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.delete("/api/reps/:id", async (req, res) => {
     try {
       const { id } = req.params;
