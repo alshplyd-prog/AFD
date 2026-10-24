@@ -934,6 +934,8 @@ public class MainActivity extends BridgeActivity {
                 Log.e(TAG, "shareImageToWhatsApp error: " + e.getMessage());
                 return false;
             }
+        }
+
         @JavascriptInterface
         public boolean openWhatsAppChatWithText(final String rawPhone, final String message) {
             try {
