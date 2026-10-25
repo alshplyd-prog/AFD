@@ -16,7 +16,7 @@ interface LoginViewProps {
 export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onViewSplash }) => {
   const isAr = lang === 'ar';
   const activeRepsList = React.useMemo(() => {
-    let list = reps && Array.isArray(reps) ? [...reps] : [];
+    let list = reps && Array.isArray(reps) && reps.length > 0 ? [...reps] : [...DEFAULT_REPS];
     return list.sort((a, b) => {
       if (a.id === 'rep-1' || a.role === 'admin') return -1;
       if (b.id === 'rep-1' || b.role === 'admin') return 1;
@@ -289,15 +289,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onVie
 
             {/* Accounts Cards Grid */}
             <div className="grid grid-cols-1 gap-2.5 max-h-80 overflow-y-auto pr-1">
-              {activeRepsList.length === 0 ? (
-                <div className="text-center py-8 px-4 bg-slate-900/60 rounded-2xl border border-slate-700/80">
-                  <div className="w-8 h-8 border-2 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-xs font-bold text-slate-300">
-                    {isAr ? 'جاري تحميل حسابات المندوبين من الخادم...' : 'Loading accounts from server...'}
-                  </p>
-                </div>
-              ) : (
-                activeRepsList.map((rep) => (
+              {activeRepsList.map((rep) => (
                 <button
                   key={rep.id}
                   type="button"
@@ -380,7 +372,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onVie
                     </span>
                   </div>
                 </button>
-              )))}
+              ))}
             </div>
           </div>
         </div>

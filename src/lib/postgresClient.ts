@@ -1978,7 +1978,14 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
       if (cached.length > 0) {
         emitIfChanged(cached);
       } else {
-        emitIfChanged([]);
+        let initialFallback: any[] = [];
+        if (tableName === 'reps') initialFallback = DEFAULT_REPS;
+        if (initialFallback.length > 0) {
+          setLocalCache(tableName, initialFallback as T[]);
+          emitIfChanged(initialFallback as T[]);
+        } else {
+          emitIfChanged([]);
+        }
       }
     } catch (e) {
       emitIfChanged([]);
