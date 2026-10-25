@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { UserCheck, Shield, KeyRound, ArrowRight, UserPlus, Sparkles, Building2, Lock, Delete, X, User } from 'lucide-react';
+import { UserCheck, Shield, KeyRound, ArrowRight, UserPlus, Sparkles, Building2, Lock, Delete, X, User, Server, Globe, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { SalesRepresentative, Language } from '../types';
 import { DEFAULT_REPS } from '../data/initialContracts';
 import { normalizePin, isPinMatching } from '../lib/pinUtils';
-import { fetchWithFallback } from '../lib/apiConfig';
-import { getLocalCache } from '../lib/postgresClient';
+import { fetchWithFallback, getCustomServerUrl, setCustomServerUrl, checkServerHealth } from '../lib/apiConfig';
+import { getLocalCache, reconcileAllLocalWithDatabase } from '../lib/postgresClient';
 
 interface LoginViewProps {
   onLogin: (rep: SalesRepresentative) => void;
   reps: SalesRepresentative[];
   lang: Language;
   onViewSplash?: () => void;
+  onRefreshReps?: () => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onViewSplash }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onViewSplash, onRefreshReps }) => {
   const isAr = lang === 'ar';
   const activeRepsList = React.useMemo(() => {
     let list = reps && Array.isArray(reps) && reps.length > 0 ? [...reps] : [...DEFAULT_REPS];

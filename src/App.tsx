@@ -161,7 +161,7 @@ import {
   run5DayPruneAndPollingInspection
 } from './lib/postgresClient';
 
-import { universalApiFetch } from './lib/apiConfig';
+import { universalApiFetch, fetchWithFallback } from './lib/apiConfig';
 import { subscribeToQueueChange, getPendingQueue, getPendingQueueSync, flushPendingQueue, scheduleIdleVerification, isUserActivelyTypingOrInputFocused } from './lib/offlineQueue';
 import { hasDuplicateName, deduplicateEntitiesByName, normalizeEntityName } from './lib/nameHelpers';
 import { normalizePin } from './lib/pinUtils';
@@ -578,7 +578,7 @@ export default function App() {
       } else {
         // Quick lightweight version verification
         try {
-          const res = await fetch('/api/sync/version', { method: 'GET', cache: 'no-store' }).catch(() => null);
+          const res = await fetchWithFallback('/api/sync/version', { method: 'GET', cache: 'no-store' }, 4000).catch(() => null);
           if (res && res.ok) {
             setSyncError(false);
             const data = await res.json().catch(() => null);

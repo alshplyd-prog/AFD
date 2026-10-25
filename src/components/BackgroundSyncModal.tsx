@@ -18,7 +18,9 @@ import {
   Settings,
   Flame,
   Trash2,
-  CalendarClock
+  CalendarClock,
+  Globe,
+  Server
 } from 'lucide-react';
 import { Language } from '../types';
 import {
@@ -39,8 +41,10 @@ import {
 } from '../lib/offlineQueue';
 import {
   get5DayPruneAndPollStatus,
-  run5DayPruneAndPollingInspection
+  run5DayPruneAndPollingInspection,
+  reconcileAllLocalWithDatabase
 } from '../lib/postgresClient';
+import { getCustomServerUrl, setCustomServerUrl, checkServerHealth } from '../lib/apiConfig';
 
 interface BackgroundSyncModalProps {
   isOpen: boolean;
