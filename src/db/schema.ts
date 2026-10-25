@@ -201,6 +201,13 @@ export const deletedRecords = pgTable('deleted_records', {
   deletedAt: timestamp('deleted_at').defaultNow(),
 });
 
+// Define 'shared_pdfs'
+export const sharedPdfs = pgTable('shared_pdfs', {
+  filename: text('filename').primaryKey(),
+  dataBase64: text('data_base64').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   sales: many(sales),

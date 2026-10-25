@@ -1062,6 +1062,11 @@ async function startServer() {
     .then(async () => {
       if (isPgConfigured()) {
         await executePg(`
+          CREATE TABLE IF NOT EXISTS shared_pdfs (
+            filename TEXT PRIMARY KEY,
+            data_base64 TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
           CREATE INDEX IF NOT EXISTS idx_payments_contract_id ON payments (contract_id);
           CREATE INDEX IF NOT EXISTS idx_payments_customer_name ON payments (customer_name);
           CREATE INDEX IF NOT EXISTS idx_payments_payment_date ON payments (payment_date);
@@ -1168,8 +1173,44 @@ async function startServer() {
     });
   });
 
-  // Temporary storage for shared statement PDFs
-  app.post("/api/save-statement-pdf", (req, res) => {
+  async function uploadToPublicPdfCdn(buffer: Buffer, filename: string): Promise<string | null> {
+    try {
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+      const pre = Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="reqtype"\r\n\r\nfileupload\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="time"\r\n\r\n72h\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="fileToUpload"; filename="${encodeURIComponent(filename)}"\r\n` +
+        `Content-Type: application/pdf\r\n\r\n`
+      );
+      const post = Buffer.from(`\r\n--${boundary}--\r\n`);
+      const fullBody = Buffer.concat([pre, buffer, post]);
+
+      const res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'User-Agent': 'Mozilla/5.0 AlKarrarApp/1.0',
+        },
+        body: fullBody,
+        signal: AbortSignal.timeout(10000),
+      });
+      if (res.ok) {
+        const text = (await res.text()).trim();
+        if (text.startsWith('http://') || text.startsWith('https://')) {
+          return text;
+        }
+      }
+    } catch (err: any) {
+      // Gracefully swallow timeouts and aborts to avoid log noise when fallback URL is available
+      if (err?.name !== 'TimeoutError' && !err?.message?.includes('timeout') && !err?.message?.includes('aborted')) {
+        console.warn('uploadToPublicPdfCdn note:', err?.message || err);
+      }
+    }
+    return null;
+  }
+
+  // Storage for shared statement & receipt PDFs (PostgreSQL + Local Cache + Direct Public CDN)
+  app.post("/api/save-statement-pdf", async (req, res) => {
     try {
       const { filename, base64Data } = req.body || {};
       if (!base64Data) {
@@ -1184,26 +1225,118 @@ async function startServer() {
       const filePath = path.join(sharedDir, finalName);
       const buffer = Buffer.from(base64Data, "base64");
       fs.writeFileSync(filePath, buffer);
+
+      if (isPgConfigured()) {
+        await executePg(
+          `CREATE TABLE IF NOT EXISTS shared_pdfs (
+             filename TEXT PRIMARY KEY,
+             data_base64 TEXT NOT NULL,
+             created_at TIMESTAMPTZ DEFAULT NOW()
+           )`
+        ).catch(() => {});
+
+        await executePg(
+          `INSERT INTO shared_pdfs (filename, data_base64, created_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (filename) DO UPDATE SET data_base64 = EXCLUDED.data_base64, created_at = NOW()`,
+          [finalName, base64Data]
+        ).catch(() => {});
+      }
+
+      let publicUrl = '';
+      try {
+        publicUrl = (await uploadToPublicPdfCdn(buffer, finalName)) || '';
+      } catch (uErr) {}
+
       const fileUrl = `/shared_pdfs/${encodeURIComponent(finalName)}`;
-      return res.json({ success: true, url: fileUrl });
+      return res.json({
+        success: true,
+        url: publicUrl || fileUrl,
+        publicUrl: publicUrl || null,
+        localUrl: fileUrl,
+      });
     } catch (e: any) {
       console.warn("Error saving statement PDF:", e);
       return res.status(500).json({ error: "Failed to save PDF" });
     }
   });
 
-  // Explicit download / inline view route for shared PDFs
-  app.get("/shared_pdfs/:filename", (req, res) => {
+  // Explicit download / inline view route for shared PDFs (supports both /shared_pdfs and /api/shared_pdfs)
+  app.get(["/shared_pdfs/:filename", "/api/shared_pdfs/:filename"], async (req, res) => {
     try {
-      const filename = req.params.filename;
+      const rawParam = req.params.filename || '';
+      let decodedParam = rawParam;
+      try {
+        decodedParam = decodeURIComponent(rawParam);
+      } catch (e) {}
+
       const sharedDir = path.resolve(process.cwd(), "public", "shared_pdfs");
-      const filePath = path.join(sharedDir, filename);
-      if (fs.existsSync(filePath)) {
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(filename)}"`);
-        return fs.createReadStream(filePath).pipe(res);
+      
+      // 1. Try checking on disk (both decoded and raw names)
+      for (const nameToTry of [decodedParam, rawParam]) {
+        if (!nameToTry) continue;
+        const filePath = path.join(sharedDir, nameToTry);
+        if (fs.existsSync(filePath)) {
+          const stats = fs.statSync(filePath);
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(decodedParam)}"`);
+          res.setHeader("Content-Length", String(stats.size));
+          res.setHeader("Accept-Ranges", "bytes");
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return fs.createReadStream(filePath).pipe(res);
+        }
       }
-      return res.status(404).send("PDF not found");
+
+      // 2. Try PostgreSQL persistent store (handles ephemeral Cloud Run container restarts)
+      if (isPgConfigured()) {
+        try {
+          const rows = await executePg(
+            "SELECT data_base64 FROM shared_pdfs WHERE filename = $1 OR filename = $2 LIMIT 1",
+            [decodedParam, rawParam]
+          );
+          if (rows && rows.length > 0 && rows[0].data_base64) {
+            const buffer = Buffer.from(rows[0].data_base64, "base64");
+            if (!fs.existsSync(sharedDir)) {
+              fs.mkdirSync(sharedDir, { recursive: true });
+            }
+            try {
+              fs.writeFileSync(path.join(sharedDir, decodedParam), buffer);
+            } catch (wErr) {}
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(decodedParam)}"`);
+            res.setHeader("Content-Length", String(buffer.length));
+            res.setHeader("Accept-Ranges", "bytes");
+            res.setHeader("Cache-Control", "public, max-age=86400");
+            return res.send(buffer);
+          }
+        } catch (dbErr) {
+          console.warn("Error fetching shared PDF from PG:", dbErr);
+        }
+      }
+
+      return res.status(404).setHeader("Content-Type", "text/html; charset=utf-8").send(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>الملف غير متوفر - الكرار للموبايل</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+            .card { background: #1e293b; border: 1px solid #334155; border-radius: 20px; padding: 32px 24px; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+            h2 { color: #38bdf8; margin-top: 0; font-size: 22px; }
+            p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h2>📄 كشف حساب الزبون</h2>
+            <p>الملف المطلوب غير متوفر حالياً أو قد تم تحديثه بنسخة جديدة من قبل الإدارة.</p>
+            <p style="font-size: 12px; color: #64748b;">الكرار للتقسيط للموبايل</p>
+          </div>
+        </body>
+        </html>
+      `);
     } catch (e) {
       return res.status(500).send("Error reading PDF");
     }

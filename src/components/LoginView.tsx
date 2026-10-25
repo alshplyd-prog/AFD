@@ -265,6 +265,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onVie
                 alt="الكرار للتقسيط للموبايل"
                 referrerPolicy="no-referrer"
                 className="w-24 h-24 rounded-3xl object-cover shadow-2xl border-2 border-teal-500/40 p-0.5 bg-slate-800 group-hover:border-teal-400 transition-colors"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.includes('data:image')) {
+                    target.src = '/icon.png';
+                  }
+                }}
               />
               <span className="absolute -bottom-2 px-2 py-0.5 rounded-full bg-teal-500/90 text-slate-950 font-black text-[10px] shadow-md flex items-center gap-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
                 <Sparkles className="w-2.5 h-2.5" />
