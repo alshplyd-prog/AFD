@@ -697,7 +697,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
       const result = await shareCustomerPaymentsOrDirectWhatsApp({
         contract: historyModalContract,
         payments: custPayments,
-        phone: historyModalContract.customerPhone,
         lang,
         targetApp: target,
         forceAppsChooser: target === 'other',
@@ -707,8 +706,8 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           showToast(
             target === 'whatsapp'
               ? (isAr
-                  ? 'تم فتح محادثة واتساب الزبون - اضغط (لصق / Paste) أو إرسال لنشر صورة الكشف'
-                  : 'Customer WhatsApp opened - Tap Paste or Send for statement image')
+                  ? 'تم تجهيز ملف الـ PDF كملف مستند - اختر واتساب لإرساله للزبون'
+                  : 'PDF document ready - Select WhatsApp to send file')
               : (isAr
                   ? 'تم تجهيز ملف الـ PDF - اختر التطبيق المطلوب للمشاركة'
                   : 'PDF ready - Select app to share file'),

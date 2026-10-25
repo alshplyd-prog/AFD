@@ -22,8 +22,7 @@ import {
   Navigation,
   LocateFixed,
   MapPinned,
-  ExternalLink,
-  MessageCircle,
+  ExternalLink
 } from 'lucide-react';
 import { InstallmentContract, PaymentRecord, Language, SalesRepresentative, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
@@ -33,7 +32,6 @@ import { normalizeEntityName } from '../lib/nameHelpers';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { updateCustomerLocation } from '../lib/postgresClient';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
-import { sharePaymentReceiptWhatsApp } from '../lib/pdfShareHelper';
 
 interface ContractDetailsModalProps {
   contract: InstallmentContract | null;
@@ -274,7 +272,7 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
             onRecordPayment(contract, amount, paymentNote || '', undefined, true, {
               latitude: res.location.latitude,
               longitude: res.location.longitude,
-              address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('en-CA')})`
+              address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('ar-EG')})`
             });
             setCustomAmount('');
             setPaymentNote('');
@@ -302,7 +300,7 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
           onRecordPayment(contract, amount, paymentNote || '', undefined, true, {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('en-CA')})`
+            address: contract.customerAddress || `موقع تسديد (${new Date().toLocaleDateString('ar-EG')})`
           });
         },
         () => {
@@ -748,26 +746,9 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
                               )}
                             </td>
 
-                            {/* Actions: WhatsApp Share, Print, Edit, Delete */}
+                            {/* Actions: Print, Edit, Delete */}
                             <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-1.5">
-                                {/* WhatsApp Text Receipt Share button */}
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    await sharePaymentReceiptWhatsApp({
-                                      payment: p,
-                                      contract,
-                                      allPayments: payments,
-                                      shopTitle: 'الكرار للموبايل والتقسيط',
-                                    });
-                                  }}
-                                  className="p-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center"
-                                  title={isAr ? 'مشاركة وصل نصي للدفعة عبر واتساب' : 'Share text receipt via WhatsApp'}
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                </button>
-
                                 {/* Print Receipt button - matches screenshot styling */}
                                 <button
                                   type="button"

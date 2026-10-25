@@ -46,7 +46,7 @@ import {
 } from './types';
 import { getLocalDateString, playNotificationSound, showBrowserNotification, isAppointmentDueForNotification } from './lib/dateUtils';
 import { initCapacitorPush } from './lib/capacitorPush';
-import { INITIAL_CONTRACTS, INITIAL_FUNDS, INITIAL_CUSTOMER_LISTS, INITIAL_EMPLOYEES } from './data/initialContracts';
+import { INITIAL_CONTRACTS, DEFAULT_REPS, INITIAL_FUNDS, INITIAL_CUSTOMER_LISTS, INITIAL_EMPLOYEES } from './data/initialContracts';
 import { HeaderAndStats } from './components/HeaderAndStats';
 import { ContractCard } from './components/ContractCard';
 import { ContractDetailsModal } from './components/ContractDetailsModal';
@@ -161,7 +161,7 @@ import {
   run5DayPruneAndPollingInspection
 } from './lib/postgresClient';
 
-import { universalApiFetch, fetchWithFallback } from './lib/apiConfig';
+import { universalApiFetch } from './lib/apiConfig';
 import { subscribeToQueueChange, getPendingQueue, getPendingQueueSync, flushPendingQueue, scheduleIdleVerification, isUserActivelyTypingOrInputFocused } from './lib/offlineQueue';
 import { hasDuplicateName, deduplicateEntitiesByName, normalizeEntityName } from './lib/nameHelpers';
 import { normalizePin } from './lib/pinUtils';
@@ -578,7 +578,7 @@ export default function App() {
       } else {
         // Quick lightweight version verification
         try {
-          const res = await fetchWithFallback('/api/sync/version', { method: 'GET', cache: 'no-store' }, 4000).catch(() => null);
+          const res = await fetch('/api/sync/version', { method: 'GET', cache: 'no-store' }).catch(() => null);
           if (res && res.ok) {
             setSyncError(false);
             const data = await res.json().catch(() => null);
@@ -3491,7 +3491,7 @@ export default function App() {
     }
   };
 
-  const effectiveRep: SalesRepresentative = currentRep || reps[0] || { id: 'guest', name: 'زائر', phone: '', code: '', role: 'rep', canEdit: false, canDelete: false, canSell: false };
+  const effectiveRep = currentRep || reps[0] || DEFAULT_REPS[0];
   const isAdmin = effectiveRep.role === 'admin';
   const isSupervisor = effectiveRep.role === 'supervisor';
   const canEdit = isAdmin || effectiveRep.canEdit !== false;

@@ -251,7 +251,7 @@ export const CustomerAppointmentModal: React.FC<CustomerAppointmentModalProps> =
                   : (isAr ? 'جدولة موعد للزبون' : 'Schedule Appointment')}
               </h3>
               <p className="text-xs text-purple-100 font-bold truncate max-w-[260px]">
-                {contract.customerName} ({contract.remainingBalance.toLocaleString('en-US')} د.ع متبقي)
+                {contract.customerName} ({contract.remainingBalance.toLocaleString()} د.ع متبقي)
               </p>
             </div>
           </div>

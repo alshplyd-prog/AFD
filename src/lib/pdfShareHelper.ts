@@ -6,8 +6,6 @@ import { Share } from '@capacitor/share';
 import { numberToArabicWords } from './tafqeet';
 import { getPaymentFormattedDateAndTime } from './dateUtils';
 import { InstallmentContract, PaymentRecord } from '../types';
-import { fetchWithFallback, getApiBaseUrl, getPublicShareBaseUrl } from './apiConfig';
-import { getPaymentReceiptBalances } from './paymentCalculator';
 
 /**
  * Converts Arabic and Persian numerals to Western digits (0-9).
@@ -47,84 +45,6 @@ export function formatIraqiPhoneForWhatsApp(rawPhone: string | undefined | null)
 }
 
 /**
- * Uploads a PDF to the backend / PostgreSQL / direct public CDN to generate a working public link.
- * 100% free of Google AI Studio redirect, 404, or authentication cookies.
- */
-export async function uploadPdfToPublicLink(
-  pdfBlob: Blob,
-  filename: string
-): Promise<string> {
-  const cleanFilename = (filename || 'statement').replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
-  const finalFilename = cleanFilename.endsWith('.pdf') ? cleanFilename : `${cleanFilename}.pdf`;
-
-  // 1. Try our backend route /api/save-statement-pdf
-  try {
-    const reader = new FileReader();
-    const base64Data = await new Promise<string>((resolve) => {
-      reader.onloadend = () => resolve((reader.result as string).split(',')[1] || '');
-      reader.readAsDataURL(pdfBlob);
-    });
-
-    const res = await fetchWithFallback(
-      '/api/save-statement-pdf',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: finalFilename, base64Data }),
-      },
-      12000
-    );
-
-    if (res && res.ok) {
-      const data = await res.json();
-      if (data?.publicUrl && typeof data.publicUrl === 'string' && data.publicUrl.startsWith('http')) {
-        return data.publicUrl;
-      }
-      if (data?.url && typeof data.url === 'string' && data.url.startsWith('http') && !data.url.includes('ais-')) {
-        return data.url;
-      }
-      if (data?.url && typeof data.url === 'string' && data.url.startsWith('/')) {
-        const customOrigin = getPublicShareBaseUrl();
-        if (customOrigin && !customOrigin.includes('ais-')) {
-          return `${customOrigin}${data.url}`;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Backend save-statement-pdf warning:', err);
-  }
-
-  // 2. Direct client-side upload to public CDN (supports CORS, no cookies, no 404, instant 200)
-  try {
-    const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('time', '72h');
-    formData.append('fileToUpload', pdfBlob, finalFilename);
-
-    const directRes = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
-      method: 'POST',
-      body: formData,
-    });
-    if (directRes && directRes.ok) {
-      const directUrl = (await directRes.text()).trim();
-      if (directUrl.startsWith('http://') || directUrl.startsWith('https://')) {
-        return directUrl;
-      }
-    }
-  } catch (directErr) {
-    console.warn('Direct public CDN upload warning:', directErr);
-  }
-
-  // 3. Fallback to custom server if configured
-  const fallbackOrigin = getPublicShareBaseUrl();
-  if (fallbackOrigin && !fallbackOrigin.includes('ais-')) {
-    return `${fallbackOrigin}/shared_pdfs/${encodeURIComponent(finalFilename)}`;
-  }
-
-  return '';
-}
-
-/**
  * Formats a clean, high-clarity Arabic text statement for WhatsApp.
  */
 export function buildCustomerPaymentStatementText({
@@ -151,11 +71,11 @@ export function buildCustomerPaymentStatementText({
 
   const paymentsLines = payments
     .map((p, idx) => {
-      const { dateStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
+      const { dateStr, timeStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       const noteStr = cleanNote ? ` (${cleanNote})` : '';
       const repStr = p.repName ? ` - مندوب: ${p.repName}` : '';
-      return `${idx + 1}. 🗓️ ${dateStr}: *${amount.toLocaleString('en-US')} د.ع*${repStr}${noteStr}`;
+      return `${idx + 1}. 🗓️ ${dateStr} ${timeStr}: *${amount.toLocaleString('en-US')} د.ع*${repStr}${noteStr}`;
     })
     .join('\n');
 
@@ -214,237 +134,9 @@ export function openCustomerWhatsAppDirect({
 }
 
 /**
- * Formats a clean, professional, high-clarity Arabic text receipt for WhatsApp
- * matching the exact structure and details of the printed thermal receipt.
- */
-export function buildPaymentReceiptWhatsAppText({
-  payment,
-  contract,
-  allPayments = [],
-}: {
-  payment: PaymentRecord;
-  contract?: InstallmentContract | null;
-  allPayments?: PaymentRecord[];
-  shopTitle?: string;
-}): string {
-  const snapshot = getPaymentReceiptBalances(payment, contract, allPayments);
-  const customerName = payment.customerName || contract?.customerName || 'زبون';
-  const remaining = snapshot.remainingBalance || 0;
-  const paidAmount = snapshot.paidAmount || Number(payment.amountPaid ?? payment.amount ?? 0) || 0;
-  const totalPaid = snapshot.totalPaid || paidAmount;
-  const amountInWords = numberToArabicWords(paidAmount);
-  const { dateStr } = getPaymentFormattedDateAndTime(payment, true);
-
-  let text = `*وصل تسديد*\n`;
-  text += `*اسم الزبون:* ${customerName}\n`;
-  text += `*الواصل:* ${totalPaid.toLocaleString('en-US')} د.ع\n`;
-  text += `*المبلغ رقما:* ${paidAmount.toLocaleString('en-US')} د.ع\n`;
-  text += `*المبلغ كتابة:* ${amountInWords}\n`;
-  text += `*الباقي:* ${remaining.toLocaleString('en-US')} د.ع\n`;
-  text += `*التاريخ:* ${dateStr}\n`;
-  text += `*وصل معتمد*`;
-
-  return text.trim();
-}
-
-/**
-  * Generates a clean PDF Blob of the official thermal/single payment receipt.
-  */
-export async function generateSinglePaymentReceiptPdfBlob({
-  payment,
-  contract,
-  allPayments = [],
-}: {
-  payment: PaymentRecord;
-  contract?: InstallmentContract | null;
-  allPayments?: PaymentRecord[];
-}): Promise<Blob> {
-  const snapshot = getPaymentReceiptBalances(payment, contract, allPayments);
-  const customerName = payment.customerName || contract?.customerName || 'زبون';
-  const itemName = contract?.itemName || '—';
-  const paidAmount = snapshot.paidAmount || Number(payment.amountPaid ?? payment.amount ?? 0) || 0;
-  const totalPaid = snapshot.totalPaid || paidAmount;
-  const remaining = snapshot.remainingBalance || 0;
-  const totalPrice = snapshot.totalPrice || contract?.totalPrice || 0;
-  const amountInWords = numberToArabicWords(paidAmount);
-  const { dateStr, timeStr } = getPaymentFormattedDateAndTime(payment, true);
-
-  const htmlContent = `
-    <div style="width: 750px; padding: 40px 36px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; background: #ffffff; border: 4px solid #0f766e; border-radius: 24px; margin: 0 auto; box-sizing: border-box;">
-      <div style="text-align: center; border-bottom: 3px dashed #0f766e; padding-bottom: 20px; margin-bottom: 24px;">
-        <div style="font-size: 34px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">وصل استلام قسط رسمي</div>
-      </div>
-
-      <div style="font-size: 24px; line-height: 2.2; color: #1e293b;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0;">
-          <span style="font-weight: bold; color: #475569; font-size: 24px;">اسم الزبون:</span>
-          <span style="font-weight: 900; color: #0f172a; font-size: 28px;">${customerName}</span>
-        </div>
-        ${itemName && itemName !== '—' ? `
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0;">
-          <span style="font-weight: bold; color: #475569; font-size: 24px;">المادة:</span>
-          <span style="font-weight: bold; color: #334155; font-size: 25px;">${itemName}</span>
-        </div>
-        ` : ''}
-        ${totalPrice > 0 ? `
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0;">
-          <span style="font-weight: bold; color: #475569; font-size: 24px;">المبلغ الكلي:</span>
-          <span style="font-weight: 900; color: #0284c7; direction: ltr; font-size: 26px;">${totalPrice.toLocaleString('en-US')} د.ع</span>
-        </div>
-        ` : ''}
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0; color: #047857;">
-          <span style="font-weight: bold; font-size: 24px;">مجموع الواصل الكلي:</span>
-          <span style="font-weight: 900; direction: ltr; font-size: 28px;">${totalPaid.toLocaleString('en-US')} د.ع</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; color: #0f766e; font-weight: 900; margin: 18px 0; background: #f0fdf4; border: 2.5px solid #a7f3d0; padding: 16px 20px; border-radius: 16px;">
-          <span style="font-size: 28px;">مبلغ الدفعة رقماً:</span>
-          <span style="direction: ltr; font-size: 36px; font-weight: 900; color: #047857;">${paidAmount.toLocaleString('en-US')} د.ع</span>
-        </div>
-        <div style="font-size: 22px; color: #047857; font-weight: bold; background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 12px 18px; border-radius: 14px; margin-bottom: 14px;">
-          <span>المبلغ كتابة:</span> <span style="font-weight: 900; color: #0f172a;">${amountInWords}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding: 8px 0; color: #b91c1c;">
-          <span style="font-weight: bold; font-size: 24px;">المبلغ المتبقي:</span>
-          <span style="font-weight: 900; direction: ltr; font-size: 28px;">${remaining.toLocaleString('en-US')} د.ع</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; color: #64748b; font-size: 22px; margin-top: 6px;">
-          <span style="font-weight: bold;">تاريخ التسديد:</span>
-          <span style="font-weight: 900; direction: ltr; color: #334155; font-size: 22px;">${dateStr} ${timeStr}</span>
-        </div>
-      </div>
-
-      <div style="text-align: center; border-top: 3px dashed #0f766e; padding-top: 18px; margin-top: 24px; font-size: 24px; font-weight: 900; color: #0f766e;">
-        وصل رسمي معتمد
-      </div>
-    </div>
-  `;
-
-  const { pdfBlob } = await renderHtmlToPdfAndImage(htmlContent);
-  return pdfBlob;
-}
-
-/**
- * Shares an individual payment text receipt directly to the customer's WhatsApp,
- * including a short link to the official PDF receipt document.
- */
-export async function sharePaymentReceiptWhatsApp({
-  payment,
-  contract,
-  allPayments = [],
-  shopTitle = 'الكرار للموبايل والتقسيط',
-}: {
-  payment: PaymentRecord;
-  contract?: InstallmentContract | null;
-  allPayments?: PaymentRecord[];
-  shopTitle?: string;
-}): Promise<boolean> {
-  const baseReceiptText = buildPaymentReceiptWhatsAppText({
-    payment,
-    contract,
-    allPayments,
-    shopTitle,
-  });
-
-  const rawPhone = contract?.customerPhone || (payment as any)?.customerPhone;
-  const cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
-
-  // Generate official PDF receipt and upload to get direct working public link
-  let receiptPdfUrl = '';
-  let pdfBlob: Blob | null = null;
-  try {
-    pdfBlob = await generateSinglePaymentReceiptPdfBlob({ payment, contract, allPayments });
-    const safeTimestamp = Date.now();
-    const safePdfName = `وصل_تسديد_${safeTimestamp}.pdf`;
-    receiptPdfUrl = await uploadPdfToPublicLink(pdfBlob, safePdfName);
-  } catch (err) {
-    console.warn('Receipt PDF upload warning:', err);
-  }
-
-  // Add the PDF link to the receipt text as requested by the user
-  let fullReceiptText = baseReceiptText;
-  if (receiptPdfUrl) {
-    fullReceiptText = `${baseReceiptText}\n\n*رابط وصل الـ PDF:*\n${receiptPdfUrl}`;
-  }
-
-  const isCapacitor =
-    Capacitor.isNativePlatform() ||
-    (typeof window !== 'undefined' && (window as any).Capacitor?.getPlatform?.() === 'android');
-
-  // If running in Capacitor APK: write PDF to cache for native sharing if needed
-  if (isCapacitor && pdfBlob) {
-    try {
-      const reader = new FileReader();
-      const base64Data = await new Promise<string>((resolve) => {
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1] || '');
-        reader.readAsDataURL(pdfBlob!);
-      });
-      const safePdfName = `وصل_تسديد_${Date.now()}.pdf`;
-      const writeResult = await Filesystem.writeFile({
-        path: safePdfName,
-        data: base64Data,
-        directory: Directory.Cache,
-        recursive: true,
-      });
-      const fileUri =
-        writeResult.uri ||
-        (await Filesystem.getUri({ path: safePdfName, directory: Directory.Cache })).uri;
-
-      // If customer phone number is missing, open native share chooser with the PDF file attached
-      if (!cleanPhone) {
-        await Share.share({
-          title: 'وصل استلام قسط',
-          text: fullReceiptText,
-          files: [fileUri],
-          dialogTitle: 'إرسال وصل التسديد عبر واتساب',
-        });
-        return true;
-      }
-    } catch (capErr) {
-      console.warn('Capacitor write cache warning:', capErr);
-    }
-  }
-
-  // Native Android interface fallback if present
-  const nativeAndroid =
-    typeof window !== 'undefined'
-      ? (window as any).AndroidInterface || (window as any).AndroidPrinter
-      : null;
-
-  if (cleanPhone && nativeAndroid && typeof nativeAndroid.openWhatsAppChatWithText === 'function') {
-    const ok = nativeAndroid.openWhatsAppChatWithText(cleanPhone, fullReceiptText);
-    if (ok) return true;
-  }
-
-  // Open WhatsApp directly to customer's chat with the receipt text and the PDF link
-  const encodedMsg = encodeURIComponent(fullReceiptText);
-  const waAppUrl = cleanPhone
-    ? `whatsapp://send?phone=${cleanPhone}&text=${encodedMsg}`
-    : `whatsapp://send?text=${encodedMsg}`;
-  const waWebUrl = cleanPhone
-    ? `https://wa.me/${cleanPhone}?text=${encodedMsg}`
-    : `https://api.whatsapp.com/send?text=${encodedMsg}`;
-
-  try {
-    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-    if (isMobile) {
-      window.location.href = waAppUrl;
-      setTimeout(() => {
-        window.open(waWebUrl, '_blank');
-      }, 500);
-    } else {
-      window.open(waWebUrl, '_blank');
-    }
-    return true;
-  } catch (e) {
-    window.open(waWebUrl, '_blank');
-    return true;
-  }
-}
-
-/**
  * Universal PDF Sharer
- * Shares PDF directly to native share sheet or directly to Customer WhatsApp.
- * Strictly DOES NOT save or auto-download files to the user's persistent device storage
+ * Shares PDF directly to native share sheet (WhatsApp, Telegram, Messenger, etc.).
+ * Strictly DOES NOT save or auto-download files to the user's device storage
  * to respect the user's preference ("ماريد يحفض بالجهاز يشارك فقط").
  */
 export async function sharePdfBlob({
@@ -453,97 +145,35 @@ export async function sharePdfBlob({
   title,
   text,
   dialogTitle,
-  phone,
-  targetApp = 'all',
 }: {
   filename: string;
   pdfBlob: Blob;
   title?: string;
   text?: string;
   dialogTitle?: string;
-  phone?: string | null;
-  targetApp?: 'whatsapp' | 'all' | 'other';
 }): Promise<{ success: boolean; method: string; error?: string }> {
   const cleanFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
   const shareTitle = title || 'مشاركة تقرير PDF';
   const modalDialogTitle = dialogTitle || shareTitle;
-  const cleanPhone = formatIraqiPhoneForWhatsApp(phone);
 
-  const getBase64 = async (): Promise<string> => {
-    const reader = new FileReader();
-    return new Promise<string>((resolve, reject) => {
-      reader.onloadend = () => {
-        const res = reader.result as string;
-        const b64 = res.split(',')[1] || '';
-        resolve(b64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(pdfBlob);
-    });
-  };
-
-  // 1. DIRECT TO CUSTOMER WHATSAPP
-  // When targetApp === 'whatsapp', STRICTLY target WhatsApp directly and NEVER show the all-apps system chooser
-  if (targetApp === 'whatsapp') {
-    // 1A. Android Native Interface (inside APK)
-    const nativeAndroid =
-      typeof window !== 'undefined'
-        ? (window as any).AndroidInterface || (window as any).AndroidPrinter
-        : null;
-
-    if (nativeAndroid && typeof nativeAndroid.sharePdfToWhatsApp === 'function') {
-      try {
-        const base64Data = await getBase64();
-        const success = nativeAndroid.sharePdfToWhatsApp(base64Data, cleanFilename, cleanPhone || '');
-        if (success) {
-          return { success: true, method: 'android_native_whatsapp' };
-        }
-      } catch (nativeErr) {
-        console.warn('AndroidInterface.sharePdfToWhatsApp failed, falling back:', nativeErr);
-      }
-    }
-
-    // 1B. Direct WhatsApp with PDF Link (No explanation, only "لعرض تسديدات  افتح الرابط ادناه")
-    if (cleanPhone) {
-      const pdfPublicUrl = await uploadPdfToPublicLink(pdfBlob, cleanFilename);
-
-      const fullMessage = pdfPublicUrl
-        ? `لعرض تسديدات  افتح الرابط ادناه:\n${pdfPublicUrl}`
-        : 'لعرض تسديدات  افتح الرابط ادناه';
-
-      if (nativeAndroid && typeof nativeAndroid.openWhatsAppChatWithText === 'function') {
-        const ok = nativeAndroid.openWhatsAppChatWithText(cleanPhone, fullMessage);
-        if (ok) {
-          return { success: true, method: 'whatsapp_direct_with_pdf_link_native' };
-        }
-      }
-
-      const encodedMsg = encodeURIComponent(fullMessage);
-      const waAppUrl = `whatsapp://send?phone=${cleanPhone}&text=${encodedMsg}`;
-      const waWebUrl = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
-
-      const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-      if (isMobile) {
-        window.location.href = waAppUrl;
-        setTimeout(() => {
-          window.open(waWebUrl, '_blank');
-        }, 500);
-      } else {
-        window.open(waWebUrl, '_blank');
-      }
-
-      return { success: true, method: 'whatsapp_direct_with_pdf_link' };
-    }
-  }
-
-  // 2. CAPACITOR NATIVE GENERAL SHARE (Used for 'تطبيقات أخرى' or when no customer phone)
+  // 1. CAPACITOR NATIVE (Android APK / iOS)
   const isCapacitor =
     Capacitor.isNativePlatform() ||
     (typeof window !== 'undefined' && (window as any).Capacitor?.getPlatform?.() === 'android');
 
   if (isCapacitor) {
     try {
-      const base64Data = await getBase64();
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          const base64 = res.split(',')[1] || '';
+          resolve(base64);
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(pdfBlob);
+      const base64Data = await base64Promise;
 
       // Write strictly to temporary Cache directory (auto-purged, not saved to persistent user storage)
       const writeResult = await Filesystem.writeFile({
@@ -562,7 +192,8 @@ export async function sharePdfBlob({
           })
         ).uri;
 
-      // Pass `files: [fileUri]` so native apps receive the actual PDF document file
+      // Pass `files: [fileUri]` so native apps (WhatsApp, Telegram, etc.) receive the actual PDF document file.
+      // Do NOT pass `url: fileUri` as text, so WhatsApp doesn't send a link string instead of the document.
       await Share.share({
         title: shareTitle,
         files: [fileUri],
@@ -578,7 +209,7 @@ export async function sharePdfBlob({
     }
   }
 
-  // 3. Web Share API with File object (Used for 'تطبيقات أخرى' on Web)
+  // 2. Web Share API with File object (Mobile Chrome / Android Web / Safari)
   if (typeof navigator !== 'undefined' && navigator.share && typeof File !== 'undefined') {
     try {
       const file = new File([pdfBlob], cleanFilename, { type: 'application/pdf' });
@@ -597,7 +228,8 @@ export async function sharePdfBlob({
     }
   }
 
-  // 4. General Fallback preview (never force-download)
+  // If sharing is not supported and user explicitly does NOT want auto-download:
+  // Open the PDF in a clean temporary blob window for preview/sharing, NEVER force-download.
   try {
     const url = URL.createObjectURL(pdfBlob);
     window.open(url, '_blank');
@@ -609,13 +241,10 @@ export async function sharePdfBlob({
 }
 
 /**
- * Converts an HTML element container to both a clean jsPDF Blob and a crisp high-res Image.
+ * Converts an HTML element container to a clean, exact jsPDF Blob.
+ * Strictly avoids adding blank/trailing extra pages.
  */
-async function renderHtmlToPdfAndImage(htmlString: string): Promise<{
-  pdfBlob: Blob;
-  imageBlob: Blob;
-  imageBase64: string;
-}> {
+async function renderHtmlToPdfBlob(htmlString: string): Promise<Blob> {
   const container = document.createElement('div');
   container.style.position = 'fixed';
   container.style.left = '-9999px';
@@ -631,7 +260,7 @@ async function renderHtmlToPdfAndImage(htmlString: string): Promise<{
   document.body.appendChild(container);
 
   try {
-    // Layout stabilization
+    // Ultra-short layout stabilization
     await new Promise((r) => setTimeout(r, 60));
 
     const canvas = await html2canvas(container, {
@@ -642,11 +271,6 @@ async function renderHtmlToPdfAndImage(htmlString: string): Promise<{
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.95);
-    const imageBase64 = imgData.split(',')[1] || '';
-    const imageBlob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.95);
-    });
-
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -661,11 +285,10 @@ async function renderHtmlToPdfAndImage(htmlString: string): Promise<{
     // Single Page Fit: if content height is within 1 page (with 10mm tolerance), strictly use 1 page!
     if (pdfHeight <= pageHeight + 10) {
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, Math.min(pdfHeight, pageHeight));
-      const pdfBlob = pdf.output('blob');
-      return { pdfBlob, imageBlob, imageBase64 };
+      return pdf.output('blob');
     }
 
-    // Multipage
+    // Multipage: only add an extra page if remaining content height is strictly > 25mm (eliminates blank trailing pages)
     let heightLeft = pdfHeight;
     let position = 0;
 
@@ -679,8 +302,7 @@ async function renderHtmlToPdfAndImage(htmlString: string): Promise<{
       heightLeft -= pageHeight;
     }
 
-    const pdfBlob = pdf.output('blob');
-    return { pdfBlob, imageBlob, imageBase64 };
+    return pdf.output('blob');
   } finally {
     try {
       document.body.removeChild(container);
@@ -694,20 +316,18 @@ async function renderHtmlToPdfAndImage(htmlString: string): Promise<{
 export async function shareCustomerPaymentsPdf({
   contract,
   payments,
-  phone,
   lang = 'ar',
   targetApp = 'whatsapp',
 }: {
   contract?: InstallmentContract | null;
   payments: PaymentRecord[];
-  phone?: string | null;
   lang?: string;
   targetApp?: 'whatsapp' | 'all' | 'other';
 }): Promise<{ success: boolean; method: string; error?: string }> {
   const isAr = lang === 'ar';
   const customerName = contract?.customerName || payments[0]?.customerName || (isAr ? 'زبون' : 'Customer');
   const itemName = contract?.itemName || '—';
-  const resolvedPhone = phone || contract?.customerPhone || '—';
+  const phone = contract?.customerPhone || '—';
   const totalPrice = Number(contract?.totalPrice || 0);
   const advance = Number(contract?.advancePayment || 0);
   const netDue = Math.max(0, totalPrice - advance);
@@ -721,189 +341,150 @@ export async function shareCustomerPaymentsPdf({
 
   const paymentsRowsHtml = payments
     .map((p, idx) => {
-      const { dateStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
+      const { dateStr, timeStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       const rep = p.repName || '—';
       return `
-        <tr style="border-bottom: 2px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-          <td style="padding: 15px 10px; text-align: center; font-weight: 900; color: #475569; font-size: 20px;">${idx + 1}</td>
-          <td style="padding: 15px 10px; text-align: center; font-weight: 900; color: #0f172a; font-size: 22px; direction: ltr;">${dateStr}</td>
-          <td style="padding: 15px 10px; text-align: center; font-weight: 900; color: #047857; font-size: 26px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
-          <td style="padding: 15px 10px; text-align: center; font-weight: 900; color: #1e293b; font-size: 20px;">${rep}</td>
-          <td style="padding: 15px 10px; text-align: right; font-weight: 700; color: #334155; font-size: 19px;">${cleanNote || '—'}</td>
+        <tr style="border-bottom: 1px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+          <td style="padding: 6px 6px; text-align: center; font-weight: bold; color: #64748b; font-size: 11px;">${idx + 1}</td>
+          <td style="padding: 6px 6px; text-align: center; font-weight: 800; color: #0f172a; font-size: 11.5px; direction: ltr;">${dateStr} ${timeStr}</td>
+          <td style="padding: 6px 6px; text-align: center; font-weight: 900; color: #047857; font-size: 12.5px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
+          <td style="padding: 6px 6px; text-align: center; font-weight: bold; color: #334155; font-size: 11px;">${rep}</td>
+          <td style="padding: 6px 6px; text-align: right; font-weight: 600; color: #475569; font-size: 11px;">${cleanNote || '—'}</td>
         </tr>
       `;
     })
     .join('');
 
   const htmlContent = `
-    <div style="padding: 24px 28px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; width: 794px; box-sizing: border-box;">
+    <div style="padding: 16px 20px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
       <!-- Header -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f766e; padding-bottom: 16px; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0f766e; padding-bottom: 10px; margin-bottom: 12px;">
         <div>
-          <div style="font-size: 34px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">الكرار للموبايل والتقسيط</div>
-          <div style="font-size: 20px; font-weight: 900; color: #1e293b; margin-top: 5px;">كشف وسجل تسديدات الزبون الشامل</div>
+          <div style="font-size: 22px; font-weight: 900; color: #0f766e;">الكرار للموبايل والتقسيط</div>
+          <div style="font-size: 13px; font-weight: bold; color: #64748b; margin-top: 1px;">كشف وسجل تسديدات الزبون</div>
         </div>
         <div style="text-align: left;">
-          <div style="font-size: 16px; font-weight: bold; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a; font-size: 18px;">${printDateStr}</span></div>
-          <div style="font-size: 16px; font-weight: bold; color: #475569; margin-top: 5px;">عدد الدفعات: <span style="font-weight: 900; color: #0f766e; font-size: 20px;">${payments.length}</span></div>
+          <div style="font-size: 10.5px; font-weight: bold; color: #64748b;">تاريخ التصدير: <span style="direction: ltr; font-weight: 800; color: #0f172a;">${printDateStr} ${printTimeStr}</span></div>
+          <div style="font-size: 10.5px; font-weight: bold; color: #64748b; margin-top: 2px;">عدد الحركات: <span style="font-weight: 900; color: #0f766e;">${payments.length}</span></div>
         </div>
       </div>
 
       <!-- Customer Summary Card -->
-      <div style="background: #f0fdfa; border: 2.5px solid #0f766e; border-radius: 16px; padding: 18px 22px; margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <div style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <div>
-            <span style="font-size: 19px; font-weight: bold; color: #0f766e;">اسم الزبون: </span>
-            <span style="font-size: 28px; font-weight: 900; color: #0f172a;">${customerName}</span>
+            <span style="font-size: 11px; font-weight: bold; color: #0f766e;">اسم الزبون: </span>
+            <span style="font-size: 16px; font-weight: 900; color: #134e4a;">${customerName}</span>
           </div>
           ${
-            resolvedPhone && resolvedPhone !== '—'
-              ? `<div><span style="font-size: 18px; font-weight: bold; color: #0f766e;">الهاتف: </span><span style="font-size: 22px; font-weight: 900; direction: ltr; color: #0f172a;">${resolvedPhone}</span></div>`
+            phone && phone !== '—'
+              ? `<div><span style="font-size: 11px; font-weight: bold; color: #0f766e;">الهاتف: </span><span style="font-size: 13px; font-weight: 800; direction: ltr;">${phone}</span></div>`
               : ''
           }
           <div>
-            <span style="font-size: 18px; font-weight: bold; color: #0f766e;">المادة: </span>
-            <span style="font-size: 22px; font-weight: 900; color: #1e293b;">${itemName}</span>
+            <span style="font-size: 11px; font-weight: bold; color: #0f766e;">المادة: </span>
+            <span style="font-size: 13px; font-weight: 800; color: #1e293b;">${itemName}</span>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 12px; padding: 12px 14px; text-align: center;">
-            <div style="font-size: 15px; font-weight: bold; color: #64748b; margin-bottom: 4px;">المبلغ الكلي</div>
-            <div style="font-size: 22px; font-weight: 900; color: #0284c7; direction: ltr;">${totalPrice.toLocaleString('en-US')} د.ع</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+          <div style="background: #ffffff; border: 1px solid #ccfbf1; border-radius: 8px; padding: 6px 8px; text-align: center;">
+            <div style="font-size: 9.5px; font-weight: bold; color: #64748b;">المبلغ الكلي</div>
+            <div style="font-size: 13px; font-weight: 900; color: #0284c7; direction: ltr;">${totalPrice.toLocaleString('en-US')} د.ع</div>
           </div>
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 12px; padding: 12px 14px; text-align: center;">
-            <div style="font-size: 15px; font-weight: bold; color: #64748b; margin-bottom: 4px;">الواصل الكلي</div>
-            <div style="font-size: 22px; font-weight: 900; color: #047857; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</div>
+          <div style="background: #ffffff; border: 1px solid #ccfbf1; border-radius: 8px; padding: 6px 8px; text-align: center;">
+            <div style="font-size: 9.5px; font-weight: bold; color: #64748b;">الواصل الكلي</div>
+            <div style="font-size: 13px; font-weight: 900; color: #047857; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</div>
           </div>
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 12px; padding: 12px 14px; text-align: center;">
-            <div style="font-size: 15px; font-weight: bold; color: #64748b; margin-bottom: 4px;">المتبقي الباقي</div>
-            <div style="font-size: 22px; font-weight: 900; color: #b91c1c; direction: ltr;">${remaining.toLocaleString('en-US')} د.ع</div>
+          <div style="background: #ffffff; border: 1px solid #ccfbf1; border-radius: 8px; padding: 6px 8px; text-align: center;">
+            <div style="font-size: 9.5px; font-weight: bold; color: #64748b;">المتبقي الباقي</div>
+            <div style="font-size: 13px; font-weight: 900; color: #b91c1c; direction: ltr;">${remaining.toLocaleString('en-US')} د.ع</div>
           </div>
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 12px; padding: 12px 14px; text-align: center;">
-            <div style="font-size: 15px; font-weight: bold; color: #64748b; margin-bottom: 4px;">حالة العقد</div>
-            <div style="font-size: 20px; font-weight: 900; color: ${isFinished ? '#047857' : '#b45309'};">${isFinished ? 'منتهي ومكتمل' : 'قيد التسديد'}</div>
+          <div style="background: #ffffff; border: 1px solid #ccfbf1; border-radius: 8px; padding: 6px 8px; text-align: center;">
+            <div style="font-size: 9.5px; font-weight: bold; color: #64748b;">حالة العقد</div>
+            <div style="font-size: 12px; font-weight: 900; color: ${isFinished ? '#047857' : '#b45309'};">${isFinished ? 'منتهي ومكتمل' : 'قيد التسديد'}</div>
           </div>
         </div>
       </div>
 
       <!-- Payments Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 2.5px solid #0f766e;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px;">
         <thead>
           <tr style="background-color: #0f766e; color: #ffffff;">
-            <th style="padding: 16px 10px; font-size: 19px; font-weight: 900; text-align: center; width: 55px;">#</th>
-            <th style="padding: 16px 10px; font-size: 22px; font-weight: 900; text-align: center; width: 170px;">التاريخ</th>
-            <th style="padding: 16px 10px; font-size: 22px; font-weight: 900; text-align: center; width: 190px;">المبلغ المسدد</th>
-            <th style="padding: 16px 10px; font-size: 20px; font-weight: 900; text-align: center; width: 140px;">المندوب</th>
-            <th style="padding: 16px 10px; font-size: 20px; font-weight: 900; text-align: right;">ملاحظات</th>
+            <th style="padding: 7px 6px; font-size: 10.5px; font-weight: 900; text-align: center; width: 35px;">#</th>
+            <th style="padding: 7px 6px; font-size: 11px; font-weight: 900; text-align: center; width: 130px;">التاريخ والوقت</th>
+            <th style="padding: 7px 6px; font-size: 11px; font-weight: 900; text-align: center; width: 115px;">المبلغ المسدد</th>
+            <th style="padding: 7px 6px; font-size: 11px; font-weight: 900; text-align: center; width: 110px;">المندوب</th>
+            <th style="padding: 7px 6px; font-size: 11px; font-weight: 900; text-align: right;">ملاحظات</th>
           </tr>
         </thead>
         <tbody>
-          ${paymentsRowsHtml || '<tr><td colspan="5" style="padding: 26px; text-align: center; color: #94a3b8; font-weight: bold; font-size: 20px;">لا توجد تسديدات مسجلة</td></tr>'}
+          ${paymentsRowsHtml || '<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-weight: bold;">لا توجد تسديدات مسجلة</td></tr>'}
         </tbody>
         <tfoot>
-          <tr style="background-color: #e2e8f0; font-weight: 900; border-top: 3px solid #0f766e;">
-            <td colspan="2" style="padding: 18px 12px; text-align: right; font-size: 22px; color: #0f172a;">مجموع المبالغ المسددة:</td>
-            <td style="padding: 18px 10px; text-align: center; font-size: 28px; color: #047857; direction: ltr; font-weight: 900;">${totalPaid.toLocaleString('en-US')} د.ع</td>
-            <td colspan="2" style="padding: 18px 12px; text-align: right; font-size: 19px; color: #334155; font-weight: 800;">(${numberToArabicWords(totalPaid)})</td>
+          <tr style="background-color: #e2e8f0; font-weight: 900;">
+            <td colspan="2" style="padding: 8px 10px; text-align: right; font-size: 12px; color: #0f172a;">مجموع المبالغ المسددة:</td>
+            <td style="padding: 8px 6px; text-align: center; font-size: 14px; color: #047857; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</td>
+            <td colspan="2" style="padding: 8px 10px; text-align: right; font-size: 10.5px; color: #475569;">(${numberToArabicWords(totalPaid)})</td>
           </tr>
         </tfoot>
       </table>
 
       <!-- Bottom Signature & Verification -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 24px; padding-top: 16px; border-top: 2px dashed #cbd5e1; font-size: 18px; color: #334155; font-weight: bold;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 14px; padding-top: 10px; border-top: 1px dashed #cbd5e1; font-size: 10.5px; color: #64748b;">
         <div>توقيع وختم الإدارة: ___________________</div>
-        <div style="font-weight: 900; color: #0f766e; font-size: 19px;">الكرار للموبايل والتقسيط - وثيقة كشف حساب معتمدة</div>
+        <div style="font-weight: bold;">الكرار للموبايل والتقسيط - وثيقة كشف حساب معتمدة</div>
       </div>
     </div>
   `;
 
-  const { pdfBlob, imageBlob, imageBase64 } = await renderHtmlToPdfAndImage(htmlContent);
+  const pdfBlob = await renderHtmlToPdfBlob(htmlContent);
   const cleanName = customerName.replace(/[\/\\:*?"<>|]/g, '_');
   const filename = `تسديدات_${cleanName}_${printDateStr}`;
+
   const isWhatsAppTarget = targetApp === 'whatsapp';
-  const cleanPhone = formatIraqiPhoneForWhatsApp(resolvedPhone);
+  const shareTitle = isWhatsAppTarget
+    ? (isAr ? `إرسال كشف تسديدات الزبون (PDF) إلى واتساب: ${customerName}` : `Send customer statement (PDF) to WhatsApp: ${customerName}`)
+    : (isAr ? `مشاركة كشف تسديدات الزبون (PDF): ${customerName}` : `Share customer statement (PDF): ${customerName}`);
 
-  if (isWhatsAppTarget) {
-    if (cleanPhone) {
-      const pdfPublicUrl = await uploadPdfToPublicLink(pdfBlob, filename);
+  const dialogTitle = isWhatsAppTarget
+    ? (isAr ? 'إرسال ملف PDF عبر واتساب الزبون' : 'Send PDF via Customer WhatsApp')
+    : (isAr ? 'مشاركة ملف PDF عبر التطبيقات (تليكرام، ماسنجر...)' : 'Share PDF via Apps');
 
-      const messageText = pdfPublicUrl
-        ? `لعرض تسديدات  افتح الرابط ادناه:\n${pdfPublicUrl}`
-        : `*كشف وسجل تسديدات الزبون:* ${customerName}\n*المبلغ الكلي:* ${totalPrice.toLocaleString('en-US')} د.ع\n*الواصل الكلي:* ${totalPaid.toLocaleString('en-US')} د.ع\n*المتبقي:* ${remaining.toLocaleString('en-US')} د.ع`;
-
-      // 1. If running inside Android APK with native interface
-      const nativeAndroid =
-        typeof window !== 'undefined'
-          ? (window as any).AndroidInterface || (window as any).AndroidPrinter
-          : null;
-
-      if (nativeAndroid && typeof nativeAndroid.openWhatsAppChatWithText === 'function') {
-        const ok = nativeAndroid.openWhatsAppChatWithText(cleanPhone, messageText);
-        if (ok) {
-          return { success: true, method: 'whatsapp_pdf_link_native' };
-        }
-      }
-
-      // 2. Web / Mobile Chrome / Capacitor URL scheme
-      const encodedMsg = encodeURIComponent(messageText);
-      const waAppUrl = `whatsapp://send?phone=${cleanPhone}&text=${encodedMsg}`;
-      const waWebUrl = `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
-
-      const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-      if (isMobile) {
-        window.location.href = waAppUrl;
-        setTimeout(() => {
-          window.open(waWebUrl, '_blank');
-        }, 500);
-      } else {
-        window.open(waWebUrl, '_blank');
-      }
-
-      return { success: true, method: 'whatsapp_pdf_link_direct' };
-    }
-  }
-
-  // If "تطبيقات أخرى" (Other apps) was requested:
   return sharePdfBlob({
     filename,
     pdfBlob,
-    title: `مشاركة كشف تسديدات الزبون: ${customerName}`,
-    text: `كشف وسجل تسديدات الزبون: ${customerName}`,
-    dialogTitle: 'مشاركة كشف الحساب عبر التطبيقات (تليكرام، ماسنجر...)',
-    phone: resolvedPhone,
-    targetApp,
+    title: shareTitle,
+    text: `كشف وسجل تسديدات الزبون: ${customerName} بمجموع واصل ${totalPaid.toLocaleString('en-US')} د.ع`,
+    dialogTitle,
   });
 }
 
 /**
  * High-level Customer Sharing Function:
  * Always generates and shares the PDF document file (📄 ملف بي دي اف وليس نص).
- * Directly enters customer's WhatsApp chat with the PDF document when targetApp === 'whatsapp'.
+ * Passes the PDF file attachment to native sharing so WhatsApp receives the PDF file document.
  */
 export async function shareCustomerPaymentsOrDirectWhatsApp({
   contract,
   payments,
-  phone,
   lang = 'ar',
   forceAppsChooser = false,
   targetApp = 'whatsapp',
 }: {
   contract?: InstallmentContract | null;
   payments: PaymentRecord[];
-  phone?: string | null;
   lang?: string;
   forceAppsChooser?: boolean;
   targetApp?: 'whatsapp' | 'all' | 'other';
 }): Promise<{ success: boolean; method: string; error?: string }> {
-  const resolvedPhone = phone || contract?.customerPhone;
+  // Always share the actual PDF document file directly (never plain text wa.me links)
   return shareCustomerPaymentsPdf({
     contract,
     payments,
-    phone: resolvedPhone,
     lang,
-    targetApp: forceAppsChooser ? 'other' : targetApp,
+    targetApp: forceAppsChooser ? 'all' : targetApp,
   });
 }
 
@@ -1020,7 +601,7 @@ export async function shareGeneralPaymentsPdf({
     </div>
   `;
 
-  const { pdfBlob } = await renderHtmlToPdfAndImage(htmlContent);
+  const pdfBlob = await renderHtmlToPdfBlob(htmlContent);
   const filename = `سجل_التسديدات_العام_${startDate || 'بداية'}_إلى_${endDate || 'اليوم'}`;
 
   return sharePdfBlob({
