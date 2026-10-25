@@ -309,24 +309,7 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
       }
     }
 
-    if (tableName === 'reps') {
-      // Ensure rep-1 is ALWAYS present in reps
-      const hasDhia = Array.from(map.values()).some((r: any) => r.id === 'rep-1' || (r.name && r.name.includes('ضياء')));
-      if (!hasDhia) {
-        map.set('rep-1', {
-          id: 'rep-1',
-          name: 'ضياء المحاسب',
-          phone: '07801112233',
-          code: '4444',
-          role: 'admin',
-          canEdit: true,
-          canDelete: true,
-          canMoveCustomer: true,
-          canSell: true,
-          allowedListIds: ['all']
-        });
-      }
-    }
+
 
     // Apply un-synced pending offline actions on top (new offline additions or edits)
     for (const act of pendingActions) {
@@ -1995,15 +1978,7 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
       if (cached.length > 0) {
         emitIfChanged(cached);
       } else {
-        let initialFallback: any[] = [];
-        if (tableName === 'reps') initialFallback = DEFAULT_REPS;
-
-        if (initialFallback.length > 0) {
-          setLocalCache(tableName, initialFallback as T[]);
-          emitIfChanged(initialFallback as T[]);
-        } else {
-          emitIfChanged([]);
-        }
+        emitIfChanged([]);
       }
     } catch (e) {
       emitIfChanged([]);

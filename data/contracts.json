@@ -90,7 +90,10 @@
     "createdAt": "2026-09-22T08:22:35.001Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T08:22:35.820Z",
-    "isEdited": false
+    "isEdited": false,
+    "latitude": null,
+    "longitude": null,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1790065431036_0axzo",
@@ -119,7 +122,10 @@
     "createdAt": "2026-09-22T08:23:51.036Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T08:23:51.882Z",
-    "isEdited": false
+    "isEdited": false,
+    "latitude": null,
+    "longitude": null,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1790065601829_de04g",
@@ -1012,7 +1018,10 @@
     "createdAt": "2026-09-22T09:17:01.696Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T09:17:01.926Z",
-    "isEdited": false
+    "isEdited": false,
+    "latitude": null,
+    "longitude": null,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1790068729469_4ybbp",
@@ -1139,7 +1148,8 @@
     "createdAt": "2026-09-22T10:20:14.291Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T10:20:14.581Z",
-    "isEdited": false
+    "isEdited": false,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1790072484026_3fbng",
@@ -1168,7 +1178,10 @@
     "createdAt": "2026-09-22T10:21:24.026Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T10:21:24.302Z",
-    "isEdited": false
+    "isEdited": false,
+    "latitude": null,
+    "longitude": null,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1790072556698_i5059",
@@ -1229,7 +1242,10 @@
     "createdAt": "2026-09-22T10:25:24.987Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T10:25:25.329Z",
-    "isEdited": false
+    "isEdited": false,
+    "latitude": null,
+    "longitude": null,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1791618917978_uc19n",
@@ -1436,15 +1452,15 @@
     "listName": "هيثم",
     "totalPrice": 1400000,
     "advancePayment": 0,
-    "remainingBalance": 1256000,
+    "remainingBalance": 1236000,
     "dailyInstallment": 12000,
     "startDate": "2026-10-13",
     "notes": "",
     "status": "active",
     "lastPaymentDate": "2026-10-24",
-    "totalPaid": 144000,
+    "totalPaid": 164000,
     "excessAmount": 0,
-    "rawTotalPaid": 144000,
+    "rawTotalPaid": 164000,
     "repName": "ضياء المحاسب",
     "latitude": 31.98889,
     "longitude": 44.9223483,
@@ -1482,7 +1498,10 @@
     "createdAt": "2026-10-15T10:06:58.307Z",
     "completedAt": null,
     "updatedAt": "2026-10-15T10:07:10.002Z",
-    "isEdited": false
+    "isEdited": false,
+    "latitude": null,
+    "longitude": null,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1792149137851_6g649",
@@ -1561,15 +1580,15 @@
     "listName": "هيثم",
     "totalPrice": 350000,
     "advancePayment": 0,
-    "remainingBalance": 330000,
+    "remainingBalance": 186000,
     "dailyInstallment": 4000,
     "startDate": "2026-10-19",
     "notes": "",
     "status": "active",
     "lastPaymentDate": "2026-10-24",
-    "totalPaid": 20000,
+    "totalPaid": 164000,
     "excessAmount": 0,
-    "rawTotalPaid": 20000,
+    "rawTotalPaid": 164000,
     "repName": "ضياء المحاسب",
     "latitude": 31.98889,
     "longitude": 44.9223483,
@@ -1577,7 +1596,8 @@
     "createdAt": "2026-10-19T19:58:25.264Z",
     "completedAt": null,
     "updatedAt": "2026-10-19T20:45:29.280Z",
-    "isEdited": false
+    "isEdited": false,
+    "locationUpdatedAt": null
   },
   {
     "id": "contract_1792515176024_ui0rc",
@@ -1614,7 +1634,7 @@
   {
     "id": "contract_1792516758791_3npz9",
     "customerName": "كريم محمد علي",
-    "customerPhone": "07829899513",
+    "customerPhone": "07809944713",
     "customerAddress": "",
     "itemId": "item_1790064412752_wt6aw",
     "itemName": "اجهزه 170",
@@ -1624,15 +1644,15 @@
     "listName": "كربلاء الثانية",
     "totalPrice": 170000,
     "advancePayment": 0,
-    "remainingBalance": 167000,
+    "remainingBalance": 168500,
     "dailyInstallment": 1500,
     "startDate": "2026-10-20",
     "notes": "",
     "status": "active",
-    "lastPaymentDate": "2026-10-25",
-    "totalPaid": 3000,
+    "lastPaymentDate": "2026-10-24",
+    "totalPaid": 1500,
     "excessAmount": 0,
-    "rawTotalPaid": 3000,
+    "rawTotalPaid": 1500,
     "repName": "ضياء المحاسب",
     "latitude": 31.9637371,
     "longitude": 44.6097592,

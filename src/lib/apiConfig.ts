@@ -150,6 +150,13 @@ export async function fetchWithFallback(
         urlsToTry.push(candidateUrl);
       }
     }
+    if (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')) {
+      const originUrl = `${window.location.origin}${cleanEndpoint}`;
+      if (!urlsToTry.includes(originUrl)) urlsToTry.push(originUrl);
+    }
+    if (!urlsToTry.includes(cleanEndpoint)) {
+      urlsToTry.push(cleanEndpoint);
+    }
   } else {
     // 1. If in browser / web mode, try relative and origin URLs first
     if (typeof window !== 'undefined' && window.location.origin && (window.location.origin.startsWith('http://') || window.location.origin.startsWith('https://'))) {

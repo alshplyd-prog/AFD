@@ -16,26 +16,11 @@ interface LoginViewProps {
 export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onViewSplash }) => {
   const isAr = lang === 'ar';
   const activeRepsList = React.useMemo(() => {
-    let list = reps && Array.isArray(reps) && reps.length > 0 ? [...reps] : [...DEFAULT_REPS];
-    if (!list.some(r => r.id === 'rep-1' || (r.name && r.name.includes('ضياء')))) {
-      list.unshift({
-        id: 'rep-1',
-        name: 'ضياء المحاسب',
-        phone: '07801112233',
-        code: '4444',
-        role: 'admin',
-        canEdit: true,
-        canDelete: true,
-        canMoveCustomer: true,
-        canSell: true,
-        allowedListIds: ['all']
-      });
-    }
-    // Sort so admin/supervisor is at the top
+    let list = reps && Array.isArray(reps) ? [...reps] : [];
     return list.sort((a, b) => {
       if (a.id === 'rep-1' || a.role === 'admin') return -1;
       if (b.id === 'rep-1' || b.role === 'admin') return 1;
-      return a.name.localeCompare(b.name, 'ar');
+      return (a.name || '').localeCompare(b.name || '', 'ar');
     });
   }, [reps]);
 
@@ -304,7 +289,15 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onVie
 
             {/* Accounts Cards Grid */}
             <div className="grid grid-cols-1 gap-2.5 max-h-80 overflow-y-auto pr-1">
-              {activeRepsList.map((rep) => (
+              {activeRepsList.length === 0 ? (
+                <div className="text-center py-8 px-4 bg-slate-900/60 rounded-2xl border border-slate-700/80">
+                  <div className="w-8 h-8 border-2 border-teal-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                  <p className="text-xs font-bold text-slate-300">
+                    {isAr ? 'جاري تحميل حسابات المندوبين من الخادم...' : 'Loading accounts from server...'}
+                  </p>
+                </div>
+              ) : (
+                activeRepsList.map((rep) => (
                 <button
                   key={rep.id}
                   type="button"
@@ -387,7 +380,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onVie
                     </span>
                   </div>
                 </button>
-              ))}
+              )))}
             </div>
           </div>
         </div>
