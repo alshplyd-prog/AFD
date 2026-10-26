@@ -5,6 +5,7 @@ import { numberToArabicWords } from './tafqeet';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from './bluetoothPrinter';
 import { formatIraqiPhoneForWhatsApp } from './pdfShareHelper';
 import { normalizeEntityName } from './nameHelpers';
+import { getPublicShareBaseUrl } from './apiConfig';
 
 export interface PreparedReceiptData {
   shopTitle: string;
@@ -62,10 +63,14 @@ export function preparePaymentReceiptWhatsApp({
     (customerLists || []).find((l) => {
       const lId = l.id || (l as any)._id;
       const lName = l.name ? String(l.name).trim().toLowerCase() : '';
-      if (targetListId && String(lId) === String(targetListId)) return true;
+      if (targetIdMatches(lId, targetListId)) return true;
       if (normListName && lName === normListName) return true;
       return false;
     });
+
+  function targetIdMatches(lId: any, tId: any) {
+    return tId && String(lId) === String(tId);
+  }
 
   const receiptTemplate: 'template_1' | 'template_2' =
     (linkedList as any)?.receiptTemplate ||
@@ -82,8 +87,9 @@ export function preparePaymentReceiptWhatsApp({
 
   const amountInWords = numberToArabicWords(snapshot.paidAmount);
 
-  // Build the direct view URL pointing to the standalone Receipt View
-  const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+  // Build the direct short view URL pointing to the standalone Receipt View
+  const origin = getPublicShareBaseUrl();
+  const cleanPaymentId = (payment.id || '').trim();
   const searchParams = new URLSearchParams({
     view_receipt: 'true',
     id: payment.id || '',
@@ -102,28 +108,41 @@ export function preparePaymentReceiptWhatsApp({
     tpl: receiptTemplate,
   });
 
-  const receiptUrl = `${origin}/?${searchParams.toString()}`;
+  const receiptUrl = cleanPaymentId
+    ? `${origin}/r/${encodeURIComponent(cleanPaymentId)}`
+    : `${origin}/?${searchParams.toString()}`;
 
-  // Formatted direct WhatsApp message text
-  const messageText = `*الكرار للموبايل والتقسيط*
-🧾 *وصل استلام دفعة مالية*
---------------------------------
+  let messageText = '';
+  if (receiptTemplate === 'template_2') {
+    // Table receipt / وصل جداول - includes "الكرار للموبايل" without "وصل تسديد - جداول"
+    messageText = `━━━━━━━━━━━━━━━
+*الكرار للموبايل*
+━━━━━━━━━━━━━━━
 👤 *الزبون:* ${customerName}
-${customerPhone ? `📱 *الهاتف:* ${customerPhone}\n` : ''}${contract?.itemName ? `📦 *المادة المباعة:* ${contract.itemName}\n` : ''}💵 *المبلغ المسدد:* ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
-📝 *المبلغ كتابة:* ${amountInWords}
 💰 *المبلغ الكلي:* ${snapshot.totalPrice.toLocaleString('en-US')} د.ع
-✅ *إجمالي الواصل:* ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
-⏳ *المتبقي المطلوب:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع
-🗓️ *تاريخ التسديد:* ${dStr}
+✅ *المبلغ الواصل:* ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
+⏳ *المبلغ المتبقي:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع
+💵 *المبلغ المدفوع:* ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
+📝 *المبلغ كتابة:* ${amountInWords}
+🗓️ *تاريخ الدفع:* ${dStr}
 ⏰ *الوقت:* ${tStr}
-${repName ? `👤 *المحصل / المندوب:* ${repName}\n` : ''}--------------------------------
-🔗 *رابط عرض وتحميل صورة الوصل (PDF):*
-${receiptUrl}
---------------------------------
-_شكراً لتعاملكم معنا - الكرار للموبايل_`.trim();
+━━━━━━━━━━━━━━━
+🔗 *رابط الوصل المباشر:*
+${receiptUrl}`.trim();
+  } else {
+    // Default receipt / وصل افتراضي - strictly NO office name ("ماريد اي اسم مكتب احذف الكرار للتقسيط")
+    messageText = `👤 *اسم الزبون:* ${customerName}
+💵 *المبلغ رقماً:* ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
+📝 *المبلغ كتابة:* ${amountInWords}
+✅ *الواصل:* ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
+⏳ *الباقي:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع
+🗓️ *التاريخ:* ${dStr}
+🔗 *رابط الوصل:*
+${receiptUrl}`.trim();
+  }
 
   return {
-    shopTitle: 'الكرار للموبايل',
+    shopTitle: receiptTemplate === 'template_2' ? 'الكرار للموبايل' : '',
     receiptNo: receiptTemplate === 'template_2' ? '' : '1',
     customerName,
     customerPhone,

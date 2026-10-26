@@ -7,7 +7,6 @@ import { ZeroBalanceCountdown } from './ZeroBalanceCountdown';
 import { openUniversalPdfPrintWindow } from '../lib/bluetoothPrinter';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
 import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
-import { sendPaymentReceiptToWhatsApp } from '../lib/receiptWhatsAppHelper';
 
 interface CustomerStatementModalProps {
   isOpen: boolean;
@@ -505,62 +504,61 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               background: #fff;
               color: #000;
               margin: 0;
-              padding: 12px;
-              font-size: 13px;
+              padding: 10px;
+              font-size: 11px;
             }
             .header-bar {
               display: flex;
               justify-content: space-between;
               align-items: center;
-              border-bottom: 3px solid #0f172a;
-              padding-bottom: 10px;
-              margin-bottom: 14px;
+              border-bottom: 2px solid #0f172a;
+              padding-bottom: 8px;
+              margin-bottom: 12px;
             }
             .shop-title {
-              font-size: 24px;
+              font-size: 18px;
               font-weight: 900;
               color: #0f172a;
             }
             .doc-title {
-              font-size: 15px;
+              font-size: 13px;
               font-weight: 800;
               color: #2563eb;
             }
             .sub-info {
-              font-size: 13px;
+              font-size: 11px;
               font-weight: 700;
               color: #475569;
             }
             .stats-grid {
               display: flex;
               gap: 12px;
-              margin-bottom: 14px;
+              margin-bottom: 12px;
             }
             .stat-box {
               flex: 1;
-              border: 1.5px solid #cbd5e1;
-              border-radius: 8px;
-              padding: 8px 12px;
+              border: 1px solid #cbd5e1;
+              border-radius: 6px;
+              padding: 6px 10px;
               background: #f8fafc;
             }
             .stat-label {
-              font-size: 12px;
+              font-size: 9px;
               color: #64748b;
-              font-weight: 800;
+              font-weight: 700;
             }
             .stat-val {
-              font-size: 16px;
+              font-size: 13px;
               font-weight: 900;
-              margin-top: 2px;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              font-size: 12.5px;
+              font-size: 10px;
             }
             th, td {
-              border: 1.5px solid #94a3b8;
-              padding: 7px 8px;
+              border: 1px solid #94a3b8;
+              padding: 5px 6px;
               text-align: center;
               white-space: nowrap;
             }
@@ -568,30 +566,26 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
               background-color: #f1f5f9;
               font-weight: 900;
               color: #0f172a;
-              font-size: 13px;
             }
             .cust-name {
               text-align: right;
               font-weight: 900;
-              font-size: 13.5px;
-              min-width: 140px;
+              min-width: 130px;
             }
             .num-cell {
               font-weight: 800;
-              font-size: 13px;
             }
             .inst-cell { color: #1d4ed8; }
             .paid-cell { color: #047857; background-color: #ecfdf5; font-weight: 800; }
             .rem-cell { color: #b91c1c; font-weight: 800; }
             .zero-cell { color: #94a3b8; }
-            .date-col { min-width: 70px; font-weight: 800; font-size: 12px; }
+            .date-col { min-width: 65px; font-weight: 800; }
             tfoot tr td {
               background-color: #e2e8f0;
               font-weight: 900;
-              font-size: 13.5px;
-              padding: 9px 8px;
+              font-size: 11px;
             }
-            .day-total-active { background-color: #d1fae5; color: #065f46; font-weight: 900; font-size: 13px; }
+            .day-total-active { background-color: #d1fae5; color: #065f46; font-weight: 900; }
             .day-total-zero { color: #64748b; }
             .no-print {
               margin-bottom: 12px;
@@ -712,8 +706,8 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           showToast(
             target === 'whatsapp'
               ? (isAr
-                  ? 'تم تجهيز ملف الـ PDF كملف مستند - اختر واتساب لإرساله للزبون'
-                  : 'PDF document ready - Select WhatsApp to send file')
+                  ? 'تم فتح محادثة واتساب الزبون - اضغط (لصق / Paste) أو إرسال لنشر صورة الكشف'
+                  : 'Customer WhatsApp opened - Tap Paste or Send for statement image')
               : (isAr
                   ? 'تم تجهيز ملف الـ PDF - اختر التطبيق المطلوب للمشاركة'
                   : 'PDF ready - Select app to share file'),
@@ -1676,50 +1670,21 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                {/* Subcollection customer sharing buttons: واتساب الزبون and تطبيقات أخرى بشكل انفرادي */}
-                {Boolean(formatIraqiPhoneForWhatsApp(historyModalContract.customerPhone)) ? (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleShareHistoryModalPdf('whatsapp')}
-                      disabled={isExportingSubColPdf}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                      title={isAr ? 'إرسال كشف التسديدات كملف PDF إلى واتساب الزبون' : 'Send payments PDF to Customer WhatsApp'}
-                    >
-                      <MessageCircle className={`w-3.5 h-3.5 ${isExportingSubColPdf ? 'animate-spin' : ''}`} />
-                      <span>
-                        {isExportingSubColPdf
-                          ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
-                          : (isAr ? 'واتساب الزبون' : 'Customer WhatsApp')}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleShareHistoryModalPdf('other')}
-                      disabled={isExportingSubColPdf}
-                      className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                      title={isAr ? 'مشاركة ملف PDF عبر التطبيقات الأخرى (تليكرام، ماسنجر...)' : 'Share PDF via Other Apps'}
-                    >
-                      <Share2 className="w-3.5 h-3.5" />
-                      <span>{isAr ? 'تطبيقات أخرى' : 'Other Apps'}</span>
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleShareHistoryModalPdf('other')}
-                    disabled={isExportingSubColPdf}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                    title={isAr ? 'الزبون ليس لديه رقم - فتح قائمة التطبيقات لمشاركة ملف PDF' : 'Customer has no phone - Open apps chooser to share PDF'}
-                  >
-                    <Share2 className={`w-3.5 h-3.5 ${isExportingSubColPdf ? 'animate-spin' : ''}`} />
-                    <span>
-                      {isExportingSubColPdf
-                        ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
-                        : (isAr ? 'مشاركة التطبيقات' : 'Share via Apps')}
-                    </span>
-                  </button>
-                )}
+                {/* Customer payments PDF share button */}
+                <button
+                  type="button"
+                  onClick={() => handleShareHistoryModalPdf('other')}
+                  disabled={isExportingSubColPdf}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  title={isAr ? 'مشاركة كشف التسديدات كملف PDF' : 'Share payments PDF'}
+                >
+                  <Share2 className={`w-3.5 h-3.5 ${isExportingSubColPdf ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isExportingSubColPdf
+                      ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                      : (isAr ? 'مشاركة الكشف' : 'Share Statement')}
+                  </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setHistoryModalContract(null)}
@@ -1786,7 +1751,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                         <th className="p-2 border border-slate-300 dark:border-slate-600 text-center">{isAr ? 'المبلغ' : 'Amount'}</th>
                         <th className="p-2 border border-slate-300 dark:border-slate-600 text-right">{isAr ? 'التفاصيل والوصف' : 'Description'}</th>
                         <th className="p-2 border border-slate-300 dark:border-slate-600 text-center">{isAr ? 'المندوب' : 'Rep'}</th>
-                        <th className="p-2 border border-slate-300 dark:border-slate-600 text-center">{isAr ? 'وصل الواتساب' : 'WhatsApp'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700 font-bold">
@@ -1817,44 +1781,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                           </td>
                           <td className="p-2 border border-slate-300 dark:border-slate-600 text-center text-slate-500 font-normal">
                             {tx.repName || '—'}
-                          </td>
-                          <td className="p-2 border border-slate-300 dark:border-slate-600 text-center">
-                            {tx.type === 'payment' ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const actualPayment = safePayments.find(
-                                    (p) =>
-                                      p &&
-                                      (p.id === tx.id ||
-                                        (p.paymentDate === tx.date &&
-                                          (Number(p.amountPaid ?? p.amount) === tx.amount)))
-                                  ) || {
-                                    id: tx.id || `pay_${Date.now()}`,
-                                    contractId: historyModalContract.id,
-                                    customerName: historyModalContract.customerName,
-                                    amountPaid: tx.amount,
-                                    paymentDate: tx.date,
-                                    repName: tx.repName || '',
-                                    note: tx.description || '',
-                                  } as PaymentRecord;
-
-                                  sendPaymentReceiptToWhatsApp({
-                                    payment: actualPayment,
-                                    contract: historyModalContract,
-                                    allPayments: safePayments,
-                                    customerLists: availableCustomerLists,
-                                  });
-                                }}
-                                className="px-2 py-1 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer font-black text-[11px]"
-                                title={isAr ? 'إرسال وصل مباشر على واتساب الزبون (نص + رابط PDF)' : 'Send direct receipt to Customer WhatsApp'}
-                              >
-                                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
-                              </button>
-                            ) : (
-                              <span className="text-slate-400 text-xs">—</span>
-                            )}
                           </td>
                         </tr>
                       ))}

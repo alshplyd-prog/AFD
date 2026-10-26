@@ -1,99 +1,152 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Printer,
   Download,
-  Share2,
-  CheckCircle2,
-  ArrowRight,
   FileText,
-  MessageCircle,
   Copy,
-  Info
+  Info,
+  CheckCircle2
 } from 'lucide-react';
-import { ThermalReceiptData, downloadReceiptPdf, downloadReceiptImage, openThermalPrintWindow, DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
+import {
+  ThermalReceiptData,
+  downloadReceiptPdf,
+  downloadReceiptImage,
+  openThermalPrintWindow,
+  DEFAULT_DUPLICATE_RECEIPT_WARNING
+} from '../lib/bluetoothPrinter';
 import { numberToArabicWords } from '../lib/tafqeet';
 
 interface CustomerReceiptViewProps {
-  onBackToApp?: () => void;
+  receiptId?: string | null;
 }
 
-export const CustomerReceiptView: React.FC<CustomerReceiptViewProps> = ({ onBackToApp }) => {
+export const CustomerReceiptView: React.FC<CustomerReceiptViewProps> = ({ receiptId: propReceiptId }) => {
   const [receiptData, setReceiptData] = useState<ThermalReceiptData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
   useEffect(() => {
-    // Parse URL search parameters
+    // 1. Extract receipt ID from path (/r/:id or /receipt/:id) or query parameter (?r= or ?id=)
+    let id = propReceiptId || '';
+    if (!id && typeof window !== 'undefined') {
+      const pathname = window.location.pathname || '';
+      if (pathname.startsWith('/r/')) {
+        id = pathname.replace('/r/', '').trim();
+      } else if (pathname.startsWith('/receipt/')) {
+        id = pathname.replace('/receipt/', '').trim();
+      }
+      if (!id) {
+        const params = new URLSearchParams(window.location.search);
+        id = params.get('r') || params.get('id') || params.get('receipt_id') || '';
+      }
+    }
+
+    // 2. Also check if URL has query params (backward compatibility)
     const params = new URLSearchParams(window.location.search);
+    const queryCustomer = params.get('c') || params.get('customer_name');
+    const queryPaid = Number(params.get('paid_now') || params.get('paid_amount') || params.get('amount') || 0);
 
-    const id = params.get('id') || '';
-    const customerName = params.get('c') || params.get('customer_name') || 'زبون';
-    const itemName = params.get('item') || params.get('item_name') || 'قسط';
-    const totalPrice = Number(params.get('price') || params.get('total_price')) || 0;
-    const totalPaid = Number(params.get('paid_so_far') || params.get('total_paid')) || 0;
-    const remainingBalance = Number(params.get('remaining') || params.get('remaining_balance')) || 0;
-    const paidAmount = Number(params.get('paid_now') || params.get('paid_amount') || params.get('amount')) || 0;
-    const amountInWords = params.get('words') || params.get('amount_in_words') || numberToArabicWords(paidAmount);
-    const dateStr = params.get('d') || params.get('date') || new Date().toISOString().split('T')[0];
-    const timeStr = params.get('tm') || params.get('time') || '';
-    const template = (params.get('tpl') || params.get('template') || 'template_1') as 'template_1' | 'template_2';
-    const isDuplicate = params.get('dup') === 'true' || true;
+    const applyData = (data: any) => {
+      const amt = Number(data.paidAmount ?? data.amountPaid ?? data.amount ?? 0);
+      const template = (data.template || 'template_1') as 'template_1' | 'template_2';
+      const dateStr = data.dateStr || data.paymentDate || new Date().toISOString().split('T')[0];
+      const timeStr = data.timeStr || data.paymentTime || '';
 
-    if (paidAmount > 0 || customerName !== 'زبون') {
       setReceiptData({
-        shopTitle: 'الكرار للموبايل',
+        shopTitle: template === 'template_2' ? 'الكرار للموبايل' : '',
         receiptNo: template === 'template_2' ? '' : '1',
-        customerName,
-        itemName: template === 'template_2' ? '' : itemName,
-        totalPrice,
-        totalPaid,
-        remainingBalance,
-        paidAmount,
-        amountInWords,
+        customerName: data.customerName || 'زبون',
+        itemName: template === 'template_2' ? '' : (data.itemName || 'قسط'),
+        totalPrice: Number(data.totalPrice || 0),
+        totalPaid: Number(data.totalPaid || amt),
+        remainingBalance: Number(data.remainingBalance || 0),
+        paidAmount: amt,
+        amountInWords: data.amountInWords || numberToArabicWords(amt),
         dateStr,
         timeStr,
-        isDuplicate,
+        isDuplicate: true,
         warningNote: DEFAULT_DUPLICATE_RECEIPT_WARNING,
         template,
       });
       setLoading(false);
-      return;
-    }
+    };
 
-    // If params are empty but id is provided, fetch from server
+    // If ID is available, fetch exact receipt from server endpoint /api/receipt/:id
     if (id) {
-      fetch(`/api/payments`)
-        .then((res) => res.json())
-        .then((payments) => {
-          if (Array.isArray(payments)) {
-            const found = payments.find((p: any) => p.id === id);
-            if (found) {
-              const amt = Number(found.amountPaid ?? found.amount) || 0;
-              setReceiptData({
-                shopTitle: 'الكرار للموبايل',
-                receiptNo: '1',
-                customerName: found.customerName || 'زبون',
-                itemName: 'قسط',
-                totalPrice: 0,
-                totalPaid: amt,
-                remainingBalance: 0,
-                paidAmount: amt,
-                amountInWords: numberToArabicWords(amt),
-                dateStr: found.paymentDate || '',
-                timeStr: '',
-                isDuplicate: true,
-                warningNote: DEFAULT_DUPLICATE_RECEIPT_WARNING,
-                template: 'template_1',
-              });
-            }
+      fetch(`/api/receipt/${encodeURIComponent(id)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error('API receipt error');
+        })
+        .then((data) => {
+          if (data && (data.customerName || data.paidAmount > 0)) {
+            applyData(data);
+          } else {
+            throw new Error('Invalid data');
           }
         })
-        .catch(() => {})
-        .finally(() => setLoading(false));
+        .catch(() => {
+          // Fallback to /api/payments
+          fetch(`/api/payments`)
+            .then((r) => r.json())
+            .then((allP) => {
+              if (Array.isArray(allP)) {
+                const found = allP.find((p: any) => p.id === id);
+                if (found) {
+                  applyData(found);
+                  return;
+                }
+              }
+              if (queryPaid > 0 || queryCustomer) {
+                applyData({
+                  customerName: queryCustomer,
+                  paidAmount: queryPaid,
+                  totalPrice: Number(params.get('price') || 0),
+                  totalPaid: Number(params.get('paid_so_far') || 0),
+                  remainingBalance: Number(params.get('remaining') || 0),
+                  itemName: params.get('item') || '',
+                  dateStr: params.get('d') || '',
+                  timeStr: params.get('tm') || '',
+                  template: params.get('tpl') || 'template_1',
+                });
+              } else {
+                setLoading(false);
+              }
+            })
+            .catch(() => {
+              if (queryPaid > 0 || queryCustomer) {
+                applyData({
+                  customerName: queryCustomer,
+                  paidAmount: queryPaid,
+                  totalPrice: Number(params.get('price') || 0),
+                  totalPaid: Number(params.get('paid_so_far') || 0),
+                  remainingBalance: Number(params.get('remaining') || 0),
+                  itemName: params.get('item') || '',
+                  dateStr: params.get('d') || '',
+                  timeStr: params.get('tm') || '',
+                  template: params.get('tpl') || 'template_1',
+                });
+              } else {
+                setLoading(false);
+              }
+            });
+        });
+    } else if (queryPaid > 0 || queryCustomer) {
+      applyData({
+        customerName: queryCustomer,
+        paidAmount: queryPaid,
+        totalPrice: Number(params.get('price') || 0),
+        totalPaid: Number(params.get('paid_so_far') || 0),
+        remainingBalance: Number(params.get('remaining') || 0),
+        itemName: params.get('item') || '',
+        dateStr: params.get('d') || '',
+        timeStr: params.get('tm') || '',
+        template: params.get('tpl') || 'template_1',
+      });
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [propReceiptId]);
 
   const handleDownloadPdf = () => {
     if (!receiptData) return;
@@ -125,8 +178,8 @@ export const CustomerReceiptView: React.FC<CustomerReceiptViewProps> = ({ onBack
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white dir-rtl p-4">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <h2 className="text-lg font-bold">جاري تحميل وصل الاستلام...</h2>
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
+        <h2 className="text-sm font-bold text-slate-300">جاري تحميل وصل الاستلام...</h2>
       </div>
     );
   }
@@ -134,97 +187,42 @@ export const CustomerReceiptView: React.FC<CustomerReceiptViewProps> = ({ onBack
   if (!receiptData) {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col items-center justify-center dir-rtl p-4 text-center">
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-200 dark:border-slate-700">
-          <Info className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-          <h2 className="text-lg font-black text-slate-900 dark:text-slate-100 mb-2">تعذر العثور على بيانات الوصل</h2>
-          <p className="text-sm font-semibold text-slate-500 mb-6">يرجى التأكد من صحة الرابط المرسل عبر الواتساب.</p>
-          {onBackToApp && (
-            <button
-              onClick={onBackToApp}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm"
-            >
-              الذهاب للتطبيق الرئيسي
-            </button>
-          )}
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-xl max-w-sm w-full border border-slate-200 dark:border-slate-700">
+          <Info className="w-10 h-10 text-amber-500 mx-auto mb-2" />
+          <h2 className="text-base font-black text-slate-900 dark:text-slate-100 mb-1">تعذر العثور على بيانات الوصل</h2>
+          <p className="text-xs font-semibold text-slate-500">يرجى التأكد من صحة الرابط المرسل عبر الواتساب.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col items-center py-6 px-3 sm:px-4 dir-rtl text-slate-900">
-      {/* Top Header Navigation */}
-      <div className="w-full max-w-[420px] mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-sm">
-            ✓
-          </div>
-          <div>
-            <h1 className="text-base font-black text-slate-900 dark:text-slate-100">وصل استلام رسمي</h1>
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">الكرار للموبايل والتقسيط</p>
-          </div>
-        </div>
-
-        {onBackToApp && (
-          <button
-            onClick={onBackToApp}
-            className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-50 flex items-center gap-1.5 shadow-2xs cursor-pointer"
-          >
-            <span>التطبيق الرئيسي</span>
-            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-          </button>
-        )}
-      </div>
-
-      {/* Action Buttons Toolbar (Top) */}
-      <div className="w-full max-w-[420px] grid grid-cols-3 gap-2 mb-4">
-        <button
-          onClick={handleDownloadPdf}
-          className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs flex flex-col items-center justify-center gap-1 shadow-md hover:shadow-lg transition-all cursor-pointer"
-        >
-          <FileText className="w-4 h-4" />
-          <span>تنزيل PDF</span>
-        </button>
-
-        <button
-          onClick={handleDownloadImage}
-          className="py-2.5 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs flex flex-col items-center justify-center gap-1 shadow-md hover:shadow-lg transition-all cursor-pointer"
-        >
-          <Download className="w-4 h-4" />
-          <span>حفظ صورة</span>
-        </button>
-
-        <button
-          onClick={handlePrint}
-          className="py-2.5 px-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-xs flex flex-col items-center justify-center gap-1 shadow-md hover:shadow-lg transition-all cursor-pointer"
-        >
-          <Printer className="w-4 h-4" />
-          <span>طباعة</span>
-        </button>
-      </div>
-
-      {/* Physical Thermal Paper Styled Receipt Container */}
-      <div className="w-full max-w-[420px] bg-white text-black p-5 sm:p-6 rounded-2xl shadow-2xl border-2 border-slate-300 select-none dir-rtl relative overflow-hidden">
-        {/* Subtle decorative roll notch at top */}
-        <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4" />
+    <div className="min-h-screen bg-slate-200/70 dark:bg-slate-950 flex flex-col items-center justify-center py-4 px-2 dir-rtl text-slate-900 antialiased">
+      {/* Physical 58mm Thermal Receipt Card - Scaled compactly to look authentic */}
+      <div
+        id="thermal-receipt-container"
+        className="w-full max-w-[280px] sm:max-w-[295px] bg-white text-black p-3.5 sm:p-4 rounded-xl shadow-lg border border-slate-300 dark:border-slate-700 select-none dir-rtl relative overflow-hidden"
+      >
+        {/* Subtle decorative roll indentation */}
+        <div className="w-6 h-0.5 bg-slate-200 rounded-full mx-auto mb-2" />
 
         {isTemplate2 ? (
           /* ============================================================ */
-          /* DESIGN TEMPLATE 2 (Structured Tables with Top Shop Title)    */
+          /* DESIGN TEMPLATE 2 (Structured Tables with Shop Title)        */
           /* ============================================================ */
           <div>
-            <div className="text-center font-black text-2xl text-black pb-2 mb-3 border-b-2 border-black tracking-wide">
+            <div className="text-center font-black text-lg text-black pb-1 mb-2 border-b-2 border-black tracking-wide">
               الكرار للموبايل
             </div>
 
             {/* Customer Details Table */}
-            <table className="w-full border-collapse border border-black mb-2 text-base font-black">
+            <table className="w-full border-collapse border border-black mb-1.5 text-xs font-black">
               <tbody>
                 <tr>
-                  <td className="w-[38%] py-1.5 px-2 bg-slate-100 border-l border-black text-right text-slate-800">
+                  <td className="w-[36%] py-0.5 px-1 bg-slate-100 border-l border-black text-right text-slate-800 text-[11px]">
                     الزبون
                   </td>
-                  <td className="py-1.5 px-2 text-left dir-ltr font-black text-lg text-black">
+                  <td className="py-0.5 px-1 text-left dir-ltr font-black text-sm text-black">
                     {receiptData.customerName}
                   </td>
                 </tr>
@@ -233,46 +231,46 @@ export const CustomerReceiptView: React.FC<CustomerReceiptViewProps> = ({ onBack
 
             {/* Warning Notice for Duplicate Receipt */}
             {(receiptData.isDuplicate || receiptData.warningNote) && (
-              <div className="p-3 mb-2 border-2 border-black rounded-xl bg-white text-center font-black text-black">
-                <div className="text-lg font-black mb-1">⚠️ تنبية هام ⚠️</div>
-                <div className="text-sm font-black leading-snug">
+              <div className="p-1.5 mb-1.5 border-2 border-black rounded-lg bg-white text-center font-black text-black">
+                <div className="text-xs font-black mb-0.5">⚠️ تنبية هام ⚠️</div>
+                <div className="text-[10px] font-black leading-snug">
                   {receiptData.warningNote || DEFAULT_DUPLICATE_RECEIPT_WARNING}
                 </div>
               </div>
             )}
 
             {/* Financial Grid */}
-            <table className="w-full border-collapse border border-black mb-2 text-base font-black">
+            <table className="w-full border-collapse border border-black mb-1.5 text-xs font-black">
               <tbody>
                 <tr className="border-b border-black">
-                  <td className="w-[42%] py-1.5 px-2 bg-slate-100 border-l border-black text-right text-slate-800">
+                  <td className="w-[42%] py-0.5 px-1 bg-slate-100 border-l border-black text-right text-slate-800 text-[11px]">
                     المبلغ الكلي
                   </td>
-                  <td className="py-1.5 px-2 text-left dir-ltr font-black text-black">
+                  <td className="py-0.5 px-1 text-left dir-ltr font-black text-black text-xs">
                     {Number(receiptData.totalPrice || 0).toLocaleString('en-US')} د.ع
                   </td>
                 </tr>
                 <tr className="border-b border-black">
-                  <td className="w-[42%] py-1.5 px-2 bg-slate-100 border-l border-black text-right text-slate-800">
+                  <td className="w-[42%] py-0.5 px-1 bg-slate-100 border-l border-black text-right text-slate-800 text-[11px]">
                     المبلغ الواصل
                   </td>
-                  <td className="py-1.5 px-2 text-left dir-ltr font-black text-black">
+                  <td className="py-0.5 px-1 text-left dir-ltr font-black text-black text-xs">
                     {Number(receiptData.totalPaid || 0).toLocaleString('en-US')} د.ع
                   </td>
                 </tr>
                 <tr className="border-b-2 border-black bg-slate-50">
-                  <td className="w-[42%] py-2 px-2 bg-slate-200 border-l border-black text-right text-lg font-black text-slate-900">
+                  <td className="w-[42%] py-1 px-1 bg-slate-200 border-l border-black text-right font-black text-slate-900 text-xs">
                     المبلغ المتبقي
                   </td>
-                  <td className="py-2 px-2 text-left dir-ltr font-black text-2xl text-black">
+                  <td className="py-1 px-1 text-left dir-ltr font-black text-base text-black">
                     {Number(receiptData.remainingBalance || 0).toLocaleString('en-US')} د.ع
                   </td>
                 </tr>
                 <tr className="border-2 border-black bg-slate-100">
-                  <td className="w-[42%] py-2.5 px-2 border-l-2 border-black text-right text-lg font-black text-black">
+                  <td className="w-[42%] py-1 px-1 border-l-2 border-black text-right font-black text-black text-xs">
                     المبلغ المدفوع
                   </td>
-                  <td className="py-2.5 px-2 text-left dir-ltr font-black text-2xl text-emerald-800">
+                  <td className="py-1 px-1 text-left dir-ltr font-black text-base text-emerald-800">
                     {Number(receiptData.paidAmount || 0).toLocaleString('en-US')} د.ع
                   </td>
                 </tr>
@@ -280,71 +278,73 @@ export const CustomerReceiptView: React.FC<CustomerReceiptViewProps> = ({ onBack
             </table>
 
             {/* Tafqeet and Timing */}
-            <table className="w-full border-collapse border border-black mb-2 text-sm font-black">
+            <table className="w-full border-collapse border border-black mb-1.5 text-[11px] font-black">
               <tbody>
                 <tr className="border-b border-black">
-                  <td className="w-[35%] py-1.5 px-2 bg-slate-100 border-l border-black text-right text-slate-800">
+                  <td className="w-[35%] py-0.5 px-1 bg-slate-100 border-l border-black text-right text-slate-800">
                     المبلغ كتابة
                   </td>
-                  <td className="py-1.5 px-2 text-left dir-ltr font-black text-black leading-snug">
+                  <td className="py-0.5 px-1 text-left dir-ltr font-black text-black leading-tight text-[11px]">
                     {receiptData.amountInWords || 'صفر دينار'}
                   </td>
                 </tr>
                 <tr className="border-b border-black">
-                  <td className="w-[35%] py-1 px-2 bg-slate-100 border-l border-black text-right text-slate-800">
+                  <td className="w-[35%] py-0.5 px-1 bg-slate-100 border-l border-black text-right text-slate-800">
                     تاريخ الدفع
                   </td>
-                  <td className="py-1 px-2 text-left dir-ltr font-bold text-black">{receiptData.dateStr}</td>
+                  <td className="py-0.5 px-1 text-left dir-ltr font-bold text-black">{receiptData.dateStr}</td>
                 </tr>
                 <tr>
-                  <td className="w-[35%] py-1 px-2 bg-slate-100 border-l border-black text-right text-slate-800">
+                  <td className="w-[35%] py-0.5 px-1 bg-slate-100 border-l border-black text-right text-slate-800">
                     الوقت
                   </td>
-                  <td className="py-1 px-2 text-left dir-ltr font-bold text-black">{receiptData.timeStr}</td>
+                  <td className="py-0.5 px-1 text-left dir-ltr font-bold text-black">{receiptData.timeStr}</td>
                 </tr>
               </tbody>
             </table>
 
-            <div className="text-center font-bold text-sm my-3 text-black">
+            <div className="text-center font-bold text-xs my-1 text-black">
               شكراً لتعاملكم معنا
             </div>
           </div>
         ) : (
           /* ============================================================ */
-          /* DESIGN TEMPLATE 1 (Classic Thermal Roll Design)              */
+          /* DESIGN TEMPLATE 1 (Classic Compact Thermal Roll Design)       */
           /* ============================================================ */
           <div>
-            <div className="text-center font-black text-2xl text-black mb-3 pb-2 border-b-2 border-black">
-              الكرار للموبايل
-            </div>
+            {receiptData.shopTitle && (
+              <div className="text-center font-black text-lg text-black mb-2 pb-1 border-b-2 border-black">
+                {receiptData.shopTitle}
+              </div>
+            )}
 
-            <table className="w-full border-collapse mb-1 text-lg text-black">
+            <table className="w-full border-collapse mb-1 text-xs text-black">
               <tbody>
                 {receiptData.receiptNo && (
                   <tr className="border-b border-dashed border-slate-300">
-                    <td className="py-2 px-1 font-black text-right align-top whitespace-nowrap w-[38%] text-slate-700 text-lg">
+                    <td className="py-0.5 px-1 font-bold text-right align-top whitespace-nowrap w-[38%] text-slate-700 text-[11px]">
                       رقم الوصل
                     </td>
-                    <td className="py-2 px-1 font-black text-left align-top dir-ltr w-[62%] text-black text-xl">
+                    <td className="py-0.5 px-1 font-black text-left align-top dir-ltr w-[62%] text-black text-xs">
                       {receiptData.receiptNo}
                     </td>
                   </tr>
                 )}
                 <tr className="border-b border-dashed border-slate-300">
-                  <td className="py-2.5 px-1 font-black text-right align-top whitespace-nowrap text-slate-700 text-xl">
+                  <td className="py-1 px-1 font-black text-right align-top whitespace-nowrap text-slate-700 text-xs">
                     الزبون
                   </td>
-                  <td className="py-2.5 px-1 font-black text-left align-top dir-ltr break-words text-2xl text-black">
+                  <td className="py-1 px-1 font-black text-left align-top dir-ltr break-words text-base text-black">
                     {receiptData.customerName}
                   </td>
                 </tr>
 
                 {(receiptData.isDuplicate || receiptData.warningNote) && (
                   <tr>
-                    <td colSpan={2} className="py-3 px-0">
-                      <div className="p-3.5 border-[3px] border-black rounded-2xl bg-white text-center font-black text-black">
-                        <div className="text-xl font-black mb-1">⚠️ تنبية هام ⚠️</div>
-                        <div className="text-sm font-black leading-relaxed">
+                    <td colSpan={2} className="py-1.5 px-0">
+                      <div className="p-1.5 border-2 border-black rounded-lg bg-white text-center font-black text-black">
+                        <div className="text-xs font-black mb-0.5">⚠️ تنبية هام ⚠️</div>
+                        <div className="text-[10px] font-black leading-snug">
                           {receiptData.warningNote || DEFAULT_DUPLICATE_RECEIPT_WARNING}
                         </div>
                       </div>
@@ -354,105 +354,98 @@ export const CustomerReceiptView: React.FC<CustomerReceiptViewProps> = ({ onBack
 
                 {receiptData.itemName && (
                   <tr>
-                    <td className="py-2 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-lg">
+                    <td className="py-0.5 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-[11px]">
                       المادة المباعة
                     </td>
-                    <td className="py-2 px-1 font-black text-left align-top dir-ltr break-words text-xl text-black">
+                    <td className="py-0.5 px-1 font-black text-left align-top dir-ltr break-words text-xs text-black">
                       {receiptData.itemName}
                     </td>
                   </tr>
                 )}
 
                 <tr>
-                  <td className="py-2 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-lg">
+                  <td className="py-0.5 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-[11px]">
                     المبلغ الكلي
                   </td>
-                  <td className="py-2 px-1 font-black text-left align-top dir-ltr text-xl text-black">
+                  <td className="py-0.5 px-1 font-black text-left align-top dir-ltr text-xs text-black">
                     {Number(receiptData.totalPrice || 0).toLocaleString('en-US')} د.ع
                   </td>
                 </tr>
 
                 <tr>
-                  <td className="py-2 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-lg">
+                  <td className="py-0.5 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-[11px]">
                     المبلغ الواصل
                   </td>
-                  <td className="py-2 px-1 font-black text-left align-top dir-ltr text-xl text-black">
+                  <td className="py-0.5 px-1 font-black text-left align-top dir-ltr text-xs text-black">
                     {Number(receiptData.totalPaid || 0).toLocaleString('en-US')} د.ع
                   </td>
                 </tr>
 
-                <tr className="border-b-2 border-dashed border-slate-400 bg-slate-100/60">
-                  <td className="py-3 px-2 font-black text-right align-middle whitespace-nowrap text-slate-900 text-xl">
+                <tr className="border-b-2 border-dashed border-slate-400 bg-slate-100/70">
+                  <td className="py-1 px-1 font-black text-right align-middle whitespace-nowrap text-slate-900 text-xs">
                     المبلغ المتبقي
                   </td>
-                  <td className="py-3 px-2 font-black text-left align-middle dir-ltr text-3xl text-black">
+                  <td className="py-1 px-1 font-black text-left align-middle dir-ltr text-lg text-black">
                     {Number(receiptData.remainingBalance || 0).toLocaleString('en-US')} د.ع
                   </td>
                 </tr>
 
                 {/* Highlighted Paid Box */}
                 <tr>
-                  <td colSpan={2} className="py-3.5 px-0">
-                    <div className="border-[3px] border-black rounded-2xl p-4 bg-slate-50 flex items-center justify-between shadow-xs">
-                      <span className="font-black text-xl text-black">المبلغ المدفوع:</span>
-                      <span className="font-black text-3xl dir-ltr text-emerald-800">
+                  <td colSpan={2} className="py-1.5 px-0">
+                    <div className="border-2 border-black rounded-lg p-2 bg-slate-50 flex items-center justify-between shadow-2xs">
+                      <span className="font-black text-xs text-black">المبلغ المدفوع:</span>
+                      <span className="font-black text-xl dir-ltr text-emerald-800">
                         {Number(receiptData.paidAmount || 0).toLocaleString('en-US')} د.ع
                       </span>
                     </div>
                   </td>
                 </tr>
 
-                <tr className="bg-slate-50 border border-slate-200/80 rounded-xl">
-                  <td className="py-3 px-2 font-black text-right align-top whitespace-nowrap text-slate-900 text-lg">
+                <tr className="bg-slate-50 border border-slate-200/80 rounded-lg">
+                  <td className="py-1 px-1 font-black text-right align-top whitespace-nowrap text-slate-900 text-[11px]">
                     المبلغ كتابة
                   </td>
-                  <td className="py-3 px-2 font-black text-xl text-left align-top dir-ltr break-words text-slate-900 leading-snug">
+                  <td className="py-1 px-1 font-black text-[11px] text-left align-top dir-ltr break-words text-slate-900 leading-snug">
                     {receiptData.amountInWords || 'صفر دينار'}
                   </td>
                 </tr>
 
                 <tr>
-                  <td className="py-2 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-lg">
+                  <td className="py-0.5 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-[11px]">
                     تاريخ الدفع
                   </td>
-                  <td className="py-2 px-1 font-black text-left align-top dir-ltr text-lg">{receiptData.dateStr}</td>
+                  <td className="py-0.5 px-1 font-black text-left align-top dir-ltr text-[11px]">{receiptData.dateStr}</td>
                 </tr>
 
                 <tr>
-                  <td className="py-2 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-lg">
+                  <td className="py-0.5 px-1 font-bold text-right align-top whitespace-nowrap text-slate-700 text-[11px]">
                     الوقت
                   </td>
-                  <td className="py-2 px-1 font-black text-left align-top dir-ltr text-lg">{receiptData.timeStr}</td>
+                  <td className="py-0.5 px-1 font-black text-left align-top dir-ltr text-[11px]">{receiptData.timeStr}</td>
                 </tr>
               </tbody>
             </table>
 
-            <div className="text-center font-black text-lg my-2 text-black tracking-tighter">
+            <div className="text-center font-black text-xs my-1 text-black tracking-tighter">
               ====================
             </div>
           </div>
         )}
 
-        <div className="text-center text-[11px] font-bold text-slate-500 mt-2">
-          الكرار للموبايل والتقسيط • وثيقة قبض معتمدة
+        <div className="text-center text-[10px] font-bold text-slate-500 mt-2">
+          {isTemplate2 ? 'الكرار للموبايل • وثيقة قبض معتمدة' : 'وثيقة قبض معتمدة'}
         </div>
       </div>
 
-      {/* Bottom Share Link Box */}
-      <div className="w-full max-w-[420px] mt-4 p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shadow-sm">
-        <div className="flex items-center gap-2 min-w-0">
-          <Copy className="w-4 h-4 text-slate-400 shrink-0" />
-          <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">
-            رابط الوصل الإلكتروني
-          </span>
-        </div>
-        <button
-          onClick={handleCopyLink}
-          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 font-black text-xs cursor-pointer shrink-0 transition-all"
-        >
-          {copySuccess ? 'تم النسخ ✓' : 'نسخ الرابط'}
-        </button>
-      </div>
+      {/* Copy link option */}
+      <button
+        onClick={handleCopyLink}
+        className="mt-3 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+      >
+        <Copy className="w-3 h-3" />
+        <span>{copySuccess ? 'تم نسخ الرابط بنجاح ✓' : 'نسخ رابط الوصل'}</span>
+      </button>
     </div>
   );
 };

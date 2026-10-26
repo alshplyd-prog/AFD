@@ -21,7 +21,6 @@ export function bumpSyncVersion() {
     }
   } catch (e) {}
 }
-import { INITIAL_CONTRACTS } from "./src/data/initialContracts.ts";
 import fs from "fs";
 import webpush from "web-push";
 
@@ -278,12 +277,13 @@ async function recalculateAllFundBalancesInPg() {
           CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') THEN 'employee_loan' ELSE 'employee_repay' END,
           COALESCE(et.amount, 0),
           CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') 
-            THEN 'دين / سلفة للموظف (' || COALESCE(et.employee_name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
-            ELSE 'راجع دين / تسديد من الموظف (' || COALESCE(et.employee_name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+            THEN 'دين / سلفة للموظف (' || COALESCE(e.name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+            ELSE 'راجع دين / تسديد من الموظف (' || COALESCE(e.name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
           END,
           COALESCE(et.rep_name, 'الإدارة'),
           COALESCE(et.created_at, NOW()::text)
         FROM employee_transactions et
+        LEFT JOIN employees e ON e.id = et.employee_id
         WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = et.id)
           AND COALESCE(et.amount, 0) > 0
           AND et.fund_id IS NOT NULL 
@@ -2152,10 +2152,11 @@ async function startServer() {
       if (isPgConfigured()) {
         try {
           const pRows = await executePg(`
-            SELECT p.*, COALESCE(NULLIF(p.customer_name, ''), c.customer_name, '') AS resolved_customer_name
+            SELECT p.*, COALESCE(NULLIF(p.customer_name, ''), c.customer_name, s.customer_name, '') AS resolved_customer_name
             FROM payments p
             LEFT JOIN contracts c ON p.contract_id = c.id
-            WHERE p.id = $1
+            LEFT JOIN sales s ON p.contract_id = s.id
+            WHERE p.id = $1 OR TRIM(p.id) = TRIM($1)
             LIMIT 1
           `, [id]);
           if (pRows && pRows.length > 0) {
@@ -2163,9 +2164,10 @@ async function startServer() {
           }
 
           if (payment?.contractId) {
-            const cRows = await executePg(`
-              SELECT * FROM sales WHERE id = $1 UNION SELECT * FROM contracts WHERE id = $1 LIMIT 1
-            `, [payment.contractId]);
+            let cRows = await executePg(`SELECT * FROM sales WHERE id = $1 LIMIT 1`, [payment.contractId]).catch(() => []);
+            if (!cRows || cRows.length === 0) {
+              cRows = await executePg(`SELECT * FROM contracts WHERE id = $1 LIMIT 1`, [payment.contractId]).catch(() => []);
+            }
             if (cRows && cRows.length > 0) {
               contract = mapContractRow(cRows[0]);
             }
@@ -2177,7 +2179,7 @@ async function startServer() {
 
       if (!payment) {
         const filePayments = fileDb.get<any>("payments") || [];
-        const found = filePayments.find((p: any) => p.id === id);
+        const found = filePayments.find((p: any) => p.id === id || String(p.id).trim() === String(id).trim());
         if (found) payment = mapPaymentRow(found);
       }
 
@@ -2193,8 +2195,47 @@ async function startServer() {
 
       const amt = Number(payment.amountPaid || payment.amount || 0);
       const totalPrice = Number(contract?.totalPrice || 0);
-      const totalPaid = Number(contract?.totalPaid || amt);
-      const remainingBalance = Number(contract?.remainingBalance || 0);
+      let totalPaid = Number(contract?.totalPaid || amt);
+      let remainingBalance = Number(contract?.remainingBalance || 0);
+
+      if (isPgConfigured() && payment?.contractId) {
+        try {
+          const sumRows = await executePg(`
+            SELECT COALESCE(SUM(amount), 0) AS cumulative_paid
+            FROM payments
+            WHERE contract_id = $1 AND (created_at <= $2 OR id = $3)
+          `, [payment.contractId, payment.createdAt || new Date().toISOString(), payment.id]);
+          if (sumRows && sumRows.length > 0 && sumRows[0].cumulative_paid != null) {
+            totalPaid = Number(sumRows[0].cumulative_paid);
+            const netFinanced = Math.max(0, totalPrice - Number(contract?.advancePayment || 0));
+            remainingBalance = Math.max(0, netFinanced - totalPaid);
+          }
+        } catch (sumErr) {}
+      }
+
+      let resolvedTemplate = contract?.receiptTemplate;
+      if (!resolvedTemplate) {
+        const listId = contract?.listId;
+        const listName = contract?.listName;
+        if (listId || listName) {
+          const fileLists = fileDb.get<any>("customer_lists") || [];
+          const targetList = fileLists.find((l: any) => l.id === listId || l.name === listName);
+          if (targetList?.receiptTemplate || targetList?.receipt_template) {
+            resolvedTemplate = targetList.receiptTemplate || targetList.receipt_template;
+          }
+        }
+      }
+      if (!resolvedTemplate && isPgConfigured() && (contract?.listId || contract?.listName)) {
+        try {
+          const lRows = await executePg(
+            `SELECT receipt_template FROM customer_lists WHERE id = $1 OR name = $2 LIMIT 1`,
+            [contract?.listId || '', contract?.listName || '']
+          ).catch(() => []);
+          if (lRows && lRows.length > 0 && lRows[0].receipt_template) {
+            resolvedTemplate = lRows[0].receipt_template;
+          }
+        } catch (e) {}
+      }
 
       res.json({
         id: payment.id,
@@ -2206,9 +2247,98 @@ async function startServer() {
         remainingBalance,
         paidAmount: amt,
         paymentDate: payment.paymentDate,
+        paymentTime: payment.paymentTime || '',
+        timeStr: payment.paymentTime || '',
         repName: payment.repName || '',
         note: payment.note || '',
-        template: contract?.receiptTemplate || 'template_1',
+        template: resolvedTemplate || 'template_1',
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/statement/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      let contract: any = null;
+      let payments: any[] = [];
+
+      if (isPgConfigured()) {
+        try {
+          let cRows = await executePg(`SELECT * FROM sales WHERE id = $1 LIMIT 1`, [id]).catch(() => []);
+          if (!cRows || cRows.length === 0) {
+            cRows = await executePg(`SELECT * FROM contracts WHERE id = $1 LIMIT 1`, [id]).catch(() => []);
+          }
+          if (cRows && cRows.length > 0) {
+            contract = mapContractRow(cRows[0]);
+          } else {
+            let cRowsByName = await executePg(`SELECT * FROM sales WHERE customer_name = $1 LIMIT 1`, [id]).catch(() => []);
+            if (!cRowsByName || cRowsByName.length === 0) {
+              cRowsByName = await executePg(`SELECT * FROM contracts WHERE customer_name = $1 LIMIT 1`, [id]).catch(() => []);
+            }
+            if (cRowsByName && cRowsByName.length > 0) {
+              contract = mapContractRow(cRowsByName[0]);
+            }
+          }
+
+          const targetContractId = contract?.id || id;
+          const pRows = await executePg(`
+            SELECT * FROM payments 
+            WHERE contract_id = $1 OR contract_id = $2
+            ORDER BY payment_date ASC, created_at ASC
+          `, [id, targetContractId]);
+          if (pRows && Array.isArray(pRows)) {
+            payments = pRows.map(mapPaymentRow);
+          }
+        } catch (e) {
+          console.warn('Error fetching statement from PG:', e);
+        }
+      }
+
+      if (!contract) {
+        const fileContracts = fileDb.get<any>("contracts") || [];
+        const foundC = fileContracts.find((c: any) => c.id === id || c.customerName === id);
+        if (foundC) contract = mapContractRow(foundC);
+      }
+
+      if (payments.length === 0) {
+        const filePayments = fileDb.get<any>("payments") || [];
+        const targetId = contract?.id || id;
+        payments = filePayments
+          .filter((p: any) => p.contractId === id || p.contractId === targetId || p.contract_id === id || p.contract_id === targetId)
+          .map(mapPaymentRow);
+      }
+
+      if (!contract && payments.length === 0) {
+        return res.status(404).json({ error: "Customer statement not found" });
+      }
+
+      const totalPrice = Number(contract?.totalPrice || 0);
+      const advancePayment = Number(contract?.advancePayment || 0);
+      const netDue = Math.max(0, totalPrice - advancePayment);
+      const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amountPaid || p.amount || 0) || 0), 0);
+      const remainingBalance = Math.max(0, (netDue > 0 ? netDue : (contract?.remainingBalance != null ? Number(contract.remainingBalance) : 0)) - totalPaid);
+      const isFinished = remainingBalance <= 0;
+
+      res.json({
+        contract: contract || {
+          id,
+          customerName: payments[0]?.customerName || 'زبون',
+          customerPhone: (payments[0] as any)?.customerPhone || '',
+          itemName: 'قسط',
+          totalPrice,
+          advancePayment,
+          totalPaid,
+          remainingBalance,
+          status: isFinished ? 'completed' : 'active',
+        },
+        payments,
+        totalPrice,
+        advancePayment,
+        totalPaid,
+        remainingBalance,
+        isFinished,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
