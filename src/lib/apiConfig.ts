@@ -5,8 +5,6 @@
 export const CANDIDATE_SERVERS: string[] = [
   'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
   'https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
-  'https://ais-dev-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app',
-  'https://ais-pre-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app',
 ];
 
 const DEFAULT_REMOTE_SERVER = 'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app';
@@ -36,7 +34,8 @@ let activeWorkingServer = '';
 
 export function setActiveWorkingServer(url: string) {
   if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-    activeWorkingServer = url.replace(/\/+$/, '');
+    const clean = url.replace(/\/+$/, '');
+    activeWorkingServer = clean;
     try {
       localStorage.setItem(SERVER_URL_STORAGE_KEY, activeWorkingServer);
     } catch (e) {}
@@ -59,35 +58,42 @@ export function isNativeOrApkEnvironment(): boolean {
 
 export function getApiBaseUrl(): string {
   const isNative = isNativeOrApkEnvironment();
+  let base = '';
   if (!isNative && typeof window !== 'undefined' && window.location.origin && 
       (window.location.origin.startsWith('http://') || window.location.origin.startsWith('https://')) && 
       !window.location.origin.includes('localhost') && 
       !window.location.origin.includes('127.0.0.1') && 
       !window.location.origin.includes('file://')) {
-    return window.location.origin;
+    base = window.location.origin;
+  } else if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
+    base = activeWorkingServer;
+  } else {
+    const custom = getCustomServerUrl();
+    if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) {
+      base = custom;
+    } else {
+      base = DEFAULT_REMOTE_SERVER;
+    }
   }
-  if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
-    return activeWorkingServer;
-  }
-  const custom = getCustomServerUrl();
-  if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) return custom;
-  return DEFAULT_REMOTE_SERVER;
+  return base.replace(/\/+$/, '');
 }
 
 export function getPublicShareBaseUrl(): string {
+  const custom = getCustomServerUrl();
+  if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) {
+    return custom.replace(/\/+$/, '');
+  }
+  if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
+    return activeWorkingServer.replace(/\/+$/, '');
+  }
   if (typeof window !== 'undefined' && window.location.origin && 
       (window.location.origin.startsWith('http://') || window.location.origin.startsWith('https://')) && 
       !window.location.origin.includes('localhost') && 
       !window.location.origin.includes('127.0.0.1') && 
       !window.location.origin.includes('capacitor://') && 
       !window.location.origin.includes('file://')) {
-    return window.location.origin;
+    return window.location.origin.replace(/\/+$/, '');
   }
-  if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
-    return activeWorkingServer;
-  }
-  const custom = getCustomServerUrl();
-  if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) return custom;
   return DEFAULT_REMOTE_SERVER;
 }
 
@@ -143,6 +149,13 @@ export async function fetchWithFallback(
       if (!urlsToTry.includes(candidateUrl)) {
         urlsToTry.push(candidateUrl);
       }
+    }
+    if (typeof window !== 'undefined' && window.location.origin && window.location.origin.startsWith('http')) {
+      const originUrl = `${window.location.origin}${cleanEndpoint}`;
+      if (!urlsToTry.includes(originUrl)) urlsToTry.push(originUrl);
+    }
+    if (!urlsToTry.includes(cleanEndpoint)) {
+      urlsToTry.push(cleanEndpoint);
     }
   } else {
     // 1. If in browser / web mode, try relative and origin URLs first
