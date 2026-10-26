@@ -46,7 +46,7 @@ import {
 } from './types';
 import { getLocalDateString, playNotificationSound, showBrowserNotification, isAppointmentDueForNotification } from './lib/dateUtils';
 import { initCapacitorPush } from './lib/capacitorPush';
-import { INITIAL_CONTRACTS, INITIAL_FUNDS, INITIAL_CUSTOMER_LISTS, INITIAL_EMPLOYEES } from './data/initialContracts';
+import { INITIAL_CONTRACTS, DEFAULT_REPS, INITIAL_FUNDS, INITIAL_CUSTOMER_LISTS, INITIAL_EMPLOYEES } from './data/initialContracts';
 import { HeaderAndStats } from './components/HeaderAndStats';
 import { ContractCard } from './components/ContractCard';
 import { ContractDetailsModal } from './components/ContractDetailsModal';
@@ -68,6 +68,7 @@ import { RepsPaymentsSummaryBox } from './components/RepsPaymentsSummaryBox';
 import { openReceiptPdfWindow } from './lib/receiptPdf';
 import { ReceiptPrintTemplate } from './components/ReceiptPrintTemplate';
 import { CustomerStatementModal } from './components/CustomerStatementModal';
+import { CustomerReceiptView } from './components/CustomerReceiptView';
 import { SalesBox } from './components/SalesBox';
 import { SalesBoxModal } from './components/SalesBoxModal';
 import { AddAppointmentModal } from './components/AddAppointmentModal';
@@ -3491,7 +3492,7 @@ export default function App() {
     }
   };
 
-  const effectiveRep: SalesRepresentative = currentRep || reps[0] || { id: 'guest', name: 'زائر', phone: '', code: '', role: 'rep', canEdit: false, canDelete: false, canSell: false };
+  const effectiveRep = currentRep || reps[0] || DEFAULT_REPS[0];
   const isAdmin = effectiveRep.role === 'admin';
   const isSupervisor = effectiveRep.role === 'supervisor';
   const canEdit = isAdmin || effectiveRep.canEdit !== false;
@@ -3504,6 +3505,31 @@ export default function App() {
       <SplashScreen
         lang={lang}
         onComplete={() => setShowSplash(false)}
+      />
+    );
+  }
+
+  // Direct standalone Customer Receipt Viewer (opened from customer WhatsApp link)
+  const isReceiptViewUrl = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const p = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    return (
+      p === '/receipt' ||
+      p.startsWith('/receipt/') ||
+      params.get('view_receipt') === 'true' ||
+      params.has('receipt_id') ||
+      Boolean(params.get('paid_now') && params.get('c'))
+    );
+  }, []);
+
+  if (isReceiptViewUrl) {
+    return (
+      <CustomerReceiptView
+        onBackToApp={() => {
+          window.history.replaceState({}, '', '/');
+          window.location.href = '/';
+        }}
       />
     );
   }

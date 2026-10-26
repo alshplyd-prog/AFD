@@ -8,6 +8,7 @@ import {
   INITIAL_INVENTORY,
   INITIAL_EMPLOYEES,
   INITIAL_CONTRACTS,
+  INITIAL_PAYMENTS,
 } from '../data/initialContracts';
 import { AppointmentRecord } from '../types';
 
@@ -1980,6 +1981,12 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
       } else {
         let initialFallback: any[] = [];
         if (tableName === 'reps') initialFallback = DEFAULT_REPS;
+        else if (tableName === 'funds') initialFallback = INITIAL_FUNDS;
+        else if (tableName === 'customer_lists') initialFallback = INITIAL_CUSTOMER_LISTS;
+        else if (tableName === 'contracts') initialFallback = INITIAL_CONTRACTS;
+        else if (tableName === 'payments') initialFallback = INITIAL_PAYMENTS;
+        else if (tableName === 'inventory') initialFallback = INITIAL_INVENTORY;
+        else if (tableName === 'employees') initialFallback = INITIAL_EMPLOYEES;
         if (initialFallback.length > 0) {
           setLocalCache(tableName, initialFallback as T[]);
           emitIfChanged(initialFallback as T[]);
