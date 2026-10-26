@@ -68,8 +68,6 @@ import { RepsPaymentsSummaryBox } from './components/RepsPaymentsSummaryBox';
 import { openReceiptPdfWindow } from './lib/receiptPdf';
 import { ReceiptPrintTemplate } from './components/ReceiptPrintTemplate';
 import { CustomerStatementModal } from './components/CustomerStatementModal';
-import { CustomerReceiptView } from './components/CustomerReceiptView';
-import { CustomerStatementView } from './components/CustomerStatementView';
 import { SalesBox } from './components/SalesBox';
 import { SalesBoxModal } from './components/SalesBoxModal';
 import { AddAppointmentModal } from './components/AddAppointmentModal';
@@ -172,72 +170,6 @@ const LANG_STORAGE_KEY = 'sami_installments_lang';
 const REP_STORAGE_KEY = 'sami_installments_rep';
 
 export default function App() {
-  // Direct Standalone Document Route Check
-  // Evaluated immediately at the top of App() to render pure document views (Statement /s/:id or Receipt /r/:id)
-  // Bypasses splash screen, login screen, rep selection, and background state initialization completely
-  const standaloneRoute = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return { isStatement: false, statementId: '', isReceipt: false, receiptId: '' };
-    }
-    const p = window.location.pathname || '';
-    const search = window.location.search || '';
-    const params = new URLSearchParams(search);
-
-    // 1. Total Payments Statement Route (/s/:id or /statement/:id)
-    let sId = '';
-    if (p.startsWith('/s/')) {
-      sId = decodeURIComponent(p.replace('/s/', '').trim());
-    } else if (p.startsWith('/statement/')) {
-      sId = decodeURIComponent(p.replace('/statement/', '').trim());
-    } else {
-      sId = params.get('statement_id') || params.get('s') || '';
-    }
-
-    const isStatementMatch = Boolean(
-      p === '/s' ||
-      p.startsWith('/s/') ||
-      p === '/statement' ||
-      p.startsWith('/statement/') ||
-      params.get('view_statement') === 'true' ||
-      params.has('statement_id')
-    );
-
-    // 2. Single Payment Receipt Route (/r/:id or /receipt/:id)
-    let rId = '';
-    if (p.startsWith('/r/')) {
-      rId = decodeURIComponent(p.replace('/r/', '').trim());
-    } else if (p.startsWith('/receipt/')) {
-      rId = decodeURIComponent(p.replace('/receipt/', '').trim());
-    } else {
-      rId = params.get('r') || params.get('id') || params.get('receipt_id') || '';
-    }
-
-    const isReceiptMatch = Boolean(
-      p === '/receipt' ||
-      p.startsWith('/receipt/') ||
-      p === '/r' ||
-      p.startsWith('/r/') ||
-      params.get('view_receipt') === 'true' ||
-      params.has('receipt_id') ||
-      Boolean(params.get('paid_now') && params.get('c'))
-    );
-
-    return {
-      isStatement: isStatementMatch,
-      statementId: sId,
-      isReceipt: isReceiptMatch,
-      receiptId: rId,
-    };
-  }, []);
-
-  if (standaloneRoute.isStatement) {
-    return <CustomerStatementView contractId={standaloneRoute.statementId} />;
-  }
-
-  if (standaloneRoute.isReceipt) {
-    return <CustomerReceiptView receiptId={standaloneRoute.receiptId} />;
-  }
-
   const [contracts, setContracts] = useState<InstallmentContract[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);

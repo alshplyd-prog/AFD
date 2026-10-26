@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2, FileSpreadsheet, Share2, CheckCircle2, AlertCircle, MessageCircle } from 'lucide-react';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
-import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, shareGeneralPaymentsPdf, formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
+import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, shareGeneralPaymentsPdf, formatIraqiPhoneForWhatsApp, sharePaymentReceiptWhatsApp } from '../lib/pdfShareHelper';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { formatPaymentDateTime, formatPaymentTime, getLocalDateString, getPaymentFormattedDateAndTime } from '../lib/dateUtils';
 import { normalizeEntityName } from '../lib/nameHelpers';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
-import { sendPaymentReceiptToWhatsApp } from '../lib/receiptWhatsAppHelper';
 
 interface PaymentsHistoryModalProps {
   isOpen: boolean;
@@ -82,9 +81,11 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
           ) ||
           null;
 
+        const phoneToUse = customerPhone || targetContract?.customerPhone;
         result = await shareCustomerPaymentsOrDirectWhatsApp({
           contract: targetContract,
           payments: filtered,
+          phone: phoneToUse,
           lang,
           targetApp: target,
           forceAppsChooser: target === 'other',
@@ -101,19 +102,12 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
       }
 
       if (result && result.success) {
-        if (result.method === 'direct_whatsapp') {
-          showToast(
-            isAr
-              ? 'تم فتح واتساب الزبون مباشرة وإرسال كشف التسديدات بنجاح'
-              : 'Direct customer WhatsApp opened with statement',
-            'success'
-          );
-        } else if (result.method !== 'user_cancelled') {
+        if (result.method !== 'user_cancelled') {
           showToast(
             target === 'whatsapp'
               ? (isAr
-                  ? 'تم تجهيز ملف مستند الـ PDF - اختر واتساب لإرسال الملف للزبون'
-                  : 'PDF document file ready - Select WhatsApp to send file')
+                  ? 'تم تجهيز رابط الـ PDF وفتح محادثة واتساب الزبون'
+                  : 'PDF link ready - Customer WhatsApp opened')
               : (isAr
                   ? 'تم تجهيز ملف مستند الـ PDF - اختر التطبيق المطلوب للمشاركة'
                   : 'PDF document file ready - Select app to share file'),
@@ -924,9 +918,34 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
                           )}
                         </td>
 
-                        {/* Actions: Print, Edit, Delete */}
+                        {/* Actions: WhatsApp Share, Print, Edit, Delete */}
                         <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
+                            {/* WhatsApp Text Receipt Share button */}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const ok = await sharePaymentReceiptWhatsApp({
+                                  payment: p,
+                                  contract,
+                                  allPayments: safePayments,
+                                  shopTitle: 'الكرار للموبايل والتقسيط',
+                                });
+                                if (ok) {
+                                  showToast(
+                                    isAr
+                                      ? 'تم فتح الواتساب مع الوصل ورابط PDF'
+                                      : 'WhatsApp opened with text receipt & PDF link',
+                                    'success'
+                                  );
+                                }
+                              }}
+                              className="p-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center"
+                              title={isAr ? 'مشاركة وصل نصي للدفعة عبر واتساب' : 'Share text receipt via WhatsApp'}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </button>
+
                             {/* Print Receipt button - matches screenshot styling */}
                             {onPrintReceipt && contract && (
                               <button
@@ -973,36 +992,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
                                 <Printer className="w-4 h-4" />
                               </button>
                             )}
-
-                            {/* WhatsApp Direct Receipt Button with Link */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const targetContract = contract || (p.contractId ? contractMap.get(p.contractId) : null) || (p.customerName ? contractMap.get(p.customerName) : null) || ({
-                                  id: p.contractId || '',
-                                  customerName: p.customerName || 'زبون',
-                                  customerPhone: '',
-                                  totalPrice: p.amountPaid,
-                                  advancePayment: 0,
-                                  remainingBalance: 0,
-                                  dailyInstallment: p.amountPaid,
-                                  startDate: p.paymentDate || '',
-                                  status: 'active',
-                                  totalPaid: p.amountPaid,
-                                } as InstallmentContract);
-
-                                sendPaymentReceiptToWhatsApp({
-                                  payment: p,
-                                  contract: targetContract,
-                                  allPayments: safePayments,
-                                  customerLists,
-                                });
-                              }}
-                              className="p-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center"
-                              title={isAr ? 'إرسال وصل مباشر على واتساب الزبون (نص + رابط PDF)' : 'Send direct receipt to Customer WhatsApp'}
-                            >
-                              <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            </button>
 
                             {/* Edit button (Admin only) */}
                             {canEditPayment && onUpdatePayment && (
