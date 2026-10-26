@@ -653,3 +653,36 @@ export async function shareGeneralPaymentsPdf({
     dialogTitle: 'اختر التطبيق لمشاركة تقرير التسديدات العام (تليكرام، واتساب، ماسنجر...)',
   });
 }
+
+export async function sharePaymentReceiptWhatsApp({
+  payment,
+  contract,
+  shopTitle = 'الكرار للتقسيط',
+}: {
+  payment: PaymentRecord;
+  contract?: InstallmentContract | null;
+  allPayments?: PaymentRecord[];
+  shopTitle?: string;
+}): Promise<boolean> {
+  const customerName = payment.customerName || contract?.customerName || 'زبون';
+  const phone = contract?.customerPhone || '';
+  const amount = Number(payment.amountPaid ?? payment.amount ?? 0);
+  const { dateStr } = getPaymentFormattedDateAndTime(payment, true);
+  const note = payment.note ? `\n📝 ملاحظة: ${payment.note}` : '';
+  const rep = payment.repName ? `\n👤 المندوب: ${payment.repName}` : '';
+
+  const text = `*${shopTitle}*
+🧾 *وصل استلام دفعة مالية*
+--------------------------------
+👤 *الزبون:* ${customerName}
+💰 *المبلغ المسدد:* ${amount.toLocaleString('en-US')} د.ع
+📅 *التاريخ:* ${dateStr}${rep}${note}
+--------------------------------
+_شكراً لتسديدكم الدورة المالية_`.trim();
+
+  return openCustomerWhatsAppDirect({
+    phone: phone || (payment as any).customerPhone || '',
+    text,
+  });
+}
+

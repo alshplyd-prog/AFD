@@ -697,7 +697,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
       const result = await shareCustomerPaymentsOrDirectWhatsApp({
         contract: historyModalContract,
         payments: custPayments,
-        phone: historyModalContract.customerPhone,
         lang,
         targetApp: target,
         forceAppsChooser: target === 'other',

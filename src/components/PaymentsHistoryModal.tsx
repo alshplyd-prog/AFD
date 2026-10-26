@@ -81,11 +81,9 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
           ) ||
           null;
 
-        const phoneToUse = customerPhone || targetContract?.customerPhone;
         result = await shareCustomerPaymentsOrDirectWhatsApp({
           contract: targetContract,
           payments: filtered,
-          phone: phoneToUse,
           lang,
           targetApp: target,
           forceAppsChooser: target === 'other',
