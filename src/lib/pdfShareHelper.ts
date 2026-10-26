@@ -80,8 +80,7 @@ export function buildCustomerPaymentStatementText({
     })
     .join('\n');
 
-  return `*الكرار للتقسيط*
-📄 *كشف وسجل تسديدات الزبون*
+  return `📄 *كشف وسجل تسديدات الزبون*
 التاريخ: ${printDateStr}
 --------------------------------
 👤 *الزبون:* ${customerName}
@@ -97,7 +96,7 @@ ${paymentsLines || 'لا توجد دفعات مسجلة بعد'}
 💵 *المجموع الكلي للواصل:* ${totalPaid.toLocaleString('en-US')} د.ع
 (${numberToArabicWords(totalPaid)})
 
-_الكرار للتقسيط - وثيقة كشف حساب معتمدة_`.trim();
+_وثيقة كشف حساب معتمدة_`.trim();
 }
 
 /**
@@ -342,14 +341,14 @@ export async function shareCustomerPaymentsPdf({
 
   const paymentsRowsHtml = payments
     .map((p, idx) => {
-      const { dateStr, timeStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
+      const { dateStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       const rep = p.repName || '—';
       return `
         <tr style="border-bottom: 1.5px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
           <td style="padding: 14px 10px; text-align: center; font-weight: 900; color: #475569; font-size: 17px;">${idx + 1}</td>
-          <td style="padding: 14px 10px; text-align: center; font-weight: 900; color: #0f172a; font-size: 17px; direction: ltr;">${dateStr} ${timeStr}</td>
           <td style="padding: 14px 10px; text-align: center; font-weight: 900; color: #0f766e; font-size: 22px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
+          <td style="padding: 14px 10px; text-align: center; font-weight: 900; color: #0f172a; font-size: 17px; direction: ltr;">${dateStr}</td>
           <td style="padding: 14px 10px; text-align: center; font-weight: 800; color: #1e293b; font-size: 17px;">${rep}</td>
           <td style="padding: 14px 10px; text-align: right; font-weight: 700; color: #334155; font-size: 16px;">${cleanNote || '—'}</td>
         </tr>
@@ -362,8 +361,7 @@ export async function shareCustomerPaymentsPdf({
       <!-- Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f766e; padding-bottom: 16px; margin-bottom: 20px;">
         <div>
-          <div style="font-size: 38px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">الكرار للتقسيط</div>
-          <div style="font-size: 22px; font-weight: 800; color: #334155; margin-top: 4px;">كشف وسجل تسديدات الزبون</div>
+          <div style="font-size: 26px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">كشف وسجل تسديدات الزبون</div>
         </div>
         <div style="text-align: left;">
           <div style="font-size: 16px; font-weight: 800; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a;">${printDateStr} ${printTimeStr}</span></div>
@@ -414,8 +412,8 @@ export async function shareCustomerPaymentsPdf({
         <thead>
           <tr style="background-color: #0f766e; color: #ffffff;">
             <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 50px;">#</th>
-            <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 180px;">التاريخ والوقت</th>
             <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 165px;">المبلغ المسدد</th>
+            <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 160px;">التاريخ</th>
             <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 150px;">المندوب</th>
             <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: right;">ملاحظات</th>
           </tr>
@@ -425,9 +423,9 @@ export async function shareCustomerPaymentsPdf({
         </tbody>
         <tfoot>
           <tr style="background-color: #e2e8f0; font-weight: 900; border-top: 2px solid #cbd5e1;">
-            <td colspan="2" style="padding: 14px 16px; text-align: right; font-size: 20px; color: #0f172a;">مجموع المبالغ المسددة:</td>
+            <td style="padding: 14px 16px; text-align: right; font-size: 18px; color: #0f172a;">مجموع المبالغ المسددة:</td>
             <td style="padding: 14px 10px; text-align: center; font-size: 24px; color: #047857; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</td>
-            <td colspan="2" style="padding: 14px 16px; text-align: right; font-size: 17px; color: #334155; font-weight: 800;">(${numberToArabicWords(totalPaid)})</td>
+            <td colspan="3" style="padding: 14px 16px; text-align: right; font-size: 17px; color: #334155; font-weight: 800;">(${numberToArabicWords(totalPaid)})</td>
           </tr>
         </tfoot>
       </table>
@@ -435,7 +433,7 @@ export async function shareCustomerPaymentsPdf({
       <!-- Bottom Signature & Verification -->
       <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 22px; padding-top: 16px; border-top: 2px dashed #94a3b8; font-size: 16px; color: #475569;">
         <div style="font-weight: 800;">توقيع وختم الإدارة: ___________________</div>
-        <div style="font-weight: 900; color: #0f766e; font-size: 17px;">الكرار للتقسيط - وثيقة كشف حساب معتمدة</div>
+        <div style="font-weight: 900; color: #0f766e; font-size: 17px;">وثيقة كشف حساب معتمدة</div>
       </div>
     </div>
   `;
@@ -561,14 +559,14 @@ export async function shareGeneralPaymentsPdf({
 
   const paymentsRowsHtml = payments
     .map((p, idx) => {
-      const { dateStr, timeStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
+      const { dateStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       return `
         <tr style="border-bottom: 1.5px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
           <td style="padding: 8px 8px; text-align: center; font-weight: 800; color: #64748b; font-size: 13px;">${idx + 1}</td>
-          <td style="padding: 8px 8px; text-align: center; font-weight: 900; color: #0f172a; font-size: 13.5px; direction: ltr;">${dateStr} ${timeStr}</td>
           <td style="padding: 8px 8px; text-align: right; font-weight: 900; color: #1e293b; font-size: 14.5px;">${p.customerName || '—'}</td>
           <td style="padding: 8px 8px; text-align: center; font-weight: 900; color: #047857; font-size: 16px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
+          <td style="padding: 8px 8px; text-align: center; font-weight: 900; color: #0f172a; font-size: 13.5px; direction: ltr;">${dateStr}</td>
           <td style="padding: 8px 8px; text-align: center; font-weight: 800; color: #334155; font-size: 13.5px;">${p.repName || '—'}</td>
           <td style="padding: 8px 8px; text-align: right; font-weight: 700; color: #64748b; font-size: 13px;">${cleanNote || '—'}</td>
         </tr>
@@ -581,8 +579,7 @@ export async function shareGeneralPaymentsPdf({
       <!-- Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px;">
         <div>
-          <div style="font-size: 28px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px;">الكرار للموبايل والتقسيط</div>
-          <div style="font-size: 16px; font-weight: 800; color: #475569; margin-top: 3px;">تقرير وسجل التسديدات العام (كافة الزبائن)</div>
+          <div style="font-size: 22px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px;">تقرير وسجل التسديدات العام (كافة الزبائن)</div>
         </div>
         <div style="text-align: left;">
           <div style="font-size: 13px; font-weight: 800; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a;">${printDateStr} ${printTimeStr}</span></div>
@@ -615,9 +612,9 @@ export async function shareGeneralPaymentsPdf({
         <thead>
           <tr style="background-color: #0284c7; color: #ffffff;">
             <th style="padding: 10px 8px; font-size: 13.5px; font-weight: 900; text-align: center; width: 40px;">#</th>
-            <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: center; width: 145px;">التاريخ والوقت</th>
             <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: right;">اسم الزبون</th>
             <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: center; width: 135px;">المبلغ (د.ع)</th>
+            <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: center; width: 130px;">التاريخ</th>
             <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: center; width: 125px;">المندوب</th>
             <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: right;">ملاحظات</th>
           </tr>
@@ -627,9 +624,9 @@ export async function shareGeneralPaymentsPdf({
         </tbody>
         <tfoot>
           <tr style="background-color: #e2e8f0; font-weight: 900;">
-            <td colspan="3" style="padding: 10px 12px; text-align: right; font-size: 15px; color: #0f172a;">المجموع الإجمالي لكافة التسديدات:</td>
+            <td colspan="2" style="padding: 10px 12px; text-align: right; font-size: 15px; color: #0f172a;">المجموع الإجمالي لكافة التسديدات:</td>
             <td style="padding: 10px 8px; text-align: center; font-size: 19px; color: #047857; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</td>
-            <td colspan="2" style="padding: 10px 12px; text-align: right; font-size: 13.5px; color: #475569;">(${numberToArabicWords(totalPaid)})</td>
+            <td colspan="3" style="padding: 10px 12px; text-align: right; font-size: 13.5px; color: #475569;">(${numberToArabicWords(totalPaid)})</td>
           </tr>
         </tfoot>
       </table>
@@ -637,7 +634,7 @@ export async function shareGeneralPaymentsPdf({
       <!-- Bottom Signature & Verification -->
       <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 18px; padding-top: 12px; border-top: 1.5px dashed #94a3b8; font-size: 13px; color: #475569;">
         <div style="font-weight: 800;">توقيع وختم الإدارة: ___________________</div>
-        <div style="font-weight: 900; color: #0284c7;">الكرار للموبايل والتقسيط - تقرير مالي معتمد</div>
+        <div style="font-weight: 900; color: #0284c7;">تقرير مالي معتمد</div>
       </div>
     </div>
   `;
@@ -671,14 +668,13 @@ export async function sharePaymentReceiptWhatsApp({
   const note = payment.note ? `\n📝 ملاحظة: ${payment.note}` : '';
   const rep = payment.repName ? `\n👤 المندوب: ${payment.repName}` : '';
 
-  const text = `*${shopTitle}*
-🧾 *وصل استلام دفعة مالية*
+  const text = `🧾 *وصل استلام دفعة مالية*
 --------------------------------
 👤 *الزبون:* ${customerName}
 💰 *المبلغ المسدد:* ${amount.toLocaleString('en-US')} د.ع
 📅 *التاريخ:* ${dateStr}${rep}${note}
 --------------------------------
-_شكراً لتسديدكم الدورة المالية_`.trim();
+_شكراً لتسديدكم_`.trim();
 
   return openCustomerWhatsAppDirect({
     phone: phone || (payment as any).customerPhone || '',
