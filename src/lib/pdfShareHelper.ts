@@ -668,13 +668,14 @@ export async function sharePaymentReceiptWhatsApp({
   const note = payment.note ? `\n📝 ملاحظة: ${payment.note}` : '';
   const rep = payment.repName ? `\n👤 المندوب: ${payment.repName}` : '';
 
-  const text = `🧾 *وصل استلام دفعة مالية*
+  const text = `*${shopTitle}*
+🧾 *وصل استلام دفعة مالية*
 --------------------------------
 👤 *الزبون:* ${customerName}
 💰 *المبلغ المسدد:* ${amount.toLocaleString('en-US')} د.ع
 📅 *التاريخ:* ${dateStr}${rep}${note}
 --------------------------------
-_شكراً لتسديدكم_`.trim();
+_شكراً لتسديدكم الدورة المالية_`.trim();
 
   return openCustomerWhatsAppDirect({
     phone: phone || (payment as any).customerPhone || '',
