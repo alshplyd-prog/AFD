@@ -95,6 +95,13 @@ export async function initializeDatabaseSchema() {
           value TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS shared_pdfs (
+          filename TEXT PRIMARY KEY,
+          data_base64 TEXT NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        ALTER TABLE IF EXISTS shared_pdfs DISABLE ROW LEVEL SECURITY;
+
         INSERT INTO system_settings (key, value)
         VALUES ('welcome_message', '{"title":"أهلاً بك في نظام مبيعات الأقساط","subtitle":"اختر القسم الذي تريد الدخول إليه:"}')
         ON CONFLICT (key) DO NOTHING;

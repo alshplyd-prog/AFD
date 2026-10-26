@@ -17,9 +17,13 @@ import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.net.Uri;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import com.getcapacitor.BridgeActivity;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -753,6 +757,254 @@ public class MainActivity extends BridgeActivity {
                 }
             });
             return true;
+        }
+
+        @JavascriptInterface
+        public boolean sharePdfToWhatsApp(final String base64Data, final String filename, final String rawPhone) {
+            try {
+                if (base64Data == null || base64Data.trim().isEmpty()) {
+                    Log.w(TAG, "sharePdfToWhatsApp: base64Data is empty");
+                    return false;
+                }
+
+                byte[] pdfBytes = Base64.decode(base64Data, Base64.DEFAULT);
+                String safeName = "statement_" + System.currentTimeMillis() + ".pdf";
+
+                File cacheDir = getExternalCacheDir();
+                if (cacheDir == null) {
+                    cacheDir = getCacheDir();
+                }
+                File pdfFile = new File(cacheDir, safeName);
+                FileOutputStream fos = new FileOutputStream(pdfFile);
+                fos.write(pdfBytes);
+                fos.flush();
+                fos.close();
+                pdfFile.setReadable(true, false);
+
+                Uri contentUri = FileProvider.getUriForFile(
+                    MainActivity.this,
+                    getPackageName() + ".fileprovider",
+                    pdfFile
+                );
+
+                String cleanPhone = normalizePhone(rawPhone);
+
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("application/pdf");
+                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.setClipData(android.content.ClipData.newRawUri("PDF", contentUri));
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                if (cleanPhone != null && !cleanPhone.isEmpty()) {
+                    intent.putExtra("jid", cleanPhone + "@s.whatsapp.net");
+                    intent.putExtra("phone", cleanPhone);
+                }
+
+                // Grant temporary URI permissions to both WhatsApp variants
+                try {
+                    grantUriPermission("com.whatsapp", contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (Throwable ignored) {}
+                try {
+                    grantUriPermission("com.whatsapp.w4b", contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (Throwable ignored) {}
+
+                // 1. Try standard WhatsApp directly
+                try {
+                    Intent waIntent = new Intent(intent);
+                    waIntent.setPackage("com.whatsapp");
+                    startActivity(waIntent);
+                    return true;
+                } catch (Throwable e1) {
+                    Log.w(TAG, "Standard WhatsApp launch note: " + e1.getMessage());
+                }
+
+                // 2. Try WhatsApp Business directly
+                try {
+                    Intent w4bIntent = new Intent(intent);
+                    w4bIntent.setPackage("com.whatsapp.w4b");
+                    startActivity(w4bIntent);
+                    return true;
+                } catch (Throwable e2) {
+                    Log.w(TAG, "WhatsApp Business launch note: " + e2.getMessage());
+                }
+
+                // 3. Fallback: URL scheme directly to WhatsApp (NEVER show all apps chooser)
+                if (cleanPhone != null && !cleanPhone.isEmpty()) {
+                    try {
+                        Intent directUrlIntent = new Intent(Intent.ACTION_VIEW);
+                        directUrlIntent.setData(Uri.parse("https://wa.me/" + cleanPhone));
+                        directUrlIntent.setPackage("com.whatsapp");
+                        directUrlIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(directUrlIntent);
+                        return true;
+                    } catch (Throwable ignored) {}
+                }
+
+                return false;
+            } catch (Throwable e) {
+                Log.e(TAG, "sharePdfToWhatsApp error: " + e.getMessage());
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean shareImageToWhatsApp(final String base64Data, final String filename, final String rawPhone) {
+            try {
+                if (base64Data == null || base64Data.trim().isEmpty()) {
+                    Log.w(TAG, "shareImageToWhatsApp: base64Data is empty");
+                    return false;
+                }
+
+                byte[] imgBytes = Base64.decode(base64Data, Base64.DEFAULT);
+                String safeName = "statement_" + System.currentTimeMillis() + ".jpg";
+
+                File cacheDir = getExternalCacheDir();
+                if (cacheDir == null) {
+                    cacheDir = getCacheDir();
+                }
+                File imgFile = new File(cacheDir, safeName);
+                FileOutputStream fos = new FileOutputStream(imgFile);
+                fos.write(imgBytes);
+                fos.flush();
+                fos.close();
+                imgFile.setReadable(true, false);
+
+                Uri contentUri = FileProvider.getUriForFile(
+                    MainActivity.this,
+                    getPackageName() + ".fileprovider",
+                    imgFile
+                );
+
+                String cleanPhone = normalizePhone(rawPhone);
+
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("image/jpeg");
+                intent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                intent.setClipData(android.content.ClipData.newRawUri("ReceiptImage", contentUri));
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                if (cleanPhone != null && !cleanPhone.isEmpty()) {
+                    intent.putExtra("jid", cleanPhone + "@s.whatsapp.net");
+                    intent.putExtra("phone", cleanPhone);
+                }
+
+                try {
+                    grantUriPermission("com.whatsapp", contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (Throwable ignored) {}
+                try {
+                    grantUriPermission("com.whatsapp.w4b", contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                } catch (Throwable ignored) {}
+
+                // 1. Try standard WhatsApp directly
+                try {
+                    Intent waIntent = new Intent(intent);
+                    waIntent.setPackage("com.whatsapp");
+                    startActivity(waIntent);
+                    return true;
+                } catch (Throwable e1) {
+                    Log.w(TAG, "Standard WhatsApp image launch note: " + e1.getMessage());
+                }
+
+                // 2. Try WhatsApp Business directly
+                try {
+                    Intent w4bIntent = new Intent(intent);
+                    w4bIntent.setPackage("com.whatsapp.w4b");
+                    startActivity(w4bIntent);
+                    return true;
+                } catch (Throwable e2) {
+                    Log.w(TAG, "WhatsApp Business image launch note: " + e2.getMessage());
+                }
+
+                // 3. Fallback: URL scheme directly to WhatsApp (NEVER show all apps chooser)
+                if (cleanPhone != null && !cleanPhone.isEmpty()) {
+                    try {
+                        Intent directUrlIntent = new Intent(Intent.ACTION_VIEW);
+                        directUrlIntent.setData(Uri.parse("https://wa.me/" + cleanPhone));
+                        directUrlIntent.setPackage("com.whatsapp");
+                        directUrlIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(directUrlIntent);
+                        return true;
+                    } catch (Throwable ignored) {}
+                }
+
+                return false;
+            } catch (Throwable e) {
+                Log.e(TAG, "shareImageToWhatsApp error: " + e.getMessage());
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean openWhatsAppChatWithText(final String rawPhone, final String message) {
+            try {
+                String cleanPhone = normalizePhone(rawPhone);
+                if (cleanPhone == null || cleanPhone.isEmpty()) return false;
+
+                String encodedMsg = Uri.encode(message != null ? message : "");
+
+                // 1. Direct native whatsapp:// URI intent (preserves full message and link directly)
+                try {
+                    Uri nativeUri = Uri.parse("whatsapp://send?phone=" + cleanPhone + "&text=" + encodedMsg);
+                    Intent nativeIntent = new Intent(Intent.ACTION_VIEW, nativeUri);
+                    nativeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(nativeIntent);
+                    return true;
+                } catch (Throwable nativeErr) {
+                    Log.d(TAG, "whatsapp:// URI fallback: " + nativeErr.getMessage());
+                }
+
+                // 2. HTTPS wa.me fallback
+                String uriStr = "https://wa.me/" + cleanPhone + (encodedMsg.isEmpty() ? "" : "?text=" + encodedMsg);
+                Uri uri = Uri.parse(uriStr);
+
+                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                try {
+                    intent.setPackage("com.whatsapp");
+                    startActivity(intent);
+                    return true;
+                } catch (Throwable e1) {
+                    try {
+                        intent.setPackage("com.whatsapp.w4b");
+                        startActivity(intent);
+                        return true;
+                    } catch (Throwable e2) {
+                        try {
+                            intent.setPackage(null);
+                            startActivity(intent);
+                            return true;
+                        } catch (Throwable ignored) {}
+                    }
+                }
+                return false;
+            } catch (Throwable e) {
+                Log.e(TAG, "openWhatsAppChatWithText error: " + e.getMessage());
+                return false;
+            }
+        }
+
+        private String normalizePhone(String raw) {
+            if (raw == null) return "";
+            String s = raw;
+            String[] ar = {"٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"};
+            String[] pe = {"۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"};
+            for (int i = 0; i < 10; i++) {
+                s = s.replace(ar[i], String.valueOf(i)).replace(pe[i], String.valueOf(i));
+            }
+            String clean = s.replaceAll("[^0-9]", "");
+            if (clean.startsWith("00964")) {
+                clean = clean.substring(2);
+            } else if (clean.startsWith("07")) {
+                clean = "964" + clean.substring(1);
+            } else if (clean.startsWith("7") && clean.length() == 10) {
+                clean = "964" + clean;
+            } else if (!clean.startsWith("964") && clean.length() == 10) {
+                clean = "964" + clean;
+            }
+            return clean;
         }
 
         private BluetoothDevice findDevice(String addressOrName) {
