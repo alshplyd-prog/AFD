@@ -5,6 +5,7 @@ import { numberToArabicWords } from './tafqeet';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from './bluetoothPrinter';
 import { formatIraqiPhoneForWhatsApp } from './pdfShareHelper';
 import { normalizeEntityName } from './nameHelpers';
+import { getPublicShareBaseUrl } from './apiConfig';
 
 export interface PreparedReceiptData {
   shopTitle: string;
@@ -62,10 +63,14 @@ export function preparePaymentReceiptWhatsApp({
     (customerLists || []).find((l) => {
       const lId = l.id || (l as any)._id;
       const lName = l.name ? String(l.name).trim().toLowerCase() : '';
-      if (targetListId && String(lId) === String(targetListId)) return true;
+      if (targetIdMatches(lId, targetListId)) return true;
       if (normListName && lName === normListName) return true;
       return false;
     });
+
+  function targetIdMatches(lId: any, tId: any) {
+    return tId && String(lId) === String(tId);
+  }
 
   const receiptTemplate: 'template_1' | 'template_2' =
     (linkedList as any)?.receiptTemplate ||
@@ -83,7 +88,7 @@ export function preparePaymentReceiptWhatsApp({
   const amountInWords = numberToArabicWords(snapshot.paidAmount);
 
   // Build the direct short view URL pointing to the standalone Receipt View
-  const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+  const origin = getPublicShareBaseUrl();
   const cleanPaymentId = (payment.id || '').trim();
   const searchParams = new URLSearchParams({
     view_receipt: 'true',
@@ -109,6 +114,7 @@ export function preparePaymentReceiptWhatsApp({
 
   let messageText = '';
   if (receiptTemplate === 'template_2') {
+    // Table receipt / وصل جداول - includes "الكرار للموبايل" without "وصل تسديد - جداول"
     messageText = `━━━━━━━━━━━━━━━
 *الكرار للموبايل*
 ━━━━━━━━━━━━━━━
@@ -124,6 +130,7 @@ export function preparePaymentReceiptWhatsApp({
 🔗 *رابط الوصل المباشر:*
 ${receiptUrl}`.trim();
   } else {
+    // Default receipt / وصل افتراضي - strictly NO office name ("ماريد اي اسم مكتب احذف الكرار للتقسيط")
     messageText = `👤 *اسم الزبون:* ${customerName}
 💵 *المبلغ رقماً:* ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
 📝 *المبلغ كتابة:* ${amountInWords}

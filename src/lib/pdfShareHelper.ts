@@ -6,6 +6,7 @@ import { Share } from '@capacitor/share';
 import { numberToArabicWords } from './tafqeet';
 import { getPaymentFormattedDateAndTime } from './dateUtils';
 import { InstallmentContract, PaymentRecord } from '../types';
+import { getPublicShareBaseUrl } from './apiConfig';
 
 /**
  * Converts Arabic and Persian numerals to Western digits (0-9).
@@ -500,7 +501,7 @@ export async function shareCustomerPaymentsOrDirectWhatsApp({
     }
 
     if (cleanPhone) {
-      const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+      const origin = getPublicShareBaseUrl();
       const contractId = contract?.id || (payments[0] as any)?.contractId || '';
       const statementUrl = contractId ? `${origin}/s/${encodeURIComponent(contractId)}` : origin;
 

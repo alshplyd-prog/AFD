@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { createPool } from './index.ts';
-import { INITIAL_CONTRACTS } from '../data/initialContracts.ts';
 
 export async function initializeDatabaseSchema() {
   if (!process.env.DATABASE_URL && !process.env.DB_HOST && (!process.env.SQL_HOST || !process.env.SQL_DB_NAME)) {

@@ -166,7 +166,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
   }
 
   return (
-    <div className="min-h-screen bg-slate-200 dark:bg-slate-950 flex flex-col items-center py-4 px-2 dir-rtl text-slate-900 antialiased font-sans">
+    <div className="min-h-screen bg-slate-200 dark:bg-slate-950 flex flex-col items-center py-3 px-2 dir-rtl text-slate-900 antialiased font-sans w-full overflow-x-hidden">
       {/* Print Styles for Exact A4 Output */}
       <style>{`
         @media print {
@@ -192,67 +192,67 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
         }
       `}</style>
 
-      {/* Main Statement Container (A4 Dimensions: max 210mm wide, fully responsive on mobile) */}
+      {/* Main Statement Container (Fully responsive across all screen sizes) */}
       <div
         id="customer-statement-container"
-        className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 p-4 sm:p-8 rounded-lg shadow-xl border border-slate-200 select-none dir-rtl relative font-sans flex flex-col justify-between my-auto"
+        className="w-full max-w-4xl bg-white text-slate-900 p-3 sm:p-6 rounded-xl shadow-xl border border-slate-200 select-none dir-rtl relative font-sans flex flex-col justify-between my-auto overflow-hidden"
       >
         <div>
           {/* Header Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b-4 border-[#0f766e] gap-2">
+          <div className="flex flex-row items-center justify-between pb-2.5 mb-3 border-b-2 sm:border-b-4 border-[#0f766e] gap-2">
             <div>
-              <h1 className="text-xl sm:text-3xl font-black text-[#0f766e] tracking-tight">الـكـرار لـلـتـقـسـيـط</h1>
+              <h1 className="text-lg sm:text-3xl font-black text-[#0f766e] tracking-tight">الكرار للموبايل والتقسيط</h1>
               <p className="text-xs sm:text-base font-extrabold text-slate-700 mt-0.5">كشف وسجل تسديدات الزبون</p>
             </div>
-            <div className="text-right sm:text-left text-xs font-extrabold text-slate-600 space-y-0.5">
+            <div className="text-left text-[11px] sm:text-xs font-extrabold text-slate-600 space-y-0.5">
               <div>تاريخ التصدير: <span className="font-black text-slate-900 dir-ltr inline-block">{getLocalDateString()}</span></div>
-              <div>عدد الحركات: <span className="font-black text-[#0f766e] text-sm sm:text-base">{payments.length}</span></div>
+              <div>عدد الحركات: <span className="font-black text-[#0f766e] text-xs sm:text-base">{payments.length}</span></div>
             </div>
           </div>
 
           {/* Customer Info Card */}
-          <div className="bg-[#f0fdfa] border-2 border-[#2dd4bf] rounded-2xl p-3 sm:p-4 my-4">
+          <div className="bg-[#f0fdfa] border-2 border-[#2dd4bf] rounded-xl sm:rounded-2xl p-2.5 sm:p-4 my-3">
             {/* Top Line: Customer Name, Phone, Item */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#99f6e4] pb-2.5 mb-3 text-right">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#99f6e4] pb-2 mb-2.5 text-right">
               <div className="flex items-center gap-1">
                 <span className="text-xs sm:text-sm font-extrabold text-[#0f766e]">اسم الزبون: </span>
-                <span className="text-sm sm:text-xl font-black text-slate-900">{customerName}</span>
+                <span className="text-xs sm:text-lg font-black text-slate-900">{customerName}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-xs sm:text-sm font-extrabold text-[#0f766e]">الهاتف: </span>
-                <span className="text-xs sm:text-lg font-black text-slate-900 dir-ltr inline-block">{phone || '—'}</span>
+                <span className="text-xs sm:text-base font-black text-slate-900 dir-ltr inline-block">{phone || '—'}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-xs sm:text-sm font-extrabold text-[#0f766e]">المادة: </span>
-                <span className="text-sm sm:text-xl font-black text-slate-900">{itemName}</span>
+                <span className="text-xs sm:text-lg font-black text-slate-900">{itemName}</span>
               </div>
             </div>
 
             {/* Bottom Line: 4 Metric Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-              <div className="bg-white border border-[#99f6e4] rounded-xl p-2 sm:p-3 text-center shadow-xs">
-                <div className="text-[11px] sm:text-xs font-extrabold text-slate-500">المبلغ الكلي</div>
-                <div className="text-sm sm:text-lg font-black text-[#0284c7] dir-ltr mt-0.5">
-                  {totalPrice.toLocaleString('en-US')} <span className="text-[10px] sm:text-xs font-bold text-slate-500">د.ع</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3">
+              <div className="bg-white border border-[#99f6e4] rounded-lg sm:rounded-xl p-1.5 sm:p-3 text-center shadow-2xs">
+                <div className="text-[10px] sm:text-xs font-extrabold text-slate-500">المبلغ الكلي</div>
+                <div className="text-xs sm:text-lg font-black text-[#0284c7] dir-ltr mt-0.5">
+                  {totalPrice.toLocaleString('en-US')} <span className="text-[9px] sm:text-xs font-bold text-slate-500">د.ع</span>
                 </div>
               </div>
 
-              <div className="bg-white border border-[#99f6e4] rounded-xl p-2 sm:p-3 text-center shadow-xs">
-                <div className="text-[11px] sm:text-xs font-extrabold text-slate-500">الواصل الكلي</div>
-                <div className="text-sm sm:text-lg font-black text-[#047857] dir-ltr mt-0.5">
-                  {totalPaid.toLocaleString('en-US')} <span className="text-[10px] sm:text-xs font-bold text-slate-500">د.ع</span>
+              <div className="bg-white border border-[#99f6e4] rounded-lg sm:rounded-xl p-1.5 sm:p-3 text-center shadow-2xs">
+                <div className="text-[10px] sm:text-xs font-extrabold text-slate-500">الواصل الكلي</div>
+                <div className="text-xs sm:text-lg font-black text-[#047857] dir-ltr mt-0.5">
+                  {totalPaid.toLocaleString('en-US')} <span className="text-[9px] sm:text-xs font-bold text-slate-500">د.ع</span>
                 </div>
               </div>
 
-              <div className="bg-white border border-[#99f6e4] rounded-xl p-2 sm:p-3 text-center shadow-xs">
-                <div className="text-[11px] sm:text-xs font-extrabold text-slate-500">المتبقي الباقي</div>
-                <div className="text-sm sm:text-lg font-black text-[#b91c1c] dir-ltr mt-0.5">
-                  {remaining.toLocaleString('en-US')} <span className="text-[10px] sm:text-xs font-bold text-slate-500">د.ع</span>
+              <div className="bg-white border border-[#99f6e4] rounded-lg sm:rounded-xl p-1.5 sm:p-3 text-center shadow-2xs">
+                <div className="text-[10px] sm:text-xs font-extrabold text-slate-500">المتبقي الباقي</div>
+                <div className="text-xs sm:text-lg font-black text-[#b91c1c] dir-ltr mt-0.5">
+                  {remaining.toLocaleString('en-US')} <span className="text-[9px] sm:text-xs font-bold text-slate-500">د.ع</span>
                 </div>
               </div>
 
-              <div className="bg-white border border-[#99f6e4] rounded-xl p-2 sm:p-3 text-center flex flex-col justify-center shadow-xs">
-                <div className="text-[11px] sm:text-xs font-extrabold text-slate-500">حالة العقد</div>
+              <div className="bg-white border border-[#99f6e4] rounded-lg sm:rounded-xl p-1.5 sm:p-3 text-center flex flex-col justify-center shadow-2xs">
+                <div className="text-[10px] sm:text-xs font-extrabold text-slate-500">حالة العقد</div>
                 <div className={`text-xs sm:text-base font-black mt-0.5 ${isFinished ? 'text-[#047857]' : 'text-[#b45309]'}`}>
                   {isFinished ? 'منتهي ومكتمل' : 'قيد التسديد'}
                 </div>
@@ -261,21 +261,21 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
           </div>
 
           {/* Payments History Table */}
-          <div className="mb-4 overflow-x-auto rounded-xl border border-slate-300">
-            <table className="w-full text-right border-collapse text-xs sm:text-sm">
+          <div className="mb-3 overflow-x-auto rounded-lg sm:rounded-xl border border-slate-300">
+            <table className="w-full text-right border-collapse text-[11px] sm:text-sm">
               <thead>
                 <tr className="bg-[#0f766e] text-white font-black text-xs sm:text-base">
-                  <th className="py-2.5 px-2 text-center w-8 sm:w-12">#</th>
-                  <th className="py-2.5 px-2 text-center">التاريخ والوقت</th>
-                  <th className="py-2.5 px-2 text-center">المبلغ المسدد</th>
-                  <th className="py-2.5 px-2 text-center">المندوب</th>
-                  <th className="py-2.5 px-2 text-right">ملاحظات</th>
+                  <th className="py-2 px-1 sm:px-2 text-center w-6 sm:w-10">#</th>
+                  <th className="py-2 px-1 sm:px-2 text-center">التاريخ والوقت</th>
+                  <th className="py-2 px-1 sm:px-2 text-center">المبلغ المسدد</th>
+                  <th className="py-2 px-1 sm:px-2 text-center">المندوب</th>
+                  <th className="py-2 px-1 sm:px-2 text-right">ملاحظات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {payments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-slate-400 font-bold text-base">
+                    <td colSpan={5} className="py-8 text-center text-slate-400 font-bold text-sm sm:text-base">
                       لا توجد تسديدات مسجلة بعد لهذا العقد
                     </td>
                   </tr>
@@ -285,17 +285,17 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
                     const amt = Number(p.amountPaid ?? p.amount ?? 0);
                     return (
                       <tr key={p.id || idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                        <td className="py-2.5 px-2 text-center font-bold text-slate-500">{idx + 1}</td>
-                        <td className="py-2.5 px-2 text-center font-black text-slate-900 dir-ltr whitespace-nowrap">
-                          {dateStr} <span className="text-[11px] sm:text-xs font-bold text-slate-500">{timeStr}</span>
+                        <td className="py-2 px-1 text-center font-bold text-slate-500">{idx + 1}</td>
+                        <td className="py-2 px-1 text-center font-black text-slate-900 dir-ltr whitespace-nowrap text-[10px] sm:text-xs">
+                          {dateStr} <span className="font-bold text-slate-500">{timeStr}</span>
                         </td>
-                        <td className="py-2.5 px-2 text-center font-black text-[#0f766e] dir-ltr whitespace-nowrap text-sm sm:text-lg">
+                        <td className="py-2 px-1 text-center font-black text-[#0f766e] dir-ltr whitespace-nowrap text-xs sm:text-base">
                           {amt.toLocaleString('en-US')} د.ع
                         </td>
-                        <td className="py-2.5 px-2 text-center font-bold text-slate-800 whitespace-nowrap">
+                        <td className="py-2 px-1 text-center font-bold text-slate-800 whitespace-nowrap text-[11px] sm:text-xs">
                           {p.repName || '—'}
                         </td>
-                        <td className="py-2.5 px-2 text-right font-medium text-slate-600">
+                        <td className="py-2 px-1 text-right font-medium text-slate-600 text-[11px] sm:text-xs">
                           {cleanNote || '—'}
                         </td>
                       </tr>
@@ -306,13 +306,13 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
               {payments.length > 0 && (
                 <tfoot>
                   <tr className="bg-[#e2e8f0] font-black border-t-2 border-slate-300">
-                    <td colSpan={2} className="py-3 px-2 text-right text-slate-900 text-xs sm:text-base">
+                    <td colSpan={2} className="py-2.5 px-2 text-right text-slate-900 text-xs sm:text-base">
                       مجموع المبالغ المسددة:
                     </td>
-                    <td className="py-3 px-2 text-center text-[#047857] text-sm sm:text-xl dir-ltr whitespace-nowrap">
+                    <td className="py-2.5 px-1 text-center text-[#047857] text-xs sm:text-lg dir-ltr whitespace-nowrap">
                       {totalPaid.toLocaleString('en-US')} د.ع
                     </td>
-                    <td colSpan={2} className="py-3 px-2 text-right text-slate-700 text-xs font-extrabold">
+                    <td colSpan={2} className="py-2.5 px-2 text-right text-slate-700 text-[10px] sm:text-xs font-extrabold">
                       ({numberToArabicWords(totalPaid)})
                     </td>
                   </tr>
@@ -323,8 +323,8 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
         </div>
 
         {/* Footer Signature */}
-        <div className="flex flex-col sm:flex-row items-center justify-between pt-3 border-t-2 border-dashed border-slate-300 text-[11px] sm:text-xs font-bold text-slate-600 mt-4 gap-2">
-          <div>الكرار للتقسيط - وثيقة كشف حساب معتمدة A4</div>
+        <div className="flex flex-row items-center justify-between pt-2.5 border-t-2 border-dashed border-slate-300 text-[10px] sm:text-xs font-bold text-slate-600 mt-3 gap-2">
+          <div>الكرار للموبايل والتقسيط - وثيقة كشف حساب معتمدة</div>
           <div className="font-black text-slate-900">توقيع وختم الإدارة: ___________________</div>
         </div>
       </div>

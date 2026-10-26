@@ -1696,7 +1696,7 @@ export async function shareReceiptImage(receiptData: ThermalReceiptData) {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'وصل تسديد - الكرار للموبايل',
+          title: 'وصل تسديد',
           text: `وصل تسديد للزبون: ${receiptData.customerName}`,
         });
         return;

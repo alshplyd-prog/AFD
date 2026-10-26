@@ -21,7 +21,6 @@ export function bumpSyncVersion() {
     }
   } catch (e) {}
 }
-import { INITIAL_CONTRACTS } from "./src/data/initialContracts.ts";
 import fs from "fs";
 import webpush from "web-push";
 

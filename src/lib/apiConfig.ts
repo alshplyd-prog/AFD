@@ -83,7 +83,7 @@ export function getPublicShareBaseUrl(): string {
   if (custom && !custom.includes('localhost') && !custom.includes('127.0.0.1')) {
     return custom.replace(/\/+$/, '');
   }
-  if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1') && !activeWorkingServer.includes('ais-')) {
+  if (activeWorkingServer && !activeWorkingServer.includes('localhost') && !activeWorkingServer.includes('127.0.0.1')) {
     return activeWorkingServer.replace(/\/+$/, '');
   }
   if (typeof window !== 'undefined' && window.location.origin && 
@@ -91,11 +91,10 @@ export function getPublicShareBaseUrl(): string {
       !window.location.origin.includes('localhost') && 
       !window.location.origin.includes('127.0.0.1') && 
       !window.location.origin.includes('capacitor://') && 
-      !window.location.origin.includes('file://') &&
-      !window.location.origin.includes('ais-')) {
+      !window.location.origin.includes('file://')) {
     return window.location.origin.replace(/\/+$/, '');
   }
-  return '';
+  return DEFAULT_REMOTE_SERVER;
 }
 
 export function getFullApiUrl(endpoint: string, baseOverride?: string): string {
