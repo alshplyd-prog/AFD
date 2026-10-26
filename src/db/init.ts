@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createPool } from './index.ts';
+import { INITIAL_CONTRACTS } from '../data/initialContracts.ts';
 
 export async function initializeDatabaseSchema() {
   if (!process.env.DATABASE_URL && !process.env.DB_HOST && (!process.env.SQL_HOST || !process.env.SQL_DB_NAME)) {
@@ -264,10 +265,8 @@ export async function initializeDatabaseSchema() {
           note TEXT,
           date TEXT,
           rep_name TEXT,
-          employee_name TEXT,
           created_at TEXT NOT NULL
         );
-        ALTER TABLE employee_transactions ADD COLUMN IF NOT EXISTS employee_name TEXT;
 
         CREATE TABLE IF NOT EXISTS reps (
           id TEXT PRIMARY KEY,

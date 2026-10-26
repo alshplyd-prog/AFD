@@ -21,6 +21,7 @@ export function bumpSyncVersion() {
     }
   } catch (e) {}
 }
+import { INITIAL_CONTRACTS } from "./src/data/initialContracts.ts";
 import fs from "fs";
 import webpush from "web-push";
 
@@ -277,13 +278,12 @@ async function recalculateAllFundBalancesInPg() {
           CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') THEN 'employee_loan' ELSE 'employee_repay' END,
           COALESCE(et.amount, 0),
           CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') 
-            THEN 'دين / سلفة للموظف (' || COALESCE(e.name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
-            ELSE 'راجع دين / تسديد من الموظف (' || COALESCE(e.name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+            THEN 'دين / سلفة للموظف (' || COALESCE(et.employee_name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+            ELSE 'راجع دين / تسديد من الموظف (' || COALESCE(et.employee_name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
           END,
           COALESCE(et.rep_name, 'الإدارة'),
           COALESCE(et.created_at, NOW()::text)
         FROM employee_transactions et
-        LEFT JOIN employees e ON e.id = et.employee_id
         WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = et.id)
           AND COALESCE(et.amount, 0) > 0
           AND et.fund_id IS NOT NULL 
@@ -1062,6 +1062,11 @@ async function startServer() {
     .then(async () => {
       if (isPgConfigured()) {
         await executePg(`
+          CREATE TABLE IF NOT EXISTS shared_pdfs (
+            filename TEXT PRIMARY KEY,
+            data_base64 TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
           CREATE INDEX IF NOT EXISTS idx_payments_contract_id ON payments (contract_id);
           CREATE INDEX IF NOT EXISTS idx_payments_customer_name ON payments (customer_name);
           CREATE INDEX IF NOT EXISTS idx_payments_payment_date ON payments (payment_date);
@@ -1166,6 +1171,175 @@ async function startServer() {
       deletedCount,
       timestamp: Date.now(),
     });
+  });
+
+  async function uploadToPublicPdfCdn(buffer: Buffer, filename: string): Promise<string | null> {
+    try {
+      const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+      const pre = Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="reqtype"\r\n\r\nfileupload\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="time"\r\n\r\n72h\r\n` +
+        `--${boundary}\r\nContent-Disposition: form-data; name="fileToUpload"; filename="${encodeURIComponent(filename)}"\r\n` +
+        `Content-Type: application/pdf\r\n\r\n`
+      );
+      const post = Buffer.from(`\r\n--${boundary}--\r\n`);
+      const fullBody = Buffer.concat([pre, buffer, post]);
+
+      const res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'User-Agent': 'Mozilla/5.0 AlKarrarApp/1.0',
+        },
+        body: fullBody,
+        signal: AbortSignal.timeout(10000),
+      });
+      if (res.ok) {
+        const text = (await res.text()).trim();
+        if (text.startsWith('http://') || text.startsWith('https://')) {
+          return text;
+        }
+      }
+    } catch (err: any) {
+      // Gracefully swallow timeouts and aborts to avoid log noise when fallback URL is available
+      if (err?.name !== 'TimeoutError' && !err?.message?.includes('timeout') && !err?.message?.includes('aborted')) {
+        console.warn('uploadToPublicPdfCdn note:', err?.message || err);
+      }
+    }
+    return null;
+  }
+
+  // Storage for shared statement & receipt PDFs (PostgreSQL + Local Cache + Direct Public CDN)
+  app.post("/api/save-statement-pdf", async (req, res) => {
+    try {
+      const { filename, base64Data } = req.body || {};
+      if (!base64Data) {
+        return res.status(400).json({ error: "No PDF data" });
+      }
+      const sharedDir = path.resolve(process.cwd(), "public", "shared_pdfs");
+      if (!fs.existsSync(sharedDir)) {
+        fs.mkdirSync(sharedDir, { recursive: true });
+      }
+      const safeName = (filename || "statement").replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, "_");
+      const finalName = safeName.endsWith(".pdf") ? safeName : `${safeName}.pdf`;
+      const filePath = path.join(sharedDir, finalName);
+      const buffer = Buffer.from(base64Data, "base64");
+      fs.writeFileSync(filePath, buffer);
+
+      if (isPgConfigured()) {
+        await executePg(
+          `CREATE TABLE IF NOT EXISTS shared_pdfs (
+             filename TEXT PRIMARY KEY,
+             data_base64 TEXT NOT NULL,
+             created_at TIMESTAMPTZ DEFAULT NOW()
+           )`
+        ).catch(() => {});
+
+        await executePg(
+          `INSERT INTO shared_pdfs (filename, data_base64, created_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (filename) DO UPDATE SET data_base64 = EXCLUDED.data_base64, created_at = NOW()`,
+          [finalName, base64Data]
+        ).catch(() => {});
+      }
+
+      let publicUrl = '';
+      try {
+        publicUrl = (await uploadToPublicPdfCdn(buffer, finalName)) || '';
+      } catch (uErr) {}
+
+      const fileUrl = `/shared_pdfs/${encodeURIComponent(finalName)}`;
+      return res.json({
+        success: true,
+        url: publicUrl || fileUrl,
+        publicUrl: publicUrl || null,
+        localUrl: fileUrl,
+      });
+    } catch (e: any) {
+      console.warn("Error saving statement PDF:", e);
+      return res.status(500).json({ error: "Failed to save PDF" });
+    }
+  });
+
+  // Explicit download / inline view route for shared PDFs (supports both /shared_pdfs and /api/shared_pdfs)
+  app.get(["/shared_pdfs/:filename", "/api/shared_pdfs/:filename"], async (req, res) => {
+    try {
+      const rawParam = req.params.filename || '';
+      let decodedParam = rawParam;
+      try {
+        decodedParam = decodeURIComponent(rawParam);
+      } catch (e) {}
+
+      const sharedDir = path.resolve(process.cwd(), "public", "shared_pdfs");
+      
+      // 1. Try checking on disk (both decoded and raw names)
+      for (const nameToTry of [decodedParam, rawParam]) {
+        if (!nameToTry) continue;
+        const filePath = path.join(sharedDir, nameToTry);
+        if (fs.existsSync(filePath)) {
+          const stats = fs.statSync(filePath);
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(decodedParam)}"`);
+          res.setHeader("Content-Length", String(stats.size));
+          res.setHeader("Accept-Ranges", "bytes");
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          return fs.createReadStream(filePath).pipe(res);
+        }
+      }
+
+      // 2. Try PostgreSQL persistent store (handles ephemeral Cloud Run container restarts)
+      if (isPgConfigured()) {
+        try {
+          const rows = await executePg(
+            "SELECT data_base64 FROM shared_pdfs WHERE filename = $1 OR filename = $2 LIMIT 1",
+            [decodedParam, rawParam]
+          );
+          if (rows && rows.length > 0 && rows[0].data_base64) {
+            const buffer = Buffer.from(rows[0].data_base64, "base64");
+            if (!fs.existsSync(sharedDir)) {
+              fs.mkdirSync(sharedDir, { recursive: true });
+            }
+            try {
+              fs.writeFileSync(path.join(sharedDir, decodedParam), buffer);
+            } catch (wErr) {}
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(decodedParam)}"`);
+            res.setHeader("Content-Length", String(buffer.length));
+            res.setHeader("Accept-Ranges", "bytes");
+            res.setHeader("Cache-Control", "public, max-age=86400");
+            return res.send(buffer);
+          }
+        } catch (dbErr) {
+          console.warn("Error fetching shared PDF from PG:", dbErr);
+        }
+      }
+
+      return res.status(404).setHeader("Content-Type", "text/html; charset=utf-8").send(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>الملف غير متوفر - الكرار للموبايل</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+            .card { background: #1e293b; border: 1px solid #334155; border-radius: 20px; padding: 32px 24px; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+            h2 { color: #38bdf8; margin-top: 0; font-size: 22px; }
+            p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h2>📄 كشف حساب الزبون</h2>
+            <p>الملف المطلوب غير متوفر حالياً أو قد تم تحديثه بنسخة جديدة من قبل الإدارة.</p>
+            <p style="font-size: 12px; color: #64748b;">الكرار للتقسيط للموبايل</p>
+          </div>
+        </body>
+        </html>
+      `);
+    } catch (e) {
+      return res.status(500).send("Error reading PDF");
+    }
   });
 
   // Welcome message settings API
@@ -2138,208 +2312,6 @@ async function startServer() {
       }
       const filePayments = (fileDb.get("payments") || []).map(mapPaymentRow).filter((p: any) => (p.amountPaid ?? p.amount ?? 0) > 0);
       res.json(filePayments);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.get("/api/receipt/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      let payment: any = null;
-      let contract: any = null;
-
-      if (isPgConfigured()) {
-        try {
-          const pRows = await executePg(`
-            SELECT p.*, COALESCE(NULLIF(p.customer_name, ''), c.customer_name, s.customer_name, '') AS resolved_customer_name
-            FROM payments p
-            LEFT JOIN contracts c ON p.contract_id = c.id
-            LEFT JOIN sales s ON p.contract_id = s.id
-            WHERE p.id = $1 OR TRIM(p.id) = TRIM($1)
-            LIMIT 1
-          `, [id]);
-          if (pRows && pRows.length > 0) {
-            payment = mapPaymentRow(pRows[0]);
-          }
-
-          if (payment?.contractId) {
-            let cRows = await executePg(`SELECT * FROM sales WHERE id = $1 LIMIT 1`, [payment.contractId]).catch(() => []);
-            if (!cRows || cRows.length === 0) {
-              cRows = await executePg(`SELECT * FROM contracts WHERE id = $1 LIMIT 1`, [payment.contractId]).catch(() => []);
-            }
-            if (cRows && cRows.length > 0) {
-              contract = mapContractRow(cRows[0]);
-            }
-          }
-        } catch (e) {
-          console.warn('Error fetching receipt from PG:', e);
-        }
-      }
-
-      if (!payment) {
-        const filePayments = fileDb.get<any>("payments") || [];
-        const found = filePayments.find((p: any) => p.id === id || String(p.id).trim() === String(id).trim());
-        if (found) payment = mapPaymentRow(found);
-      }
-
-      if (!payment) {
-        return res.status(404).json({ error: "Receipt not found" });
-      }
-
-      if (!contract && payment.contractId) {
-        const fileContracts = fileDb.get<any>("contracts") || [];
-        const foundC = fileContracts.find((c: any) => c.id === payment.contractId);
-        if (foundC) contract = mapContractRow(foundC);
-      }
-
-      const amt = Number(payment.amountPaid || payment.amount || 0);
-      const totalPrice = Number(contract?.totalPrice || 0);
-      let totalPaid = Number(contract?.totalPaid || amt);
-      let remainingBalance = Number(contract?.remainingBalance || 0);
-
-      if (isPgConfigured() && payment?.contractId) {
-        try {
-          const sumRows = await executePg(`
-            SELECT COALESCE(SUM(amount), 0) AS cumulative_paid
-            FROM payments
-            WHERE contract_id = $1 AND (created_at <= $2 OR id = $3)
-          `, [payment.contractId, payment.createdAt || new Date().toISOString(), payment.id]);
-          if (sumRows && sumRows.length > 0 && sumRows[0].cumulative_paid != null) {
-            totalPaid = Number(sumRows[0].cumulative_paid);
-            const netFinanced = Math.max(0, totalPrice - Number(contract?.advancePayment || 0));
-            remainingBalance = Math.max(0, netFinanced - totalPaid);
-          }
-        } catch (sumErr) {}
-      }
-
-      let resolvedTemplate = contract?.receiptTemplate;
-      if (!resolvedTemplate) {
-        const listId = contract?.listId;
-        const listName = contract?.listName;
-        if (listId || listName) {
-          const fileLists = fileDb.get<any>("customer_lists") || [];
-          const targetList = fileLists.find((l: any) => l.id === listId || l.name === listName);
-          if (targetList?.receiptTemplate || targetList?.receipt_template) {
-            resolvedTemplate = targetList.receiptTemplate || targetList.receipt_template;
-          }
-        }
-      }
-      if (!resolvedTemplate && isPgConfigured() && (contract?.listId || contract?.listName)) {
-        try {
-          const lRows = await executePg(
-            `SELECT receipt_template FROM customer_lists WHERE id = $1 OR name = $2 LIMIT 1`,
-            [contract?.listId || '', contract?.listName || '']
-          ).catch(() => []);
-          if (lRows && lRows.length > 0 && lRows[0].receipt_template) {
-            resolvedTemplate = lRows[0].receipt_template;
-          }
-        } catch (e) {}
-      }
-
-      res.json({
-        id: payment.id,
-        customerName: payment.customerName || contract?.customerName || 'زبون',
-        customerPhone: contract?.customerPhone || '',
-        itemName: contract?.itemName || 'قسط',
-        totalPrice,
-        totalPaid,
-        remainingBalance,
-        paidAmount: amt,
-        paymentDate: payment.paymentDate,
-        paymentTime: payment.paymentTime || '',
-        timeStr: payment.paymentTime || '',
-        repName: payment.repName || '',
-        note: payment.note || '',
-        template: resolvedTemplate || 'template_1',
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.get("/api/statement/:id", async (req, res) => {
-    try {
-      const { id } = req.params;
-      let contract: any = null;
-      let payments: any[] = [];
-
-      if (isPgConfigured()) {
-        try {
-          let cRows = await executePg(`SELECT * FROM sales WHERE id = $1 LIMIT 1`, [id]).catch(() => []);
-          if (!cRows || cRows.length === 0) {
-            cRows = await executePg(`SELECT * FROM contracts WHERE id = $1 LIMIT 1`, [id]).catch(() => []);
-          }
-          if (cRows && cRows.length > 0) {
-            contract = mapContractRow(cRows[0]);
-          } else {
-            let cRowsByName = await executePg(`SELECT * FROM sales WHERE customer_name = $1 LIMIT 1`, [id]).catch(() => []);
-            if (!cRowsByName || cRowsByName.length === 0) {
-              cRowsByName = await executePg(`SELECT * FROM contracts WHERE customer_name = $1 LIMIT 1`, [id]).catch(() => []);
-            }
-            if (cRowsByName && cRowsByName.length > 0) {
-              contract = mapContractRow(cRowsByName[0]);
-            }
-          }
-
-          const targetContractId = contract?.id || id;
-          const pRows = await executePg(`
-            SELECT * FROM payments 
-            WHERE contract_id = $1 OR contract_id = $2
-            ORDER BY payment_date ASC, created_at ASC
-          `, [id, targetContractId]);
-          if (pRows && Array.isArray(pRows)) {
-            payments = pRows.map(mapPaymentRow);
-          }
-        } catch (e) {
-          console.warn('Error fetching statement from PG:', e);
-        }
-      }
-
-      if (!contract) {
-        const fileContracts = fileDb.get<any>("contracts") || [];
-        const foundC = fileContracts.find((c: any) => c.id === id || c.customerName === id);
-        if (foundC) contract = mapContractRow(foundC);
-      }
-
-      if (payments.length === 0) {
-        const filePayments = fileDb.get<any>("payments") || [];
-        const targetId = contract?.id || id;
-        payments = filePayments
-          .filter((p: any) => p.contractId === id || p.contractId === targetId || p.contract_id === id || p.contract_id === targetId)
-          .map(mapPaymentRow);
-      }
-
-      if (!contract && payments.length === 0) {
-        return res.status(404).json({ error: "Customer statement not found" });
-      }
-
-      const totalPrice = Number(contract?.totalPrice || 0);
-      const advancePayment = Number(contract?.advancePayment || 0);
-      const netDue = Math.max(0, totalPrice - advancePayment);
-      const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amountPaid || p.amount || 0) || 0), 0);
-      const remainingBalance = Math.max(0, (netDue > 0 ? netDue : (contract?.remainingBalance != null ? Number(contract.remainingBalance) : 0)) - totalPaid);
-      const isFinished = remainingBalance <= 0;
-
-      res.json({
-        contract: contract || {
-          id,
-          customerName: payments[0]?.customerName || 'زبون',
-          customerPhone: (payments[0] as any)?.customerPhone || '',
-          itemName: 'قسط',
-          totalPrice,
-          advancePayment,
-          totalPaid,
-          remainingBalance,
-          status: isFinished ? 'completed' : 'active',
-        },
-        payments,
-        totalPrice,
-        advancePayment,
-        totalPaid,
-        remainingBalance,
-        isFinished,
-      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -3348,6 +3320,22 @@ async function startServer() {
       await executePg(
         `UPDATE reps SET name = COALESCE($1, name), phone = COALESCE($2, phone), code = COALESCE($3, code), role = COALESCE($4, role), can_edit = COALESCE($5, can_edit), can_delete = COALESCE($6, can_delete), can_move_customer = COALESCE($7, can_move_customer), can_sell = COALESCE($8, can_sell), allowed_list_ids = COALESCE($9, allowed_list_ids), avatar_url = COALESCE($10, avatar_url) WHERE id = $11`,
         [updates.name, updates.phone, updates.code, updates.role, updates.canEdit, updates.canDelete, updates.canMoveCustomer, updates.canSell, updates.allowedListIds ? JSON.stringify(updates.allowedListIds) : null, updates.avatarUrl ?? updates.avatar_url ?? null, id]
+      );
+      bumpSyncVersion();
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/reps/:id/avatar", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { avatarUrl } = req.body;
+      fileDb.update("reps", id, { avatarUrl: avatarUrl || '' } as any);
+      await executePg(
+        `UPDATE reps SET avatar_url = $1 WHERE id = $2`,
+        [avatarUrl || '', id]
       );
       bumpSyncVersion();
       res.json({ success: true });
