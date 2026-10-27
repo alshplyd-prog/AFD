@@ -5,7 +5,6 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { numberToArabicWords } from './tafqeet';
 import { getPaymentFormattedDateAndTime } from './dateUtils';
-import { getPaymentReceiptBalances } from './paymentCalculator';
 import { InstallmentContract, PaymentRecord } from '../types';
 import { getPublicShareBaseUrl } from './apiConfig';
 
@@ -59,26 +58,45 @@ export function buildCustomerPaymentStatementText({
   isAr?: boolean;
 }): string {
   const customerName = contract?.customerName || payments[0]?.customerName || 'الزبون';
+  const itemName = contract?.itemName || '—';
+  const phone = contract?.customerPhone || '';
+  const totalPrice = Number(contract?.totalPrice || 0);
+  const advance = Number(contract?.advancePayment || 0);
+  const netDue = Math.max(0, totalPrice - advance);
   const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amountPaid ?? p.amount ?? 0) || 0), 0);
+  const remaining = Math.max(0, netDue - totalPaid);
+  const isFinished = remaining <= 0;
 
   const now = new Date();
   const printDateStr = now.toLocaleDateString('en-CA');
 
   const paymentsLines = payments
     .map((p, idx) => {
-      const { dateStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
+      const { dateStr, timeStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       const noteStr = cleanNote ? ` (${cleanNote})` : '';
       const repStr = p.repName ? ` - مندوب: ${p.repName}` : '';
-      return `${idx + 1}. ${dateStr}: ${amount.toLocaleString('en-US')} د.ع${repStr}${noteStr}`;
+      return `${idx + 1}. 🗓️ ${dateStr} ${timeStr}: *${amount.toLocaleString('en-US')} د.ع*${repStr}${noteStr}`;
     })
     .join('\n');
 
-  return `اسم الزبون: ${customerName}
-إجمالي الواصل: ${totalPaid.toLocaleString('en-US')} د.ع
+  return `📄 *كشف وسجل تسديدات الزبون*
 التاريخ: ${printDateStr}
-تفاصيل التسديدات:
-${paymentsLines || 'لا توجد دفعات مسجلة بعد'}`.trim();
+--------------------------------
+👤 *الزبون:* ${customerName}
+${phone ? `📱 *الهاتف:* ${phone}\n` : ''}📦 *المادة:* ${itemName}
+💰 *المبلغ الكلي:* ${totalPrice.toLocaleString('en-US')} د.ع
+${advance > 0 ? `💵 *المقدمة:* ${advance.toLocaleString('en-US')} د.ع\n` : ''}✅ *إجمالي الواصل:* ${totalPaid.toLocaleString('en-US')} د.ع
+⏳ *المتبقي المطلوب:* ${remaining.toLocaleString('en-US')} د.ع
+📌 *حالة العقد:* ${isFinished ? '✅ منتهي ومكتمل' : '⏳ قيد التسديد'}
+--------------------------------
+📋 *تفاصيل حركات التسديد:*
+${paymentsLines || 'لا توجد دفعات مسجلة بعد'}
+--------------------------------
+💵 *المجموع الكلي للواصل:* ${totalPaid.toLocaleString('en-US')} د.ع
+(${numberToArabicWords(totalPaid)})
+
+_وثيقة كشف حساب معتمدة_`.trim();
 }
 
 /**
@@ -319,6 +337,7 @@ export async function shareCustomerPaymentsPdf({
 
   const now = new Date();
   const printDateStr = now.toLocaleDateString('en-CA');
+  const printTimeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const paymentsRowsHtml = payments
     .map((p, idx) => {
@@ -326,95 +345,95 @@ export async function shareCustomerPaymentsPdf({
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       const rep = p.repName || '—';
       return `
-        <tr style="border-bottom: 2px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-          <td style="padding: 16px 12px; text-align: center; font-weight: 900; color: #475569; font-size: 20px;">${idx + 1}</td>
-          <td style="padding: 16px 12px; text-align: center; font-weight: 900; color: #0f766e; font-size: 25px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
-          <td style="padding: 16px 12px; text-align: center; font-weight: 900; color: #0f172a; font-size: 20px; direction: ltr;">${dateStr}</td>
-          <td style="padding: 16px 12px; text-align: center; font-weight: 800; color: #1e293b; font-size: 20px;">${rep}</td>
-          <td style="padding: 16px 12px; text-align: right; font-weight: 700; color: #334155; font-size: 19px;">${cleanNote || '—'}</td>
+        <tr style="border-bottom: 1.5px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+          <td style="padding: 14px 10px; text-align: center; font-weight: 900; color: #475569; font-size: 17px;">${idx + 1}</td>
+          <td style="padding: 14px 10px; text-align: center; font-weight: 900; color: #0f766e; font-size: 22px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
+          <td style="padding: 14px 10px; text-align: center; font-weight: 900; color: #0f172a; font-size: 17px; direction: ltr;">${dateStr}</td>
+          <td style="padding: 14px 10px; text-align: center; font-weight: 800; color: #1e293b; font-size: 17px;">${rep}</td>
+          <td style="padding: 14px 10px; text-align: right; font-weight: 700; color: #334155; font-size: 16px;">${cleanNote || '—'}</td>
         </tr>
       `;
     })
     .join('');
 
   const htmlContent = `
-    <div style="padding: 30px 36px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
+    <div style="padding: 28px 32px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
       <!-- Header -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f766e; padding-bottom: 18px; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f766e; padding-bottom: 16px; margin-bottom: 20px;">
         <div>
-          <div style="font-size: 32px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">كشف وسجل تسديدات الزبون</div>
+          <div style="font-size: 26px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">كشف وسجل تسديدات الزبون</div>
         </div>
         <div style="text-align: left;">
-          <div style="font-size: 20px; font-weight: 800; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a;">${printDateStr}</span></div>
-          <div style="font-size: 20px; font-weight: 800; color: #475569; margin-top: 6px;">عدد الحركات: <span style="font-weight: 900; color: #0f766e; font-size: 24px;">${payments.length}</span></div>
+          <div style="font-size: 16px; font-weight: 800; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a;">${printDateStr} ${printTimeStr}</span></div>
+          <div style="font-size: 16px; font-weight: 800; color: #475569; margin-top: 6px;">عدد الحركات: <span style="font-weight: 900; color: #0f766e; font-size: 20px;">${payments.length}</span></div>
         </div>
       </div>
 
       <!-- Customer Summary Card -->
-      <div style="background: #f0fdfa; border: 3px solid #2dd4bf; border-radius: 20px; padding: 22px 26px; margin-bottom: 26px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 2px solid #99f6e4; padding-bottom: 14px;">
+      <div style="background: #f0fdfa; border: 2.5px solid #2dd4bf; border-radius: 18px; padding: 18px 22px; margin-bottom: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1.5px solid #99f6e4; padding-bottom: 12px;">
           <div>
-            <span style="font-size: 22px; font-weight: 800; color: #0f766e;">اسم الزبون: </span>
-            <span style="font-size: 34px; font-weight: 900; color: #0f172a;">${customerName}</span>
+            <span style="font-size: 18px; font-weight: 800; color: #0f766e;">اسم الزبون: </span>
+            <span style="font-size: 28px; font-weight: 900; color: #0f172a;">${customerName}</span>
           </div>
           ${
             phone && phone !== '—'
-              ? `<div><span style="font-size: 22px; font-weight: 800; color: #0f766e;">الهاتف: </span><span style="font-size: 26px; font-weight: 900; color: #0f172a; direction: ltr;">${phone}</span></div>`
+              ? `<div><span style="font-size: 18px; font-weight: 800; color: #0f766e;">الهاتف: </span><span style="font-size: 22px; font-weight: 900; color: #0f172a; direction: ltr;">${phone}</span></div>`
               : ''
           }
           <div>
-            <span style="font-size: 22px; font-weight: 800; color: #0f766e;">المادة: </span>
-            <span style="font-size: 26px; font-weight: 900; color: #0f172a;">${itemName}</span>
+            <span style="font-size: 18px; font-weight: 800; color: #0f766e;">المادة: </span>
+            <span style="font-size: 22px; font-weight: 900; color: #0f172a;">${itemName}</span>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 16px; padding: 16px 12px; text-align: center;">
-            <div style="font-size: 18px; font-weight: 800; color: #64748b;">المبلغ الكلي</div>
-            <div style="font-size: 26px; font-weight: 900; color: #0284c7; direction: ltr; margin-top: 6px;">${totalPrice.toLocaleString('en-US')} د.ع</div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+          <div style="background: #ffffff; border: 1.5px solid #99f6e4; border-radius: 14px; padding: 14px 10px; text-align: center;">
+            <div style="font-size: 15px; font-weight: 800; color: #64748b;">المبلغ الكلي</div>
+            <div style="font-size: 22px; font-weight: 900; color: #0284c7; direction: ltr; margin-top: 4px;">${totalPrice.toLocaleString('en-US')} د.ع</div>
           </div>
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 16px; padding: 16px 12px; text-align: center;">
-            <div style="font-size: 18px; font-weight: 800; color: #64748b;">الواصل الكلي</div>
-            <div style="font-size: 26px; font-weight: 900; color: #047857; direction: ltr; margin-top: 6px;">${totalPaid.toLocaleString('en-US')} د.ع</div>
+          <div style="background: #ffffff; border: 1.5px solid #99f6e4; border-radius: 14px; padding: 14px 10px; text-align: center;">
+            <div style="font-size: 15px; font-weight: 800; color: #64748b;">الواصل الكلي</div>
+            <div style="font-size: 22px; font-weight: 900; color: #047857; direction: ltr; margin-top: 4px;">${totalPaid.toLocaleString('en-US')} د.ع</div>
           </div>
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 16px; padding: 16px 12px; text-align: center;">
-            <div style="font-size: 18px; font-weight: 800; color: #64748b;">المتبقي الباقي</div>
-            <div style="font-size: 26px; font-weight: 900; color: #b91c1c; direction: ltr; margin-top: 6px;">${remaining.toLocaleString('en-US')} د.ع</div>
+          <div style="background: #ffffff; border: 1.5px solid #99f6e4; border-radius: 14px; padding: 14px 10px; text-align: center;">
+            <div style="font-size: 15px; font-weight: 800; color: #64748b;">المتبقي الباقي</div>
+            <div style="font-size: 22px; font-weight: 900; color: #b91c1c; direction: ltr; margin-top: 4px;">${remaining.toLocaleString('en-US')} د.ع</div>
           </div>
-          <div style="background: #ffffff; border: 2px solid #99f6e4; border-radius: 16px; padding: 16px 12px; text-align: center;">
-            <div style="font-size: 18px; font-weight: 800; color: #64748b;">حالة العقد</div>
-            <div style="font-size: 24px; font-weight: 900; color: ${isFinished ? '#047857' : '#b45309'}; margin-top: 6px;">${isFinished ? 'منتهي ومكتمل' : 'قيد التسديد'}</div>
+          <div style="background: #ffffff; border: 1.5px solid #99f6e4; border-radius: 14px; padding: 14px 10px; text-align: center;">
+            <div style="font-size: 15px; font-weight: 800; color: #64748b;">حالة العقد</div>
+            <div style="font-size: 20px; font-weight: 900; color: ${isFinished ? '#047857' : '#b45309'}; margin-top: 4px;">${isFinished ? 'منتهي ومكتمل' : 'قيد التسديد'}</div>
           </div>
         </div>
       </div>
 
       <!-- Payments Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 26px; border: 2px solid #cbd5e1; border-radius: 14px; overflow: hidden;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 22px; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden;">
         <thead>
           <tr style="background-color: #0f766e; color: #ffffff;">
-            <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: center; width: 60px;">#</th>
-            <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: center; width: 190px;">المبلغ المسدد</th>
-            <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: center; width: 180px;">التاريخ</th>
-            <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: center; width: 170px;">المندوب</th>
-            <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: right;">ملاحظات</th>
+            <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 50px;">#</th>
+            <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 165px;">المبلغ المسدد</th>
+            <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 160px;">التاريخ</th>
+            <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: center; width: 150px;">المندوب</th>
+            <th style="padding: 14px 10px; font-size: 18px; font-weight: 900; text-align: right;">ملاحظات</th>
           </tr>
         </thead>
         <tbody>
-          ${paymentsRowsHtml || '<tr><td colspan="5" style="padding: 32px; text-align: center; color: #94a3b8; font-weight: bold; font-size: 22px;">لا توجد تسديدات مسجلة</td></tr>'}
+          ${paymentsRowsHtml || '<tr><td colspan="5" style="padding: 28px; text-align: center; color: #94a3b8; font-weight: bold; font-size: 18px;">لا توجد تسديدات مسجلة</td></tr>'}
         </tbody>
         <tfoot>
-          <tr style="background-color: #e2e8f0; font-weight: 900; border-top: 3px solid #cbd5e1;">
-            <td style="padding: 16px 18px; text-align: right; font-size: 22px; color: #0f172a;">مجموع المبالغ المسددة:</td>
-            <td style="padding: 16px 12px; text-align: center; font-size: 28px; color: #047857; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</td>
-            <td colspan="3" style="padding: 16px 18px; text-align: right; font-size: 20px; color: #334155; font-weight: 800;">(${numberToArabicWords(totalPaid)})</td>
+          <tr style="background-color: #e2e8f0; font-weight: 900; border-top: 2px solid #cbd5e1;">
+            <td style="padding: 14px 16px; text-align: right; font-size: 18px; color: #0f172a;">مجموع المبالغ المسددة:</td>
+            <td style="padding: 14px 10px; text-align: center; font-size: 24px; color: #047857; direction: ltr;">${totalPaid.toLocaleString('en-US')} د.ع</td>
+            <td colspan="3" style="padding: 14px 16px; text-align: right; font-size: 17px; color: #334155; font-weight: 800;">(${numberToArabicWords(totalPaid)})</td>
           </tr>
         </tfoot>
       </table>
 
       <!-- Bottom Signature & Verification -->
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 26px; padding-top: 18px; border-top: 2px dashed #94a3b8; font-size: 20px; color: #475569;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 22px; padding-top: 16px; border-top: 2px dashed #94a3b8; font-size: 16px; color: #475569;">
         <div style="font-weight: 800;">توقيع وختم الإدارة: ___________________</div>
-        <div style="font-weight: 900; color: #0f766e; font-size: 22px;">وثيقة كشف حساب معتمدة</div>
+        <div style="font-weight: 900; color: #0f766e; font-size: 17px;">وثيقة كشف حساب معتمدة</div>
       </div>
     </div>
   `;
@@ -452,6 +471,8 @@ export async function shareCustomerPaymentsOrDirectWhatsApp({
   contract,
   payments,
   lang = 'ar',
+  forceAppsChooser = false,
+  targetApp = 'whatsapp',
 }: {
   contract?: InstallmentContract | null;
   payments: PaymentRecord[];
@@ -459,12 +480,50 @@ export async function shareCustomerPaymentsOrDirectWhatsApp({
   forceAppsChooser?: boolean;
   targetApp?: 'whatsapp' | 'all' | 'other';
 }): Promise<{ success: boolean; method: string; error?: string }> {
-  // Always share the official PDF document file directly across apps
+  const isAr = lang === 'ar';
+
+  // Direct customer WhatsApp chat if requested
+  if (targetApp === 'whatsapp' && !forceAppsChooser) {
+    const rawPhone = contract?.customerPhone || (payments[0] as any)?.customerPhone || '';
+    let cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
+
+    if (!cleanPhone && typeof window !== 'undefined') {
+      const custName = contract?.customerName || payments[0]?.customerName || 'الزبون';
+      const input = window.prompt(
+        `الزبون (${custName}) لا يملك رقم هاتف مسجل.\nيرجى كتابة رقم هاتف الزبون (أو رقم الواتساب):`,
+        ''
+      );
+      if (input && input.trim()) {
+        cleanPhone = formatIraqiPhoneForWhatsApp(input.trim());
+      }
+    }
+
+    if (cleanPhone) {
+      const origin = getPublicShareBaseUrl();
+      const contractId = contract?.id || (payments[0] as any)?.contractId || '';
+      const statementUrl = contractId ? `${origin}/s/${encodeURIComponent(contractId)}` : origin;
+
+      // User explicit request: "والنص فقط افتح الرابط لعرض التسديدات"
+      const statementText = `افتح الرابط لعرض التسديدات:
+${statementUrl}`;
+
+      const opened = openCustomerWhatsAppDirect({
+        phone: cleanPhone,
+        text: statementText,
+      });
+
+      if (opened) {
+        return { success: true, method: 'direct_whatsapp' };
+      }
+    }
+  }
+
+  // Fallback to generating and sharing the PDF document file across apps
   return shareCustomerPaymentsPdf({
     contract,
     payments,
     lang,
-    targetApp: 'all',
+    targetApp: forceAppsChooser ? 'all' : targetApp,
   });
 }
 
@@ -491,6 +550,7 @@ export async function shareGeneralPaymentsPdf({
 
   const now = new Date();
   const printDateStr = now.toLocaleDateString('en-CA');
+  const printTimeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const dateSubtitle =
     startDate || endDate
@@ -522,7 +582,7 @@ export async function shareGeneralPaymentsPdf({
           <div style="font-size: 22px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px;">تقرير وسجل التسديدات العام (كافة الزبائن)</div>
         </div>
         <div style="text-align: left;">
-          <div style="font-size: 13px; font-weight: 800; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a;">${printDateStr}</span></div>
+          <div style="font-size: 13px; font-weight: 800; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a;">${printDateStr} ${printTimeStr}</span></div>
           <div style="font-size: 13px; font-weight: 900; color: #0284c7; margin-top: 3px;">${dateSubtitle}</div>
           ${listName ? `<div style="font-size: 12.5px; font-weight: 800; color: #475569;">القائمة: ${listName}</div>` : ''}
         </div>
@@ -594,7 +654,7 @@ export async function shareGeneralPaymentsPdf({
 export async function sharePaymentReceiptWhatsApp({
   payment,
   contract,
-  allPayments = [],
+  shopTitle = 'الكرار للتقسيط',
 }: {
   payment: PaymentRecord;
   contract?: InstallmentContract | null;
@@ -605,19 +665,20 @@ export async function sharePaymentReceiptWhatsApp({
   const phone = contract?.customerPhone || '';
   const amount = Number(payment.amountPaid ?? payment.amount ?? 0);
   const { dateStr } = getPaymentFormattedDateAndTime(payment, true);
-  const snapshot = getPaymentReceiptBalances(payment, contract || null, allPayments);
+  const note = payment.note ? `\n📝 ملاحظة: ${payment.note}` : '';
+  const rep = payment.repName ? `\n👤 المندوب: ${payment.repName}` : '';
 
-  const text = `اسم الزبون: ${customerName}
-الواصل: ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
-المبلغ رقماً: ${amount.toLocaleString('en-US')} د.ع
-المبلغ كتابة: ${numberToArabicWords(amount)}
-الباقي: ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع
-التاريخ: ${dateStr}`.trim();
+  const text = `🧾 *وصل استلام دفعة مالية*
+--------------------------------
+👤 *الزبون:* ${customerName}
+💰 *المبلغ المسدد:* ${amount.toLocaleString('en-US')} د.ع
+📅 *التاريخ:* ${dateStr}${rep}${note}
+--------------------------------
+_شكراً لتسديدكم_`.trim();
 
   return openCustomerWhatsAppDirect({
     phone: phone || (payment as any).customerPhone || '',
     text,
   });
 }
-
 

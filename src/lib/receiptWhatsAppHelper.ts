@@ -112,14 +112,32 @@ export function preparePaymentReceiptWhatsApp({
     ? `${origin}/r/${encodeURIComponent(cleanPaymentId)}`
     : `${origin}/?${searchParams.toString()}`;
 
-  let messageText = `اسم الزبون: ${customerName}
-الواصل: ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
-المبلغ رقماً: ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
-المبلغ كتابة: ${amountInWords}
-الباقي: ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع
-التاريخ: ${dStr}
-رابط الوصل:
+  let messageText = '';
+  if (receiptTemplate === 'template_2') {
+    // Table receipt / وصل جداول
+    messageText = `━━━━━━━━━━━━━━━
+👤 *الزبون:* ${customerName}
+💰 *المبلغ الكلي:* ${snapshot.totalPrice.toLocaleString('en-US')} د.ع
+✅ *المبلغ الواصل:* ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
+⏳ *المبلغ المتبقي:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع
+💵 *المبلغ المدفوع:* ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
+📝 *المبلغ كتابة:* ${amountInWords}
+🗓️ *تاريخ الدفع:* ${dStr}
+⏰ *الوقت:* ${tStr}
+━━━━━━━━━━━━━━━
+🔗 *رابط الوصل المباشر:*
 ${receiptUrl}`.trim();
+  } else {
+    // Default receipt / وصل افتراضي
+    messageText = `👤 *اسم الزبون:* ${customerName}
+💵 *المبلغ رقماً:* ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
+📝 *المبلغ كتابة:* ${amountInWords}
+✅ *الواصل:* ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
+⏳ *الباقي:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع
+🗓️ *التاريخ:* ${dStr}
+🔗 *رابط الوصل:*
+${receiptUrl}`.trim();
+  }
 
   return {
     shopTitle: '',
