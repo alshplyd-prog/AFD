@@ -452,8 +452,6 @@ export async function shareCustomerPaymentsOrDirectWhatsApp({
   contract,
   payments,
   lang = 'ar',
-  forceAppsChooser = false,
-  targetApp = 'whatsapp',
 }: {
   contract?: InstallmentContract | null;
   payments: PaymentRecord[];
@@ -461,50 +459,12 @@ export async function shareCustomerPaymentsOrDirectWhatsApp({
   forceAppsChooser?: boolean;
   targetApp?: 'whatsapp' | 'all' | 'other';
 }): Promise<{ success: boolean; method: string; error?: string }> {
-  const isAr = lang === 'ar';
-
-  // Direct customer WhatsApp chat if requested
-  if (targetApp === 'whatsapp' && !forceAppsChooser) {
-    const rawPhone = contract?.customerPhone || (payments[0] as any)?.customerPhone || '';
-    let cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
-
-    if (!cleanPhone && typeof window !== 'undefined') {
-      const custName = contract?.customerName || payments[0]?.customerName || 'الزبون';
-      const input = window.prompt(
-        `الزبون (${custName}) لا يملك رقم هاتف مسجل.\nيرجى كتابة رقم هاتف الزبون (أو رقم الواتساب):`,
-        ''
-      );
-      if (input && input.trim()) {
-        cleanPhone = formatIraqiPhoneForWhatsApp(input.trim());
-      }
-    }
-
-    if (cleanPhone) {
-      const origin = getPublicShareBaseUrl();
-      const contractId = contract?.id || (payments[0] as any)?.contractId || '';
-      const statementUrl = contractId ? `${origin}/s/${encodeURIComponent(contractId)}` : origin;
-
-      // User explicit request: "والنص فقط افتح الرابط لعرض التسديدات"
-      const statementText = `افتح الرابط لعرض التسديدات:
-${statementUrl}`;
-
-      const opened = openCustomerWhatsAppDirect({
-        phone: cleanPhone,
-        text: statementText,
-      });
-
-      if (opened) {
-        return { success: true, method: 'direct_whatsapp' };
-      }
-    }
-  }
-
-  // Fallback to generating and sharing the PDF document file across apps
+  // Always share the official PDF document file directly across apps
   return shareCustomerPaymentsPdf({
     contract,
     payments,
     lang,
-    targetApp: forceAppsChooser ? 'all' : targetApp,
+    targetApp: 'all',
   });
 }
 
