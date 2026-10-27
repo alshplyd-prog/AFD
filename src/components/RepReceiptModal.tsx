@@ -376,7 +376,23 @@ export function buildRepReceiptCanvas(receipt: RepReceiptData): HTMLCanvasElemen
   ctx.fillStyle = '#64748b';
   ctx.font = 'bold 12px system-ui, Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`تاريخ الطباعة: ${receipt.dateStr} - ${receipt.timeStr}`, 192, totalHeight - 12);
+  const timestampY = currentY + 122;
+  ctx.fillText(`تاريخ الطباعة: ${receipt.dateStr} - ${receipt.timeStr}`, 192, timestampY);
+
+  // Crop canvas height immediately after text ends to prevent extra paper feed
+  const exactHeight = Math.ceil(timestampY + 12);
+  if (exactHeight < canvas.height) {
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = width;
+    trimmedCanvas.height = exactHeight;
+    const tCtx = trimmedCanvas.getContext('2d');
+    if (tCtx) {
+      tCtx.fillStyle = '#ffffff';
+      tCtx.fillRect(0, 0, width, exactHeight);
+      tCtx.drawImage(canvas, 0, 0, width, exactHeight, 0, 0, width, exactHeight);
+      return trimmedCanvas;
+    }
+  }
 
   return canvas;
 }

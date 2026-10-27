@@ -8,6 +8,7 @@ import {
   INITIAL_INVENTORY,
   INITIAL_EMPLOYEES,
   INITIAL_CONTRACTS,
+  INITIAL_PAYMENTS,
 } from '../data/initialContracts';
 import { AppointmentRecord } from '../types';
 
@@ -309,24 +310,7 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
       }
     }
 
-    if (tableName === 'reps') {
-      // Ensure rep-1 is ALWAYS present in reps
-      const hasDhia = Array.from(map.values()).some((r: any) => r.id === 'rep-1' || (r.name && r.name.includes('ضياء')));
-      if (!hasDhia) {
-        map.set('rep-1', {
-          id: 'rep-1',
-          name: 'ضياء المحاسب',
-          phone: '07801112233',
-          code: '4444',
-          role: 'admin',
-          canEdit: true,
-          canDelete: true,
-          canMoveCustomer: true,
-          canSell: true,
-          allowedListIds: ['all']
-        });
-      }
-    }
+
 
     // Apply un-synced pending offline actions on top (new offline additions or edits)
     for (const act of pendingActions) {
@@ -1039,6 +1023,7 @@ function mapRow(tableName: string, r: any): any {
       canMoveCustomer: isDhia ? true : (r.can_move_customer !== false && r.canMoveCustomer !== false),
       canSell: isDhia ? true : (r.can_sell !== false && r.canSell !== false),
       allowedListIds: isDhia ? ['all'] : allowed,
+      avatarUrl: r.avatar_url ?? r.avatarUrl ?? '',
     };
   }
 
@@ -1996,7 +1981,12 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
       } else {
         let initialFallback: any[] = [];
         if (tableName === 'reps') initialFallback = DEFAULT_REPS;
-
+        else if (tableName === 'funds') initialFallback = INITIAL_FUNDS;
+        else if (tableName === 'customer_lists') initialFallback = INITIAL_CUSTOMER_LISTS;
+        else if (tableName === 'contracts') initialFallback = INITIAL_CONTRACTS;
+        else if (tableName === 'payments') initialFallback = INITIAL_PAYMENTS;
+        else if (tableName === 'inventory') initialFallback = INITIAL_INVENTORY;
+        else if (tableName === 'employees') initialFallback = INITIAL_EMPLOYEES;
         if (initialFallback.length > 0) {
           setLocalCache(tableName, initialFallback as T[]);
           emitIfChanged(initialFallback as T[]);

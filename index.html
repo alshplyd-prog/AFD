@@ -15,7 +15,30 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="الكرار" />
     <meta name="description" content="تطبيق الكرار للتقسيط للموبايل - الحلول المالية والتقسيط المريح" />
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname || '';
+          var s = window.location.search || '';
+          if (
+            p.startsWith('/s/') || p.startsWith('/statement/') || p === '/s' || p === '/statement' ||
+            p.startsWith('/r/') || p.startsWith('/receipt/') || p === '/r' || p === '/receipt' ||
+            s.indexOf('statement_id=') !== -1 || s.indexOf('receipt_id=') !== -1 ||
+            s.indexOf('view_statement=') !== -1 || s.indexOf('view_receipt=') !== -1 ||
+            s.indexOf('s=') !== -1 || s.indexOf('r=') !== -1
+          ) {
+            document.documentElement.classList.add('is-document-route');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <style>
+      html.is-document-route body {
+        background-color: #e2e8f0 !important;
+      }
+      html.is-document-route .initial-loader {
+        display: none !important;
+      }
       body {
         margin: 0;
         padding: 0;

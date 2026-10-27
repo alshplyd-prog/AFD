@@ -384,7 +384,7 @@ export const OfflinePaymentConflictsModal: React.FC<OfflinePaymentConflictsModal
                               )}
                               {amount !== undefined && (
                                 <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                                  {Number(amount).toLocaleString()} د.ع
+                                  {Number(amount).toLocaleString('en-US')} د.ع
                                 </span>
                               )}
                               {repName && (

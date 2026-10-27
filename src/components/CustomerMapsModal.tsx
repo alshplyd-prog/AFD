@@ -1308,16 +1308,16 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
                       <span className="text-[10px] text-slate-400 font-bold block">
                         {isAr ? 'القسط اليومي' : 'Daily'}
                       </span>
-                      <span className="text-xs font-black text-slate-100">
-                        {(selectedCustomer.dailyInstallment || 0).toLocaleString()} {isAr ? 'د.ع' : 'IQD'}
+                      <span className="text-xs font-black text-slate-100 font-mono">
+                        {(selectedCustomer.dailyInstallment || 0).toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
                       </span>
                     </div>
                     <div>
                       <span className="text-[10px] text-slate-400 font-bold block">
                         {isAr ? 'المبلغ المتبقي' : 'Remaining'}
                       </span>
-                      <span className={`text-xs font-black ${selectedCustomer.remainingBalance > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                        {selectedCustomer.remainingBalance.toLocaleString()} {isAr ? 'د.ع' : 'IQD'}
+                      <span className={`text-xs font-black font-mono ${selectedCustomer.remainingBalance > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {selectedCustomer.remainingBalance.toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
                       </span>
                     </div>
                   </div>
@@ -1449,8 +1449,8 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
                               <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
                                 {contract.listName || (isAr ? 'عامة' : 'List')}
                               </span>
-                              <span className={`text-[10px] font-bold ${contract.remainingBalance > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {contract.remainingBalance.toLocaleString()} {isAr ? 'د.ع' : 'IQD'}
+                              <span className={`text-[10px] font-bold font-mono ${contract.remainingBalance > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                {contract.remainingBalance.toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
                               </span>
                             </div>
                           </div>

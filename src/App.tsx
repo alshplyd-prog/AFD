@@ -4031,8 +4031,11 @@ export default function App() {
                     <div className="p-2 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 group-hover:scale-105 transition-transform shadow-2xs">
                       <History className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
-                    <span className="text-[11px] xs:text-xs sm:text-sm font-extrabold bg-rose-200/80 dark:bg-rose-950 text-rose-800 dark:text-rose-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
-                      {payments.length} {isAr ? 'تسديد' : 'Payments'}
+                    <span
+                      className="text-[11px] xs:text-xs sm:text-sm font-black bg-rose-200/90 dark:bg-rose-950 text-rose-800 dark:text-rose-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap shadow-2xs"
+                      title={isAr ? `مجموع تسديدات اليوم: ${todayAllCollected.toLocaleString('en-US')} د.ع (${todayAllPayments.length} تسديد)` : `Today's collections: ${todayAllCollected.toLocaleString('en-US')} IQD (${todayAllPayments.length} payments)`}
+                    >
+                      {isAr ? `اليوم: ${todayAllCollected.toLocaleString('en-US')} د.ع` : `Today: ${todayAllCollected.toLocaleString('en-US')} IQD`}
                     </span>
                   </div>
                   <div className="space-y-1 my-1">

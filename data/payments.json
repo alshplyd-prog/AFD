@@ -10,8 +10,7 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-17T07:00:51.560Z",
-    "isEdited": false,
-    "amount": 2525000
+    "isEdited": false
   },
   {
     "id": "pay_64760920-e3ed-4aaf-b0a8-ee51a8b4c00c",
@@ -24,8 +23,2093 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T06:49:00.662Z",
-    "isEdited": false,
-    "amount": 775000
+    "isEdited": false
+  },
+  {
+    "id": "pay_75b381a9-dacf-4720-aec7-4b4daa7ec19b",
+    "contractId": "contract_1792515176024_ui0rc",
+    "customerName": "حميد علي حسن",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-27",
+    "repName": "ضياء المحاسب",
+    "note": "",
+    "fundId": "fund_1787412701870_5rh61",
+    "updatedAt": null,
+    "createdAt": "2026-10-27T12:43:28.684Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d9a6b66d-95e9-4aba-8f33-93fbb3c638f5",
+    "contractId": "contract_1792515176024_ui0rc",
+    "customerName": "حميد علي حسن",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-27",
+    "repName": "ضياء المحاسب",
+    "note": "",
+    "fundId": "fund_1787412701870_5rh61",
+    "updatedAt": null,
+    "createdAt": "2026-10-27T10:55:22.831Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_f068d676-3b42-47ad-a0cd-d8f7c7efaac0",
+    "contractId": "contract_1791619048835_tf79q",
+    "customerName": "اثير صباح عبود",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-27",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-27T07:54:31.849Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_2cb51b3f-7fd3-4c4e-b83a-8ba985cd5e72",
+    "contractId": "contract_1792149137851_6g649",
+    "customerName": "علي كريم عبد عون",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-27",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-27T07:47:00.777Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_000e3cf5-1180-46d6-96e4-5fce73dc186d",
+    "contractId": "contract_1792159601227_37k70",
+    "customerName": "حسين عبد حسن",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-27",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-27T06:57:59.038Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_9ff081e7-ec4f-4348-9888-a86fe7cb2ba1",
+    "contractId": "contract_1792439905263_4lg50",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-27",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-27T06:53:33.443Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_a21b45a9-feff-4be5-a39d-63de3190f0af",
+    "contractId": "contract_1791875234960_pekxp",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-27",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-27T06:53:24.361Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_2f7ce21d-31ab-408f-9f9e-4e7ecc6f7628",
+    "contractId": "contract_1790067728041_j42xx",
+    "customerName": "ليث صدام حسين",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T19:17:43.069Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_abf027c0-cf18-4c9e-9fbf-06b3c206e838",
+    "contractId": "contract_1790067398505_69ynx",
+    "customerName": "محمد ربيع خرجان",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T18:33:07.519Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_6b8ae982-5f48-48e3-a80d-391bf12eac11",
+    "contractId": "contract_1790067981560_ayym0",
+    "customerName": "رضا جميل حسين",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T18:32:55.458Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_8b7ab92c-df28-4406-90f5-61f2dce831fd",
+    "contractId": "contract_1790067087992_wxyvu",
+    "customerName": "ماهر حسن دعاش 1",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T18:32:40.599Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_26f272f9-fa84-41c0-addd-b03b9cf0a9d9",
+    "contractId": "contract_1790066049492_13kqv",
+    "customerName": "علي ماهر حسن",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T18:32:35.044Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e21a7612-fa55-407c-b597-65954ffe2ab1",
+    "contractId": "contract_1790066158966_wgvz2",
+    "customerName": "حسام عبدالكاضم عاجل",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T18:03:06.563Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_858e22f1-74ea-4e53-86b4-2ca7b8fe1247",
+    "contractId": "contract_1790066878599_lsq7k",
+    "customerName": "محمد عبدالكاضم عاجل 1",
+    "amountPaid": 50000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T18:02:50.394Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_10716712-7288-4c89-90e7-107e47d479a6",
+    "contractId": "contract_1791719348133_zkshm",
+    "customerName": "حسام عبدالكريم عاجل 2",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T17:37:34.028Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_563c3b7e-d48a-4a63-9ed1-d05945ee71e2",
+    "contractId": "contract_1790065886436_ahhsh",
+    "customerName": "سناء نوري طاهر",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T17:35:23.478Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_20adbf72-a88c-435e-808a-1e175ff05ebf",
+    "contractId": "contract_1790065221037_gv3qs",
+    "customerName": "حيدر تحسين جواد",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T17:34:57.986Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_fb8f698a-f381-4fb2-a277-ff91ccac4026",
+    "contractId": "contract_1790067910949_udpl3",
+    "customerName": "حازم حامد عبد",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T17:22:42.489Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_50dd0b6d-6119-4b7f-9f73-38a1be241830",
+    "contractId": "contract_1792953937087_4dw6t",
+    "customerName": "رائد صالح حنو",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "latitude": 31.9848045,
+    "longitude": 44.9375809,
+    "updatedAt": null,
+    "createdAt": "2026-10-26T17:20:34.966Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_5e6dc935-1079-48a4-bf8c-2af02498d985",
+    "contractId": "contract_1790068621696_c07oz",
+    "customerName": "عبدالكريم حسن سلمان 1",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T16:17:06.867Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_b8c15456-dd56-425b-b297-7a0f8bb27b6e",
+    "contractId": "contract_1790068836134_rekdk",
+    "customerName": "علي محمد جاسم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T16:08:47.665Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_6abca059-2a0e-4a20-a8bc-2a644cad4a19",
+    "contractId": "contract_1790067206694_5lkps",
+    "customerName": "يوسف رزاق احمد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T16:03:12.382Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d1f1308c-5337-42ad-8efb-6c9963a5b8f0",
+    "contractId": "contract_1790064700810_j6w5e",
+    "customerName": "سعد راضي كاضم",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:37:28.451Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_423b2981-717d-49e4-8e2c-fe089c86341a",
+    "contractId": "contract_1790065967005_r1t0o",
+    "customerName": "وجدان مهدي كتاب",
+    "amountPaid": 210000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:34:09.881Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_da43dd7f-95c3-4a6f-8e52-f648e8a33662",
+    "contractId": "contract_1791715974203_8o6ni",
+    "customerName": "حسين سلام كاضم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:32:14.224Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_0ca64be9-05fe-42ec-9dfe-37d19102d337",
+    "contractId": "contract_1790067782646_m3b34",
+    "customerName": "زينب سلام كاضم",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:32:08.461Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_b62d3d2d-87a7-46f6-8a4d-78b72bf40aa4",
+    "contractId": "contract_1790067266799_vf7d1",
+    "customerName": "احمد راضي عبيد",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:27:07.922Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e364c4d5-9d88-4178-b630-0f964013027c",
+    "contractId": "contract_1790067141105_gx9r8",
+    "customerName": "عباس عايد راضي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:26:52.834Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_ed17f117-3360-4360-948e-f463f0f10598",
+    "contractId": "contract_1790066939878_qztle",
+    "customerName": "كرار هاني شعلان",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:26:17.552Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_f4e87c8a-d2e0-4055-a6e8-b8551f7d882a",
+    "contractId": "contract_1790066217087_clsrz",
+    "customerName": "حليم عصفور حمد",
+    "amountPaid": 7000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:12:21.052Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_56806c06-a7ef-4837-8bad-5478f5d234e5",
+    "contractId": "contract_1790067859678_t7t2u",
+    "customerName": "حسين فاضل حميد",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:08:35.801Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_01fe1381-b17f-4682-abad-74a1c5f3ee4b",
+    "contractId": "contract_1790066388740_tllca",
+    "customerName": "عباس فاضل حميد",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:08:31.844Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_f2aa542b-14a5-42c1-89e4-07cff6143b7d",
+    "contractId": "contract_1790066985689_rlje8",
+    "customerName": "ابراهيم عناد عبد",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T15:03:41.497Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_05d7aab6-9003-453f-9de9-c7ffd17f7568",
+    "contractId": "contract_1792821660734_8m0u3",
+    "customerName": "محمد احمد ناصر",
+    "amountPaid": 3000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T14:37:41.590Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_4e38830f-22bd-4f49-9d43-d264818e22c9",
+    "contractId": "contract_1791719479124_bgq6j",
+    "customerName": "امير احمد يحيى",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T14:36:37.953Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_dba2e846-62f5-4c5a-8df0-c2d136099fa4",
+    "contractId": "contract_1790067032599_ggibz",
+    "customerName": "عرفان هاشم مصطفى 3",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T14:32:51.266Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7e590bfa-c2da-4d5d-8ed1-af4e2be1d116",
+    "contractId": "contract_1790068034398_77e0w",
+    "customerName": "مرتضى محمد عباس",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-26",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T14:09:37.677Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_ca10a1a0-bd84-4d56-94ee-f3a74b9e8d54",
+    "contractId": "contract_1790072556698_i5059",
+    "customerName": "رحيم حمزه بجاي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-26",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T14:05:36.805Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_9b5e3faf-72de-4d96-873a-68447b8ac320",
+    "contractId": "contract_1791618917978_uc19n",
+    "customerName": "احمد حسن عبيد",
+    "amountPaid": 150000,
+    "paymentDate": "2026-10-26",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T13:27:58.749Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_c123b038-e5a2-48d2-8842-f77686d676f4",
+    "contractId": "contract_1792149137851_6g649",
+    "customerName": "علي كريم عبد عون",
+    "amountPaid": 14000,
+    "paymentDate": "2026-10-26",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T07:55:01.501Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d7eb8205-2122-4bde-912f-9e9de9376f9c",
+    "contractId": "contract_1791619048835_tf79q",
+    "customerName": "اثير صباح عبود",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-26",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T07:43:06.045Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_5a1bc806-69b1-40f5-986d-1e25bbcd105d",
+    "contractId": "contract_1792159601227_37k70",
+    "customerName": "حسين عبد حسن",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-26",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-26T06:55:12.571Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_0ad61ce7-54b2-458e-a07e-ccc7e6fc0ddd",
+    "contractId": "contract_1790066112555_zspa1",
+    "customerName": "زيد فالح عبد حاجم",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T22:18:05.819Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_993acf58-dd60-47fb-be9e-aa59487ed7f5",
+    "contractId": "contract_1790067398505_69ynx",
+    "customerName": "محمد ربيع خرجان",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T20:53:50.897Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_9a128169-2583-4f21-a952-404556310fa7",
+    "contractId": "contract_1790067981560_ayym0",
+    "customerName": "رضا جميل حسين",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T20:53:35.133Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_389e6068-00b4-4f48-b560-df52e9b43ac0",
+    "contractId": "contract_1790067087992_wxyvu",
+    "customerName": "ماهر حسن دعاش 1",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T20:53:17.927Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_38564052-22fc-4ec5-a738-77056a6d25c8",
+    "contractId": "contract_1790066049492_13kqv",
+    "customerName": "علي ماهر حسن",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T20:53:07.174Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_ba5b4635-1337-498e-b7b8-224cfc3384b5",
+    "contractId": "contract_1792516758791_3npz9",
+    "customerName": "كريم محمد علي",
+    "amountPaid": 1500,
+    "paymentDate": "2026-10-25",
+    "repName": "ضياء المحاسب",
+    "note": "",
+    "fundId": "fund_1787412701870_5rh61",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T20:47:52.145Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e7196cce-094b-4055-9a3d-541ab3fe66b6",
+    "contractId": "contract_1792516758791_3npz9",
+    "customerName": "كريم محمد علي",
+    "amountPaid": 1500,
+    "paymentDate": "2026-10-25",
+    "repName": "ضياء المحاسب",
+    "note": "",
+    "fundId": "fund_1787412701870_5rh61",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T20:26:57.105Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_4d01bb66-c4d3-4675-b387-b3b3496bf5a5",
+    "contractId": "contract_1792516758791_3npz9",
+    "customerName": "كريم محمد علي",
+    "amountPaid": 1500,
+    "paymentDate": "2026-10-25",
+    "repName": "ضياء المحاسب",
+    "note": "",
+    "fundId": "fund_1787412701870_5rh61",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T19:21:41.447Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_4d8f0ead-2663-4fd0-850d-3cb09d27e166",
+    "contractId": "contract_1791719348133_zkshm",
+    "customerName": "حسام عبدالكريم عاجل 2",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T18:48:59.113Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_47a30e26-6116-40a1-a101-7a66374aac34",
+    "contractId": "contract_1790068836134_rekdk",
+    "customerName": "علي محمد جاسم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T17:53:14.854Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_02c822f2-ec70-4435-9f9b-0f4a7b2df85e",
+    "contractId": "contract_1790068729469_4ybbp",
+    "customerName": "عبدالكريم حسن سلمان 2",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T17:42:54.570Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_8af2a7b5-cb2c-4662-b16e-49e59f545ebf",
+    "contractId": "contract_1790068729469_4ybbp",
+    "customerName": "عبدالكريم حسن سلمان 2",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T17:42:22.660Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_336034ad-cdbd-4dd7-9cda-3ad4292d9725",
+    "contractId": "contract_1790068780485_r6dj6",
+    "customerName": "علي رسول جابر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T17:34:11.191Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_eaa417a0-b9ec-43d9-8bd8-6e0dcd38109c",
+    "contractId": "contract_1790067206694_5lkps",
+    "customerName": "يوسف رزاق احمد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T17:23:19.638Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d5525aa2-9174-43c4-a3c4-80e7d4c5a1f8",
+    "contractId": "contract_1790067345479_rwz2i",
+    "customerName": "حسن عباس كاطع",
+    "amountPaid": 16000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:49:23.646Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_f1a93fdb-c5e9-41fa-8a60-1036fffc7e2f",
+    "contractId": "contract_1791715974203_8o6ni",
+    "customerName": "حسين سلام كاضم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:43:02.188Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_bf96b555-8848-4d06-b3f8-9584507bf991",
+    "contractId": "contract_1790067782646_m3b34",
+    "customerName": "زينب سلام كاضم",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:42:53.661Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_1bfea41f-cb0a-42b3-97ca-f0219f395eb1",
+    "contractId": "contract_1790065967005_r1t0o",
+    "customerName": "وجدان مهدي كتاب",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:41:51.005Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_01c200a1-2167-4589-b4c4-1d98d18f4138",
+    "contractId": "contract_1790065886436_ahhsh",
+    "customerName": "سناء نوري طاهر",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:35:41.380Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_bd38003e-3010-4765-a341-bf41d88a2f30",
+    "contractId": "contract_1790065221037_gv3qs",
+    "customerName": "حيدر تحسين جواد",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:35:30.577Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_0ad45e1a-88fa-4a70-84de-e34d9dd29bd3",
+    "contractId": "contract_1790067859678_t7t2u",
+    "customerName": "حسين فاضل حميد",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:34:00.352Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_000f0ca9-ad28-43d2-b364-7aa2569c6571",
+    "contractId": "contract_1790066388740_tllca",
+    "customerName": "عباس فاضل حميد",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:33:47.819Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_a6455218-b370-4b77-a42f-af1bd2f6b001",
+    "contractId": "contract_1790066217087_clsrz",
+    "customerName": "حليم عصفور حمد",
+    "amountPaid": 7000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:33:29.060Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_1e945bf2-cf12-40a7-a9f8-8913a40a48e8",
+    "contractId": "contract_1790067266799_vf7d1",
+    "customerName": "احمد راضي عبيد",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:32:16.270Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_81d800c7-f3c8-468f-ba3a-96ef2f85590b",
+    "contractId": "contract_1790067141105_gx9r8",
+    "customerName": "عباس عايد راضي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:31:48.433Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_1336dbae-01b9-4fcc-bc72-98ed958c3a0b",
+    "contractId": "contract_1790066939878_qztle",
+    "customerName": "كرار هاني شعلان",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:31:10.610Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_10cb7832-00bb-4367-a838-65a813202bbe",
+    "contractId": "contract_1790066878599_lsq7k",
+    "customerName": "محمد عبدالكاضم عاجل 1",
+    "amountPaid": 50000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:08:44.000Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_a4e60d52-d46f-4d57-b197-839fc1c00198",
+    "contractId": "contract_1790066158966_wgvz2",
+    "customerName": "حسام عبدالكاضم عاجل",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T16:08:34.197Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e75c83bd-0cb0-4b73-8654-7983c8faba3b",
+    "contractId": "contract_1790066985689_rlje8",
+    "customerName": "ابراهيم عناد عبد",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T15:15:31.021Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_8ccd9d26-9777-420c-be92-84a5cf6b476d",
+    "contractId": "contract_1791719413342_o13ow",
+    "customerName": "سجاد قاسم جبر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T15:00:11.047Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_ece17811-10b3-4567-a531-dc54600b8b4c",
+    "contractId": "contract_1791719479124_bgq6j",
+    "customerName": "امير احمد يحيى",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T14:53:08.886Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_c15b6406-3e1a-45f6-933f-3d65676ba035",
+    "contractId": "contract_1792821660734_8m0u3",
+    "customerName": "محمد احمد ناصر",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T14:52:43.121Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_3c4a7c4e-b799-4bea-aa4a-011721c8342b",
+    "contractId": "contract_1790068034398_77e0w",
+    "customerName": "مرتضى محمد عباس",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-25",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-25T14:26:16.772Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d38985c5-bb2b-4aa3-bf95-cadc8cf5f2cf",
+    "contractId": "contract_1792516758791_3npz9",
+    "customerName": "كريم محمد علي",
+    "amountPaid": 1500,
+    "paymentDate": "2026-10-24",
+    "repName": "ضياء المحاسب",
+    "note": "",
+    "fundId": "fund_1787412701870_5rh61",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T19:17:29.015Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_c0b6fe9e-3782-479a-b0a9-7d449faec955",
+    "contractId": "contract_1790067398505_69ynx",
+    "customerName": "محمد ربيع خرجان",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T18:14:12.999Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_712542ff-09e8-4982-8aee-16f56c0af014",
+    "contractId": "contract_1790067981560_ayym0",
+    "customerName": "رضا جميل حسين",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T18:14:01.266Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_43cfccd5-231c-4b91-a560-038e9d030048",
+    "contractId": "contract_1790067087992_wxyvu",
+    "customerName": "ماهر حسن دعاش 1",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T18:13:46.757Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7b8643ea-ac70-4dd8-a2fa-b019408df9a5",
+    "contractId": "contract_1790066049492_13kqv",
+    "customerName": "علي ماهر حسن",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T18:13:38.403Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_8286f85f-7581-41c9-885b-d5134da2d831",
+    "contractId": "contract_1790065221037_gv3qs",
+    "customerName": "حيدر تحسين جواد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T17:57:52.260Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7d2b4a2f-dcd9-44c4-a6f6-5e2549f71942",
+    "contractId": "contract_1790065886436_ahhsh",
+    "customerName": "سناء نوري طاهر",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T17:57:37.958Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7b1fcb52-0a9f-4fcb-a6f9-b95c78b0d491",
+    "contractId": "contract_1790067345479_rwz2i",
+    "customerName": "حسن عباس كاطع",
+    "amountPaid": 80000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T17:48:04.708Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d3abd064-1e9d-4013-bc16-9e2f5b3a08b9",
+    "contractId": "contract_1790067032599_ggibz",
+    "customerName": "عرفان هاشم مصطفى 3",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T17:30:05.344Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_ffe24c21-ff39-4234-b9c9-6d5439668917",
+    "contractId": "contract_1790068836134_rekdk",
+    "customerName": "علي محمد جاسم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:56:01.420Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_16475913-0020-4989-b4b7-fb598948b96c",
+    "contractId": "contract_1790068729469_4ybbp",
+    "customerName": "عبدالكريم حسن سلمان 2",
+    "amountPaid": 30000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:48:16.149Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_35a3147e-03bf-4cb7-992c-37637ea1cd65",
+    "contractId": "contract_1790068780485_r6dj6",
+    "customerName": "علي رسول جابر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:42:09.781Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_60e4216c-2b9a-44b9-b87b-c4d1dfc5dced",
+    "contractId": "contract_1790072414291_7pvhx",
+    "customerName": "منتضر رائد سعدون",
+    "amountPaid": 30000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "latitude": 31.9939081,
+    "longitude": 44.8964534,
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:37:47.858Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_782b5c59-0f09-4890-8ede-5c50089556c0",
+    "contractId": "contract_1790067206694_5lkps",
+    "customerName": "يوسف رزاق احمد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:30:34.864Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_50d92193-bf0d-4b3f-9e53-f4aead7650cb",
+    "contractId": "contract_1790066112555_zspa1",
+    "customerName": "زيد فالح عبد حاجم",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:18:07.452Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_54e271c6-d0b3-44e0-809f-51d45136c9f2",
+    "contractId": "contract_1791715974203_8o6ni",
+    "customerName": "حسين سلام كاضم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:06:52.225Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_2eda73cd-d003-4332-aebc-a83e16d5d18a",
+    "contractId": "contract_1790067782646_m3b34",
+    "customerName": "زينب سلام كاضم",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T16:06:45.937Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_3f7aec28-df25-4ab6-a544-e860f81d704d",
+    "contractId": "contract_1792821660734_8m0u3",
+    "customerName": "محمد احمد ناصر",
+    "amountPaid": 3000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "latitude": 31.9737633,
+    "longitude": 44.95196,
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:50:06.951Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_754cf118-4c1b-48e9-a61a-517224224f3f",
+    "contractId": "contract_1790066985689_rlje8",
+    "customerName": "ابراهيم عناد عبد",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:45:52.611Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_43080394-705c-4ef9-81dd-8a993a6c62c6",
+    "contractId": "contract_1791719413342_o13ow",
+    "customerName": "سجاد قاسم جبر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:42:38.864Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_83e19041-fa14-4f35-8523-13226ba25a7c",
+    "contractId": "contract_1791719479124_bgq6j",
+    "customerName": "امير احمد يحيى",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:35:25.831Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7d25495d-eb8c-437f-8b74-a77896a7a45a",
+    "contractId": "contract_1790067266799_vf7d1",
+    "customerName": "احمد راضي عبيد",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:21:35.316Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7c70e696-b698-46d6-bf67-e6695318976a",
+    "contractId": "contract_1790067141105_gx9r8",
+    "customerName": "عباس عايد راضي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:21:22.254Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_f4bb60ed-0ee0-4b24-93e1-b4486a74f747",
+    "contractId": "contract_1790066939878_qztle",
+    "customerName": "كرار هاني شعلان",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:21:12.099Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e367a48b-4245-4040-8a1e-e58354ea12e5",
+    "contractId": "contract_1790066217087_clsrz",
+    "customerName": "حليم عصفور حمد",
+    "amountPaid": 14000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:18:59.167Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_912b7ade-4388-4154-ab68-c1b0a9e91f77",
+    "contractId": "contract_1790067859678_t7t2u",
+    "customerName": "حسين فاضل حميد",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:15:42.129Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7c287b8b-337d-4439-bcff-267caf6b6934",
+    "contractId": "contract_1790066388740_tllca",
+    "customerName": "عباس فاضل حميد",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:15:38.316Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_b9b52d3d-e3e7-44eb-8cb4-3b97478bc104",
+    "contractId": "contract_1790067859678_t7t2u",
+    "customerName": "حسين فاضل حميد",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:12:11.862Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_23850104-0aa6-4c1d-b7a2-51388c96ab27",
+    "contractId": "contract_1790066388740_tllca",
+    "customerName": "عباس فاضل حميد",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T15:11:42.653Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_b5ccba2b-c953-4d23-9974-7cfbffa254b7",
+    "contractId": "contract_1790068034398_77e0w",
+    "customerName": "مرتضى محمد عباس",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-24",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T14:24:35.682Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7a2a3808-0159-4a81-a602-6a914ac28888",
+    "contractId": "contract_1790072556698_i5059",
+    "customerName": "رحيم حمزه بجاي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-24",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T13:48:53.237Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_23908c0d-dc98-471c-9842-b0813551f518",
+    "contractId": "contract_1791619048835_tf79q",
+    "customerName": "اثير صباح عبود",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-24",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T07:55:17.455Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_66c135c8-489d-4670-a8e2-70dda83b5a37",
+    "contractId": "contract_1792149137851_6g649",
+    "customerName": "علي كريم عبد عون",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-24",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T07:48:08.825Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_a3cdceab-d39c-481c-b240-1ae92f884525",
+    "contractId": "contract_1792159601227_37k70",
+    "customerName": "حسين عبد حسن",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-24",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T07:03:08.882Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_a3ee5f14-f3ee-49ff-80ee-644eb4e36263",
+    "contractId": "contract_1792439905263_4lg50",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-24",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T06:56:38.308Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_54056f9f-c630-4a72-971a-37d79c5d32bf",
+    "contractId": "contract_1791875234960_pekxp",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-24",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-24T06:56:33.031Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_5680af0e-3dd5-45fc-99ab-acaf7d7dd4e2",
+    "contractId": "contract_1790067032599_ggibz",
+    "customerName": "عرفان هاشم مصطفى 3",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:36:11.572Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_9b37805d-31b6-41f8-a699-292f2e75c4be",
+    "contractId": "contract_1790067398505_69ynx",
+    "customerName": "محمد ربيع خرجان",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:30:29.680Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e0515fe5-0e00-4824-81d5-ea6a331db920",
+    "contractId": "contract_1790067981560_ayym0",
+    "customerName": "رضا جميل حسين",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:30:10.716Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_5a810e0d-b175-4f4e-9ae9-bb2c19cfa9a3",
+    "contractId": "contract_1790067087992_wxyvu",
+    "customerName": "ماهر حسن دعاش 1",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:29:55.521Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_86a9ec93-059f-40b1-b658-103759d435fe",
+    "contractId": "contract_1790066049492_13kqv",
+    "customerName": "علي ماهر حسن",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:29:48.058Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d6c57a8b-0833-4711-bb07-055e817c2789",
+    "contractId": "contract_1791715974203_8o6ni",
+    "customerName": "حسين سلام كاضم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:28:33.208Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_a0559b73-e82d-44c7-a3cd-807820f2191c",
+    "contractId": "contract_1790067782646_m3b34",
+    "customerName": "زينب سلام كاضم",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:28:03.636Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_6b5a3eb7-cc64-4c4a-b1c1-598ee146b398",
+    "contractId": "contract_1790065967005_r1t0o",
+    "customerName": "وجدان مهدي كتاب",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:27:09.594Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_5a691507-1b2f-4a48-b597-4c8ec310cdb0",
+    "contractId": "contract_1791719348133_zkshm",
+    "customerName": "حسام عبدالكريم عاجل 2",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:25:22.796Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_445cadf9-b1a0-4757-bba9-114ab2e35a0f",
+    "contractId": "contract_1790066878599_lsq7k",
+    "customerName": "محمد عبدالكاضم عاجل 1",
+    "amountPaid": 45000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:24:59.807Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_c3fa7294-2314-4bf1-b022-39cba7520114",
+    "contractId": "contract_1790066158966_wgvz2",
+    "customerName": "حسام عبدالكاضم عاجل",
+    "amountPaid": 24000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:24:31.509Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_f3c323c9-560e-46e6-9fac-fe2041c3bf75",
+    "contractId": "contract_1790067266799_vf7d1",
+    "customerName": "احمد راضي عبيد",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:24:07.158Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d2933e60-cb20-40a2-b9e3-89486c1aba22",
+    "contractId": "contract_1790067141105_gx9r8",
+    "customerName": "عباس عايد راضي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:23:45.404Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_0349a01f-d50a-4029-9dc2-2f83968f2574",
+    "contractId": "contract_1790066939878_qztle",
+    "customerName": "كرار هاني شعلان",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:23:31.804Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_d354d4ae-17d2-4d04-a5cd-fcb362fb01aa",
+    "contractId": "contract_1790065886436_ahhsh",
+    "customerName": "سناء نوري طاهر",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:23:16.036Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_3221e025-a9bc-4767-a549-53bbd9222e83",
+    "contractId": "contract_1790065221037_gv3qs",
+    "customerName": "حيدر تحسين جواد",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:23:03.866Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_a728bcc6-f75b-4e40-87be-bba3df7f08e1",
+    "contractId": "contract_1790067728041_j42xx",
+    "customerName": "ليث صدام حسين",
+    "amountPaid": 3000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:14:18.939Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e458faa8-58bd-4f2f-bd79-e8061aa229e3",
+    "contractId": "contract_1790066112555_zspa1",
+    "customerName": "زيد فالح عبد حاجم",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T20:14:03.735Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_58598aef-01fd-4616-8b89-56e15afa8d15",
+    "contractId": "contract_1790067206694_5lkps",
+    "customerName": "يوسف رزاق احمد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T18:56:38.946Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_1f569562-b221-4e74-a287-bdbca66bf343",
+    "contractId": "contract_1790066985689_rlje8",
+    "customerName": "ابراهيم عناد عبد",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:49:55.384Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_73f644d8-2641-482c-ae05-1077db8cf0b2",
+    "contractId": "contract_1791719413342_o13ow",
+    "customerName": "سجاد قاسم جبر",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:40:48.911Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_da62d1e4-ed35-4b87-8b47-6f08e52404de",
+    "contractId": "contract_1791719479124_bgq6j",
+    "customerName": "امير احمد يحيى",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:35:36.619Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_80ba4cfc-2e9d-4e06-a2e5-ff1e25e572fc",
+    "contractId": "contract_1790068034398_77e0w",
+    "customerName": "مرتضى محمد عباس",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-23",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T15:16:11.289Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_c1ba95b8-378a-4d1f-8d05-b44cfb98d3e7",
+    "contractId": "contract_1790072556698_i5059",
+    "customerName": "رحيم حمزه بجاي",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T13:50:36.587Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_6ae5030b-6fd4-4a94-ae59-82db325f5f44",
+    "contractId": "contract_1792149137851_6g649",
+    "customerName": "علي كريم عبد عون",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:44:23.891Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_5be5aa38-87fd-435c-971c-919e183b05bd",
+    "contractId": "contract_1791619048835_tf79q",
+    "customerName": "اثير صباح عبود",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:29:44.646Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_c8dd0d27-669d-4227-bb10-abe97a5cf4a2",
+    "contractId": "contract_1792159601227_37k70",
+    "customerName": "حسين عبد حسن",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:04:41.704Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_96410b58-7676-48f0-8047-ee8a3251820d",
+    "contractId": "contract_1792439905263_4lg50",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 4000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T07:00:07.782Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_92279b33-cfaa-4f38-aa05-4fbae418c22e",
+    "contractId": "contract_1791875234960_pekxp",
+    "customerName": "سيف تركي معنه",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-23",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-23T06:59:59.348Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_933ff1a1-0408-4f77-b39b-69ec8681ae61",
+    "contractId": "contract_1790067398505_69ynx",
+    "customerName": "محمد ربيع خرجان",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:20:41.054Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_b5716ce7-c7b1-47a1-bc44-0d9f4f54a1a2",
+    "contractId": "contract_1790067981560_ayym0",
+    "customerName": "رضا جميل حسين",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:20:25.633Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_ced3fd14-8485-4aa1-84df-df85015446af",
+    "contractId": "contract_1790067087992_wxyvu",
+    "customerName": "ماهر حسن دعاش 1",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:18:54.450Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_4ef7b36d-1bd0-4aa9-87f7-b7083b0fb7d9",
+    "contractId": "contract_1790066049492_13kqv",
+    "customerName": "علي ماهر حسن",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:18:41.020Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_14b499d7-c97a-4e94-bc8f-6137081268c6",
+    "contractId": "contract_1791719348133_zkshm",
+    "customerName": "حسام عبدالكريم عاجل 2",
+    "amountPaid": 35000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:17:37.256Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_029ca132-adca-4aea-bd00-5ae9700e0556",
+    "contractId": "contract_1790066878599_lsq7k",
+    "customerName": "محمد عبدالكاضم عاجل 1",
+    "amountPaid": 45000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:17:19.839Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_6a0ba24e-28fd-40bf-bdec-7e1c6eeed47d",
+    "contractId": "contract_1790066158966_wgvz2",
+    "customerName": "حسام عبدالكاضم عاجل",
+    "amountPaid": 24000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:17:07.985Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_e173a2c2-2ffd-4ac9-8d98-51306945cbb7",
+    "contractId": "contract_1790067728041_j42xx",
+    "customerName": "ليث صدام حسين",
+    "amountPaid": 3000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:05:53.422Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_2ccac907-973b-4875-b42d-bc977717c0eb",
+    "contractId": "contract_1790066112555_zspa1",
+    "customerName": "زيد فالح عبد حاجم",
+    "amountPaid": 20000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T20:04:57.294Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_63b4aaad-efa6-47d2-a547-47664e28db91",
+    "contractId": "contract_1790067032599_ggibz",
+    "customerName": "عرفان هاشم مصطفى 3",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T18:43:32.936Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_afa6fc2b-0c8f-4adf-b3e2-8d483fe84a28",
+    "contractId": "contract_1790068836134_rekdk",
+    "customerName": "علي محمد جاسم",
+    "amountPaid": 5000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:28:09.820Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_bb5fa8d9-7728-4929-bcb0-e1f79196c7e9",
+    "contractId": "contract_1790068729469_4ybbp",
+    "customerName": "عبدالكريم حسن سلمان 2",
+    "amountPaid": 30000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:19:33.668Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_9d441af9-9e62-4774-b65d-5fe1f25f0fde",
+    "contractId": "contract_1790068780485_r6dj6",
+    "customerName": "علي رسول جابر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-2",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:07:16.906Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_3aa35b09-2976-42c7-b139-7c9293c898e1",
+    "contractId": "contract_1790067206694_5lkps",
+    "customerName": "يوسف رزاق احمد",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T16:00:06.003Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_54d01d2e-544c-4d19-804d-ed8bcf98f679",
+    "contractId": "contract_1790065790388_b80hu",
+    "customerName": "مصطفى رزاق مجهول",
+    "amountPaid": 30000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:46:00.622Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_048bbb6d-3dee-4f6a-b527-34f7db9e8c85",
+    "contractId": "contract_1790066813431_gcduh",
+    "customerName": "حيدر كريم حجيل",
+    "amountPaid": 25000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:43:48.989Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_9508adbc-5490-47f3-8a8a-280ac74ff24f",
+    "contractId": "contract_1791719413342_o13ow",
+    "customerName": "سجاد قاسم جبر",
+    "amountPaid": 10000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:42:56.598Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_17cd4568-5649-43fa-abea-b66efe7853ba",
+    "contractId": "contract_1790065684076_hkvzn",
+    "customerName": "حسن مسلم كاضم",
+    "amountPaid": 8000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:33:55.421Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_7af56412-a339-4440-a11a-0e7e887d7eba",
+    "contractId": "contract_1790064700810_j6w5e",
+    "customerName": "سعد راضي كاضم",
+    "amountPaid": 6000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:32:06.512Z",
+    "isEdited": false
+  },
+  {
+    "id": "pay_8addd1d2-644d-4a79-87e7-174bb0197d9c",
+    "contractId": "contract_1790068034398_77e0w",
+    "customerName": "مرتضى محمد عباس",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-22",
+    "repName": "ماهر",
+    "note": "",
+    "fundId": "fund-4",
+    "updatedAt": null,
+    "createdAt": "2026-10-22T15:15:33.923Z",
+    "isEdited": false
   },
   {
     "id": "pay_ddf7228a-5942-49e8-a395-ac170960bb9c",
@@ -38,8 +2122,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T15:11:51.617Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_af352448-7a2f-4016-bcd5-46af72ce698d",
@@ -52,8 +2135,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T15:11:33.367Z",
-    "isEdited": false,
-    "amount": 15000
+    "isEdited": false
   },
   {
     "id": "pay_d497b7ef-b5e6-4418-965b-bdbc02457da0",
@@ -66,8 +2148,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T15:05:32.870Z",
-    "isEdited": false,
-    "amount": 4000
+    "isEdited": false
   },
   {
     "id": "pay_bfa364b8-46c7-4806-b959-452582f30eb3",
@@ -80,8 +2161,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T15:05:29.147Z",
-    "isEdited": false,
-    "amount": 6000
+    "isEdited": false
   },
   {
     "id": "pay_95b57f14-9bbb-45d4-8c29-989611dc8671",
@@ -94,8 +2174,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T15:01:08.735Z",
-    "isEdited": false,
-    "amount": 25000
+    "isEdited": false
   },
   {
     "id": "pay_018173a6-9e47-4edf-a4b1-ea53512ef259",
@@ -108,8 +2187,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T15:01:02.116Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_ca28c3d1-b1a8-44cf-aa63-391b2efd9543",
@@ -122,8 +2200,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T15:00:31.791Z",
-    "isEdited": false,
-    "amount": 20000
+    "isEdited": false
   },
   {
     "id": "pay_74209fa0-abb5-4113-8163-c8adf806c0cf",
@@ -136,8 +2213,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T14:59:20.065Z",
-    "isEdited": false,
-    "amount": 7000
+    "isEdited": false
   },
   {
     "id": "pay_29275a58-7287-48bd-9a7b-cf7313fffe7f",
@@ -150,8 +2226,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T14:51:47.868Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_2cfabfb3-c3c7-4866-a022-717ebd1ab4f9",
@@ -164,8 +2239,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T14:51:40.036Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_65fa5c81-5850-496a-b214-de99087495fc",
@@ -178,8 +2252,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-22T14:51:10.007Z",
-    "isEdited": false,
-    "amount": 20000
+    "isEdited": false
   },
   {
     "id": "pay_e0047329-b87d-43c5-9161-72c8f58ecd36",
@@ -192,8 +2265,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-22T14:21:03.034Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_a2234c7d-9ffd-49ad-bbd4-b9d30a42b77c",
@@ -206,8 +2278,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-22T07:54:00.039Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_c350a845-11ca-4607-bd45-3ec220fb0e45",
@@ -220,8 +2291,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-22T07:02:00.610Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_a111b2f5-593a-43da-aa3b-31801fb5331a",
@@ -234,8 +2304,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-22T06:57:15.362Z",
-    "isEdited": false,
-    "amount": 4000
+    "isEdited": false
   },
   {
     "id": "pay_4381d44e-a23b-4304-8b42-591cc21e5a4d",
@@ -248,8 +2317,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-22T06:57:04.414Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_496530dd-d7cb-454d-9eb1-2600ab810bdc",
@@ -262,8 +2330,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T21:47:27.290Z",
-    "isEdited": false,
-    "amount": 35000
+    "isEdited": false
   },
   {
     "id": "pay_910ed3ab-dbc1-4071-98dd-58439c154f85",
@@ -276,8 +2343,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T19:06:54.516Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_445e9794-06cf-4433-875d-dde2fc1d4049",
@@ -290,8 +2356,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:59:51.008Z",
-    "isEdited": false,
-    "amount": 35000
+    "isEdited": false
   },
   {
     "id": "pay_792d03c6-0289-427d-a6f9-9a89334fa7ea",
@@ -304,8 +2369,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:59:37.717Z",
-    "isEdited": false,
-    "amount": 45000
+    "isEdited": false
   },
   {
     "id": "pay_d5d86ac3-b5c9-4169-8313-ec661b0b297d",
@@ -318,8 +2382,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:59:23.383Z",
-    "isEdited": false,
-    "amount": 24000
+    "isEdited": false
   },
   {
     "id": "pay_85180628-7d33-4321-89d0-cc604c88317b",
@@ -332,8 +2395,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:55:14.220Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_68459f8a-73a6-4401-895a-ff9923b3a6ff",
@@ -346,8 +2408,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:54:47.685Z",
-    "isEdited": false,
-    "amount": 15000
+    "isEdited": false
   },
   {
     "id": "pay_8398148f-7486-4c13-8c59-7f50dff85a25",
@@ -360,8 +2421,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:53:26.271Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_5931a07f-600a-43ed-b069-7a604162433d",
@@ -374,8 +2434,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:53:09.112Z",
-    "isEdited": false,
-    "amount": 6000
+    "isEdited": false
   },
   {
     "id": "pay_833fa007-eb0d-4f41-bc43-efe0176bd1f9",
@@ -388,8 +2447,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:52:55.336Z",
-    "isEdited": false,
-    "amount": 6000
+    "isEdited": false
   },
   {
     "id": "pay_b414bf5d-88c6-434b-aa46-9ed6542558b4",
@@ -402,8 +2460,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:52:47.733Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_2722c166-86b6-4863-b7d9-4b6cd7f422f9",
@@ -416,8 +2473,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:36:59.547Z",
-    "isEdited": false,
-    "amount": 8000
+    "isEdited": false
   },
   {
     "id": "pay_d1ed28e3-5c2b-4ec7-b39c-b7fcfee96b6e",
@@ -430,8 +2486,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T18:36:12.070Z",
-    "isEdited": false,
-    "amount": 3000
+    "isEdited": false
   },
   {
     "id": "pay_f9ae44fc-be04-4474-93cf-de045fe3cdc9",
@@ -444,8 +2499,7 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-21T16:05:18.069Z",
-    "isEdited": false,
-    "amount": 30000
+    "isEdited": false
   },
   {
     "id": "pay_25d269bc-e4c8-44b4-a8e7-c3000cc1e8a1",
@@ -458,8 +2512,7 @@
     "fundId": "fund-2",
     "updatedAt": null,
     "createdAt": "2026-10-21T15:55:17.220Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_85a3d22d-ee55-4ce3-90aa-a52bfe94e80e",
@@ -472,8 +2525,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T15:13:06.379Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_0ccee7b0-aa7e-458d-a893-8cb45cf1f238",
@@ -486,8 +2538,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T15:07:49.692Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_e6d48153-ba6d-4853-88d5-22dde54b5920",
@@ -500,8 +2551,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T15:01:49.397Z",
-    "isEdited": false,
-    "amount": 4000
+    "isEdited": false
   },
   {
     "id": "pay_81af87a4-f6f1-402a-be22-7f3825748982",
@@ -514,8 +2564,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T15:01:44.781Z",
-    "isEdited": false,
-    "amount": 6000
+    "isEdited": false
   },
   {
     "id": "pay_9f097c36-d34f-4680-a95b-9ed4c06eaec1",
@@ -528,8 +2577,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:59:37.772Z",
-    "isEdited": false,
-    "amount": 6000
+    "isEdited": false
   },
   {
     "id": "pay_d72dd649-a8d8-4b01-8935-793481d56cc2",
@@ -542,8 +2590,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:57:53.315Z",
-    "isEdited": false,
-    "amount": 25000
+    "isEdited": false
   },
   {
     "id": "pay_26a5a811-ba46-4450-b344-c938b37ab9bc",
@@ -556,8 +2603,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:57:40.174Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_6dd47fc1-9042-46c9-867a-8d33a4cbbae2",
@@ -570,8 +2616,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:57:27.171Z",
-    "isEdited": false,
-    "amount": 20000
+    "isEdited": false
   },
   {
     "id": "pay_33b2ba98-4bea-46ae-9102-256c7817abf9",
@@ -584,8 +2629,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:51:48.485Z",
-    "isEdited": false,
-    "amount": 7000
+    "isEdited": false
   },
   {
     "id": "pay_ba9e23d1-0ddc-4c83-b725-84f0a3699482",
@@ -598,8 +2642,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:47:31.071Z",
-    "isEdited": false,
-    "amount": 15000
+    "isEdited": false
   },
   {
     "id": "pay_86029782-361b-4dbb-b40b-cd98ebf62167",
@@ -612,8 +2655,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:43:20.044Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_5623988f-4ea3-4f15-871a-03905018eb05",
@@ -626,8 +2668,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:43:02.596Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_974d789b-851c-41b1-9f11-09f4e64b78cc",
@@ -640,8 +2681,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:42:48.552Z",
-    "isEdited": false,
-    "amount": 20000
+    "isEdited": false
   },
   {
     "id": "pay_8249f4a6-fa52-40da-b8be-8baed1707b74",
@@ -654,8 +2694,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-21T14:03:57.382Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_128fd9a8-98f4-4f5b-8086-a692eac4c181",
@@ -668,8 +2707,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-21T13:25:25.162Z",
-    "isEdited": false,
-    "amount": 150000
+    "isEdited": false
   },
   {
     "id": "pay_15cea752-56e2-4e5e-b74c-c8d6484ccf14",
@@ -682,8 +2720,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-21T07:52:39.068Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_6f1cb03e-2c8e-479c-b2a9-8ef9ac6699c4",
@@ -696,8 +2733,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-21T07:46:33.283Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_9b830cf9-2d82-435d-bd17-d7e0edaf6953",
@@ -710,8 +2746,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-21T06:55:00.526Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_757d9190-ccfc-473e-a3bf-37f2645cd6b0",
@@ -724,8 +2759,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-21T06:49:07.086Z",
-    "isEdited": false,
-    "amount": 4000
+    "isEdited": false
   },
   {
     "id": "pay_02141301-1a17-43a2-b1eb-bb0634bc6c42",
@@ -738,8 +2772,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-21T06:48:51.679Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_81ba8302-8e91-4294-ab3d-41d2f579b4af",
@@ -843,8 +2876,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:36:28.201Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_2e9fca04-bbec-460a-a41f-a468d45397ed",
@@ -870,8 +2902,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:20:33.816Z",
-    "isEdited": false,
-    "amount": 10000
+    "isEdited": false
   },
   {
     "id": "pay_af8656c5-0b56-4d47-bfe0-4bc5dfee4a61",
@@ -897,8 +2928,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:08:14.927Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_10993945-294f-4f4c-9e7c-b40f450a24fa",
@@ -963,8 +2993,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T15:02:58.115Z",
-    "isEdited": false,
-    "amount": 25000
+    "isEdited": false
   },
   {
     "id": "pay_66fc6766-920a-43a6-bf97-2719130df7c2",
@@ -1016,8 +3045,7 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-20T14:26:46.315Z",
-    "isEdited": false,
-    "amount": 5000
+    "isEdited": false
   },
   {
     "id": "pay_208c960e-a26f-4f8f-a28f-4fe4c5a2fa39",
@@ -1095,8 +3123,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-20T08:03:02.502Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_c53b3c68-c1a0-450a-894c-f87178f8d4d8",
@@ -1122,8 +3149,7 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-20T06:48:55.071Z",
-    "isEdited": false,
-    "amount": 12000
+    "isEdited": false
   },
   {
     "id": "pay_345e4e0b-95c5-4e93-8a9f-d53c341186e1",

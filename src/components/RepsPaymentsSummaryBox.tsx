@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText, Share2 } from 'lucide-react';
+import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText, Share2, MessageCircle } from 'lucide-react';
 import { SalesRepresentative, PaymentRecord, InstallmentContract, CustomerList, Language } from '../types';
 import { silentIframePrint, openUniversalPdfPrintWindow, directPrintReceipt, DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { RepReceiptModal, RepReceiptData, directPrintRepReceipt } from './RepReceiptModal';
@@ -8,6 +8,7 @@ import { numberToArabicWords } from '../lib/tafqeet';
 import { getPaymentFormattedDateAndTime } from '../lib/dateUtils';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { normalizeEntityName } from '../lib/nameHelpers';
+import { formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
 
 interface RepsPaymentsSummaryBoxProps {
   currentRep: SalesRepresentative | null;
@@ -163,6 +164,68 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
 
     // Direct Instant Print without preview modal (same as collection receipt)
     directPrintRepReceipt(repReceipt);
+  };
+
+  const handleSendPaymentWhatsApp = (p: PaymentRecord) => {
+    const amountNum = Number(p.amountPaid ?? (p as any).amount ?? 0);
+    const amountDigits = `${amountNum.toLocaleString('en-US')} د.ع`;
+    const amountWords = numberToArabicWords(amountNum);
+    const customerDisplayName = p.customerName || (isAr ? 'زبون' : 'Customer');
+    const { dateStr } = getPaymentFormattedDateAndTime(p, isAr);
+
+    const targetContract = contracts.find(
+      (c) =>
+        c &&
+        (c.id === p.contractId ||
+          c.customerName === p.customerName ||
+          normalizeEntityName(c.customerName) === normalizeEntityName(p.customerName))
+    );
+
+    let totalPaidStr = amountDigits;
+    let remainingStr = '0 د.ع';
+    if (targetContract) {
+      try {
+        const snapshot = getPaymentReceiptBalances(p, targetContract, payments);
+        if (typeof snapshot.totalPaid === 'number') {
+          totalPaidStr = `${snapshot.totalPaid.toLocaleString('en-US')} د.ع`;
+        }
+        if (typeof snapshot.remainingBalance === 'number') {
+          remainingStr = `${snapshot.remainingBalance.toLocaleString('en-US')} د.ع`;
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    const message = `اسم الزبون: ${customerDisplayName}
+الواصل: ${totalPaidStr}
+المبلغ رقماً: ${amountDigits}
+المبلغ كتابة: ${amountWords}
+الباقي: ${remainingStr}
+التاريخ: ${dateStr}`.trim();
+
+    const rawPhone = targetContract?.customerPhone || (targetContract as any)?.phone || (p as any)?.customerPhone;
+    const cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
+    const encodedText = encodeURIComponent(message);
+
+    const waUrl = cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encodedText}`
+      : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    showToast(isAr ? 'جاري فتح تطبيق واتساب لإرسال الوصل...' : 'Opening WhatsApp...', 'success');
+
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (isMobile) {
+      const waScheme = cleanPhone
+        ? `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`
+        : `whatsapp://send?text=${encodedText}`;
+      window.location.href = waScheme;
+      setTimeout(() => {
+        window.open(waUrl, '_blank');
+      }, 500);
+    } else {
+      window.open(waUrl, '_blank');
+    }
   };
 
   const handlePrintAllRepsSummary = (
@@ -797,9 +860,19 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
                 >
                   <div className="flex items-center justify-between text-xs sm:text-sm font-black">
                     <span className="text-slate-900 dark:text-slate-100 truncate">{p.customerName}</span>
-                    <span className="text-emerald-700 dark:text-emerald-300 dir-ltr font-black shrink-0">
-                      {p.amountPaid.toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-emerald-700 dark:text-emerald-300 dir-ltr font-black">
+                        {p.amountPaid.toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSendPaymentWhatsApp(p)}
+                        className="p-1 rounded-lg border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center group"
+                        title={isAr ? 'إرسال وصل التسديد عبر واتساب (الاسم، الواصل، المبلغ رقماً وكتابة، التاريخ)' : 'Send payment receipt via WhatsApp'}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
                   </div>
                   {cleanNote && (
                     <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-bold truncate mt-0.5">
