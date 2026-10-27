@@ -152,8 +152,8 @@ async function getCandidateServerOrigins() {
 
   // Fallback candidate origins for Cloud PostgreSQL server, local dev and Android
   const defaults = [
-    'https://ais-dev-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app',
-    'https://ais-pre-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app',
+    'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
+    'https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://10.0.2.2:3000',

@@ -114,10 +114,8 @@ export function preparePaymentReceiptWhatsApp({
 
   let messageText = '';
   if (receiptTemplate === 'template_2') {
-    // Table receipt / وصل جداول - includes "الكرار للموبايل" without "وصل تسديد - جداول"
+    // Table receipt / وصل جداول
     messageText = `━━━━━━━━━━━━━━━
-*الكرار للموبايل*
-━━━━━━━━━━━━━━━
 👤 *الزبون:* ${customerName}
 💰 *المبلغ الكلي:* ${snapshot.totalPrice.toLocaleString('en-US')} د.ع
 ✅ *المبلغ الواصل:* ${snapshot.totalPaid.toLocaleString('en-US')} د.ع
@@ -130,7 +128,7 @@ export function preparePaymentReceiptWhatsApp({
 🔗 *رابط الوصل المباشر:*
 ${receiptUrl}`.trim();
   } else {
-    // Default receipt / وصل افتراضي - strictly NO office name ("ماريد اي اسم مكتب احذف الكرار للتقسيط")
+    // Default receipt / وصل افتراضي
     messageText = `👤 *اسم الزبون:* ${customerName}
 💵 *المبلغ رقماً:* ${snapshot.paidAmount.toLocaleString('en-US')} د.ع
 📝 *المبلغ كتابة:* ${amountInWords}
@@ -142,7 +140,7 @@ ${receiptUrl}`.trim();
   }
 
   return {
-    shopTitle: receiptTemplate === 'template_2' ? 'الكرار للموبايل' : '',
+    shopTitle: '',
     receiptNo: receiptTemplate === 'template_2' ? '' : '1',
     customerName,
     customerPhone,

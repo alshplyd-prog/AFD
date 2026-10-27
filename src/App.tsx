@@ -646,7 +646,7 @@ export default function App() {
       } else {
         // Quick lightweight version verification
         try {
-          const res = await fetch('/api/sync/version', { method: 'GET', cache: 'no-store' }).catch(() => null);
+          const res = await universalApiFetch('/api/sync/version').catch(() => null);
           if (res && res.ok) {
             setSyncError(false);
             const data = await res.json().catch(() => null);
@@ -2903,7 +2903,7 @@ export default function App() {
 
   const handleRecalculateFundBalances = async () => {
     try {
-      const res = await fetch('/api/funds/recalculate', { method: 'POST' });
+      const res = await universalApiFetch('/api/funds/recalculate', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         if (data.funds && Array.isArray(data.funds)) {

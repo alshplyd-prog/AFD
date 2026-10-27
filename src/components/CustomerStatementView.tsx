@@ -18,6 +18,7 @@ import { InstallmentContract, PaymentRecord } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { getPaymentFormattedDateAndTime, getLocalDateString } from '../lib/dateUtils';
 import { shareCustomerPaymentsPdf } from '../lib/pdfShareHelper';
+import { universalApiFetch } from '../lib/apiConfig';
 import html2canvas from 'html2canvas';
 
 interface CustomerStatementViewProps {
@@ -49,7 +50,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
     }
 
     if (id) {
-      fetch(`/api/statement/${encodeURIComponent(id)}`)
+      universalApiFetch(`/api/statement/${encodeURIComponent(id)}`)
         .then((res) => {
           if (res.ok) return res.json();
           throw new Error('API statement error');
@@ -64,8 +65,8 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
         .catch(() => {
           // Fallback to /api/contracts and /api/payments
           Promise.all([
-            fetch('/api/contracts').then((r) => r.json()).catch(() => []),
-            fetch('/api/payments').then((r) => r.json()).catch(() => [])
+            universalApiFetch('/api/contracts').then((r) => r.json()).catch(() => []),
+            universalApiFetch('/api/payments').then((r) => r.json()).catch(() => [])
           ]).then(([allC, allP]) => {
             if (Array.isArray(allC)) {
               const foundC = allC.find((c: any) => c.id === id || c.customerName === id);

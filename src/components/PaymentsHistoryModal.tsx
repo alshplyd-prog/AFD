@@ -3,6 +3,7 @@ import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKan
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
 import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, shareGeneralPaymentsPdf, formatIraqiPhoneForWhatsApp, sharePaymentReceiptWhatsApp } from '../lib/pdfShareHelper';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
+import { universalApiFetch } from '../lib/apiConfig';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { formatPaymentDateTime, formatPaymentTime, getLocalDateString, getPaymentFormattedDateAndTime } from '../lib/dateUtils';
@@ -171,7 +172,7 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
   const handleFetchAllFromServer = async () => {
     setIsFetchingFromServer(true);
     try {
-      const res = await fetch('/api/payments');
+      const res = await universalApiFetch('/api/payments');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {

@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { fetchWithFallback } from './apiConfig';
 
 export interface PushNotificationPayload {
   title?: string;
@@ -29,7 +30,6 @@ export async function initCapacitorPush(
             description: 'إشعارات وتنبيهات المبيعات والمواعيد والتعارضات المالية والتسديدات',
             importance: 5, // High importance (heads-up banner and sound on lockscreen)
             visibility: 1, // Public visibility (shows on lockscreen)
-            sound: 'beep.wav',
             vibration: true,
             lights: true,
             lightColor: '#0d9488',
@@ -106,7 +106,7 @@ export async function registerWebPushSubscription(currentRep?: any): Promise<voi
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
-      const keyRes = await fetch('/api/push-vapid-public-key').then(r => r.json()).catch(() => null);
+      const keyRes = await fetchWithFallback('/api/push-vapid-public-key').then(r => r.json()).catch(() => null);
       if (!keyRes || !keyRes.publicKey) return;
       const applicationServerKey = urlBase64ToUint8Array(keyRes.publicKey);
       sub = await reg.pushManager.subscribe({
@@ -116,7 +116,7 @@ export async function registerWebPushSubscription(currentRep?: any): Promise<voi
     }
 
     if (sub) {
-      await fetch('/api/push-subscribe', {
+      await fetchWithFallback('/api/push-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -210,7 +210,15 @@ export async function sendExternalNotification(
       }
     }
 
-    // 1. Native Capacitor Android / iOS (APK)
+    // 1. Native Capacitor Android / iOS (APK) or Android Javascript Interface
+    try {
+      const androidBridge = (window as any).AndroidInterface || (window as any).AndroidPrinter || (window as any).Android;
+      if (androidBridge && typeof androidBridge.showNotification === 'function') {
+        const ok = androidBridge.showNotification(title || 'الكرار للتقسيط', body || '');
+        if (ok) return true;
+      }
+    } catch (bridgeErr) {}
+
     if (Capacitor.isNativePlatform()) {
       try {
         const notifId = options?.id ?? Math.floor(Math.random() * 2147483640) + 1;
@@ -222,9 +230,7 @@ export async function sendExternalNotification(
               body: body || '',
               channelId: CHANNEL_ID,
               schedule: { at: new Date(Date.now() + 50) }, // Schedule immediately
-              sound: 'beep.wav',
               extra: options?.data || {},
-              smallIcon: 'ic_stat_icon_config_sample',
               iconColor: '#0d9488',
             },
           ],

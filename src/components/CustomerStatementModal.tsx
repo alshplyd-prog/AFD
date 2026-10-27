@@ -7,6 +7,7 @@ import { ZeroBalanceCountdown } from './ZeroBalanceCountdown';
 import { openUniversalPdfPrintWindow } from '../lib/bluetoothPrinter';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
 import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
+import { universalApiFetch } from '../lib/apiConfig';
 
 interface CustomerStatementModalProps {
   isOpen: boolean;
@@ -79,7 +80,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   const handleFetchAllFromServer = async () => {
     setIsFetchingServerPayments(true);
     try {
-      const res = await fetch('/api/payments');
+      const res = await universalApiFetch('/api/payments');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
