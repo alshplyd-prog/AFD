@@ -588,7 +588,7 @@ export const RepsManagementModal: React.FC<RepsManagementModalProps> = ({
                   </label>
                   <input
                     type="tel"
-                    inputMode="numeric"
+                    inputMode="tel"
                     pattern="[0-9]*"
                     value={phone}
                     onChange={(e) => {
@@ -596,7 +596,7 @@ export const RepsManagementModal: React.FC<RepsManagementModalProps> = ({
                       setPhone(converted.replace(/\D/g, ''));
                     }}
                     placeholder="07801234567"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-semibold dir-ltr text-left font-mono"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-semibold dir-ltr text-right"
                   />
                 </div>
 
@@ -614,7 +614,7 @@ export const RepsManagementModal: React.FC<RepsManagementModalProps> = ({
                       setCode(converted.replace(/\D/g, ''));
                     }}
                     placeholder="1234"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold dir-ltr text-left font-mono"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold dir-ltr text-right"
                   />
                 </div>
               </div>

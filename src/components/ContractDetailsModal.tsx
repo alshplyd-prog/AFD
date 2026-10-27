@@ -22,8 +22,7 @@ import {
   Navigation,
   LocateFixed,
   MapPinned,
-  ExternalLink,
-  MessageCircle
+  ExternalLink
 } from 'lucide-react';
 import { InstallmentContract, PaymentRecord, Language, SalesRepresentative, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
@@ -33,7 +32,6 @@ import { normalizeEntityName } from '../lib/nameHelpers';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { updateCustomerLocation } from '../lib/postgresClient';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
-import { sendPaymentReceiptToWhatsApp } from '../lib/receiptWhatsAppHelper';
 
 interface ContractDetailsModalProps {
   contract: InstallmentContract | null;
@@ -796,23 +794,6 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
                                   title={isAr ? 'حفظ وطباعة' : 'Save & Print'}
                                 >
                                   <Printer className="w-4 h-4" />
-                                </button>
-
-                                {/* WhatsApp Direct Receipt Button */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    sendPaymentReceiptToWhatsApp({
-                                      payment: p,
-                                      contract,
-                                      allPayments: safePayments,
-                                      customerLists,
-                                    });
-                                  }}
-                                  className="p-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center"
-                                  title={isAr ? 'إرسال وصل مباشر على واتساب الزبون (نص + رابط PDF)' : 'Send direct receipt to Customer WhatsApp'}
-                                >
-                                  <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                 </button>
 
                                 {/* Edit button (Admin only) */}

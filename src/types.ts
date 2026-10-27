@@ -37,7 +37,6 @@ export interface InstallmentContract {
   excessAmount?: number;
   rawTotalPaid?: number;
   repName?: string;
-  lastPaymentDate?: string | null;
   createdAt: string;
   completedAt?: string;
   updatedAt?: string;

@@ -68,8 +68,6 @@ import { RepsPaymentsSummaryBox } from './components/RepsPaymentsSummaryBox';
 import { openReceiptPdfWindow } from './lib/receiptPdf';
 import { ReceiptPrintTemplate } from './components/ReceiptPrintTemplate';
 import { CustomerStatementModal } from './components/CustomerStatementModal';
-import { CustomerReceiptView } from './components/CustomerReceiptView';
-import { CustomerStatementView } from './components/CustomerStatementView';
 import { SalesBox } from './components/SalesBox';
 import { SalesBoxModal } from './components/SalesBoxModal';
 import { AddAppointmentModal } from './components/AddAppointmentModal';
@@ -172,72 +170,6 @@ const LANG_STORAGE_KEY = 'sami_installments_lang';
 const REP_STORAGE_KEY = 'sami_installments_rep';
 
 export default function App() {
-  // Direct Standalone Document Route Check
-  // Evaluated immediately at the top of App() to render pure document views (Statement /s/:id or Receipt /r/:id)
-  // Bypasses splash screen, login screen, rep selection, and background state initialization completely
-  const standaloneRoute = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return { isStatement: false, statementId: '', isReceipt: false, receiptId: '' };
-    }
-    const p = window.location.pathname || '';
-    const search = window.location.search || '';
-    const params = new URLSearchParams(search);
-
-    // 1. Total Payments Statement Route (/s/:id or /statement/:id)
-    let sId = '';
-    if (p.startsWith('/s/')) {
-      sId = decodeURIComponent(p.replace('/s/', '').trim());
-    } else if (p.startsWith('/statement/')) {
-      sId = decodeURIComponent(p.replace('/statement/', '').trim());
-    } else {
-      sId = params.get('statement_id') || params.get('s') || '';
-    }
-
-    const isStatementMatch = Boolean(
-      p === '/s' ||
-      p.startsWith('/s/') ||
-      p === '/statement' ||
-      p.startsWith('/statement/') ||
-      params.get('view_statement') === 'true' ||
-      params.has('statement_id')
-    );
-
-    // 2. Single Payment Receipt Route (/r/:id or /receipt/:id)
-    let rId = '';
-    if (p.startsWith('/r/')) {
-      rId = decodeURIComponent(p.replace('/r/', '').trim());
-    } else if (p.startsWith('/receipt/')) {
-      rId = decodeURIComponent(p.replace('/receipt/', '').trim());
-    } else {
-      rId = params.get('r') || params.get('id') || params.get('receipt_id') || '';
-    }
-
-    const isReceiptMatch = Boolean(
-      p === '/receipt' ||
-      p.startsWith('/receipt/') ||
-      p === '/r' ||
-      p.startsWith('/r/') ||
-      params.get('view_receipt') === 'true' ||
-      params.has('receipt_id') ||
-      Boolean(params.get('paid_now') && params.get('c'))
-    );
-
-    return {
-      isStatement: isStatementMatch,
-      statementId: sId,
-      isReceipt: isReceiptMatch,
-      receiptId: rId,
-    };
-  }, []);
-
-  if (standaloneRoute.isStatement) {
-    return <CustomerStatementView contractId={standaloneRoute.statementId} />;
-  }
-
-  if (standaloneRoute.isReceipt) {
-    return <CustomerReceiptView receiptId={standaloneRoute.receiptId} />;
-  }
-
   const [contracts, setContracts] = useState<InstallmentContract[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -646,7 +578,7 @@ export default function App() {
       } else {
         // Quick lightweight version verification
         try {
-          const res = await universalApiFetch('/api/sync/version').catch(() => null);
+          const res = await fetch('/api/sync/version', { method: 'GET', cache: 'no-store' }).catch(() => null);
           if (res && res.ok) {
             setSyncError(false);
             const data = await res.json().catch(() => null);
@@ -2641,19 +2573,6 @@ export default function App() {
     });
   }, [contractsWithLiveBalances, searchQuery, activeFilter, selectedListId, todayStr, currentRep]);
 
-  // Today's total payments amount (مبلغ تسديدات اليوم)
-  const todayPaymentsTotal = useMemo(() => {
-    const today = getLocalDateString();
-    return payments.reduce((sum, p) => {
-      if (!p) return sum;
-      const pDate = p.paymentDate ? p.paymentDate.split('T')[0] : '';
-      if (pDate === today) {
-        return sum + (Number(p.amountPaid ?? (p as any).amount ?? 0) || 0);
-      }
-      return sum;
-    }, 0);
-  }, [payments]);
-
   // Funds Management Handlers
   const handleAddFund = async (fund: Omit<CashFund, 'id'>) => {
     try {
@@ -2903,7 +2822,7 @@ export default function App() {
 
   const handleRecalculateFundBalances = async () => {
     try {
-      const res = await universalApiFetch('/api/funds/recalculate', { method: 'POST' });
+      const res = await fetch('/api/funds/recalculate', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         if (data.funds && Array.isArray(data.funds)) {
@@ -4112,8 +4031,8 @@ export default function App() {
                     <div className="p-2 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 group-hover:scale-105 transition-transform shadow-2xs">
                       <History className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
-                    <span className="text-[11px] xs:text-xs sm:text-sm font-extrabold bg-rose-200/80 dark:bg-rose-950 text-rose-800 dark:text-rose-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full dir-ltr">
-                      {isAr ? `مبلغ اليوم: ${todayPaymentsTotal.toLocaleString('en-US')} د.ع` : `Today: ${todayPaymentsTotal.toLocaleString('en-US')} IQD`}
+                    <span className="text-[11px] xs:text-xs sm:text-sm font-extrabold bg-rose-200/80 dark:bg-rose-950 text-rose-800 dark:text-rose-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                      {payments.length} {isAr ? 'تسديد' : 'Payments'}
                     </span>
                   </div>
                   <div className="space-y-1 my-1">

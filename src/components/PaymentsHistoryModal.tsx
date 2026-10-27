@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2, FileSpreadsheet, Share2, CheckCircle2, AlertCircle, MessageCircle } from 'lucide-react';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
-import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, shareGeneralPaymentsPdf, formatIraqiPhoneForWhatsApp, sharePaymentReceiptWhatsApp } from '../lib/pdfShareHelper';
+import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, shareGeneralPaymentsPdf, formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
-import { universalApiFetch } from '../lib/apiConfig';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { formatPaymentDateTime, formatPaymentTime, getLocalDateString, getPaymentFormattedDateAndTime } from '../lib/dateUtils';
@@ -105,8 +104,8 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
           showToast(
             target === 'whatsapp'
               ? (isAr
-                  ? 'تم تجهيز رابط الـ PDF وفتح محادثة واتساب الزبون'
-                  : 'PDF link ready - Customer WhatsApp opened')
+                  ? 'تم تجهيز ملف مستند الـ PDF - اختر واتساب لإرسال الملف للزبون'
+                  : 'PDF document file ready - Select WhatsApp to send file')
               : (isAr
                   ? 'تم تجهيز ملف مستند الـ PDF - اختر التطبيق المطلوب للمشاركة'
                   : 'PDF document file ready - Select app to share file'),
@@ -172,7 +171,7 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
   const handleFetchAllFromServer = async () => {
     setIsFetchingFromServer(true);
     try {
-      const res = await universalApiFetch('/api/payments');
+      const res = await fetch('/api/payments');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -385,16 +384,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
 
   const totalSum = filtered.reduce((sum, p) => sum + (Number(p.amountPaid ?? (p as any).amount ?? 0) || 0), 0);
 
-  const todayPaymentsSum = safePayments.reduce((sum, p) => {
-    if (!p) return sum;
-    const today = getLocalDateString();
-    const pDate = p.paymentDate ? p.paymentDate.split('T')[0] : '';
-    if (pDate === today) {
-      return sum + (Number(p.amountPaid ?? (p as any).amount ?? 0) || 0);
-    }
-    return sum;
-  }, 0);
-
   const expectedInstallmentTotal = activeContract
     ? ((activeContract.totalPrice || 0) - (activeContract.advancePayment || 0) > 0
         ? (activeContract.totalPrice || 0) - (activeContract.advancePayment || 0)
@@ -497,21 +486,50 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
                   <span>{isAr ? 'تسوية وتصفير الحساب' : 'Settle Account'}</span>
                 </button>
               )}
-              {/* Customer payments PDF share button */}
-              <button
-                type="button"
-                onClick={() => handleSharePdf('other')}
-                disabled={isExportingPdf || filtered.length === 0}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
-                title={isAr ? 'مشاركة كشف التسديدات كملف PDF' : 'Share payments PDF'}
-              >
-                <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
-                <span>
-                  {isExportingPdf
-                    ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
-                    : (isAr ? 'مشاركة الكشف' : 'Share Statement')}
-                </span>
-              </button>
+              {/* Customer specific sharing buttons: واتساب الزبون and تطبيقات أخرى بشكل انفرادي */}
+              {hasCustomerPhone ? (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSharePdf('whatsapp')}
+                    disabled={isExportingPdf || filtered.length === 0}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                    title={isAr ? 'إرسال كشف التسديدات كملف PDF إلى واتساب الزبون' : 'Send payments PDF to Customer WhatsApp'}
+                  >
+                    <MessageCircle className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
+                    <span>
+                      {isExportingPdf
+                        ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                        : (isAr ? 'واتساب الزبون' : 'Customer WhatsApp')}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSharePdf('other')}
+                    disabled={isExportingPdf || filtered.length === 0}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                    title={isAr ? 'مشاركة ملف PDF عبر التطبيقات الأخرى (تليكرام، ماسنجر...)' : 'Share PDF via Other Apps'}
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'تطبيقات أخرى' : 'Other Apps'}</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleSharePdf('other')}
+                  disabled={isExportingPdf || filtered.length === 0}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                  title={isAr ? 'الزبون ليس لديه رقم - فتح قائمة التطبيقات لمشاركة ملف PDF' : 'Customer has no phone - Open apps chooser to share PDF'}
+                >
+                  <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isExportingPdf
+                      ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                      : (isAr ? 'مشاركة التطبيقات' : 'Share via Apps')}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -888,34 +906,9 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
                           )}
                         </td>
 
-                        {/* Actions: WhatsApp Share, Print, Edit, Delete */}
+                        {/* Actions: Print, Edit, Delete */}
                         <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
-                            {/* WhatsApp Text Receipt Share button */}
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                const ok = await sharePaymentReceiptWhatsApp({
-                                  payment: p,
-                                  contract,
-                                  allPayments: safePayments,
-                                  shopTitle: 'الكرار للموبايل والتقسيط',
-                                });
-                                if (ok) {
-                                  showToast(
-                                    isAr
-                                      ? 'تم فتح الواتساب مع الوصل ورابط PDF'
-                                      : 'WhatsApp opened with text receipt & PDF link',
-                                    'success'
-                                  );
-                                }
-                              }}
-                              className="p-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center"
-                              title={isAr ? 'مشاركة وصل نصي للدفعة عبر واتساب' : 'Share text receipt via WhatsApp'}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </button>
-
                             {/* Print Receipt button - matches screenshot styling */}
                             {onPrintReceipt && contract && (
                               <button
