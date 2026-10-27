@@ -169,9 +169,10 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
   const handleSendPaymentWhatsApp = (p: PaymentRecord) => {
     const amountNum = Number(p.amountPaid ?? (p as any).amount ?? 0);
     const amountDigits = `${amountNum.toLocaleString('en-US')} د.ع`;
-    const amountWords = numberToArabicWords(amountNum);
+    const amountWords = `فقط ${numberToArabicWords(amountNum)} لا غير`;
     const customerDisplayName = p.customerName || (isAr ? 'زبون' : 'Customer');
-    const { dateStr } = getPaymentFormattedDateAndTime(p, isAr);
+    const { dateStr, timeStr } = getPaymentFormattedDateAndTime(p, isAr);
+    const fullDate = `${dateStr} ${timeStr}`.trim();
 
     const targetContract = contracts.find(
       (c) =>
@@ -181,28 +182,27 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
           normalizeEntityName(c.customerName) === normalizeEntityName(p.customerName))
     );
 
-    let totalPaidStr = amountDigits;
-    let remainingStr = '0 د.ع';
+    let remainingInfo = '';
     if (targetContract) {
       try {
         const snapshot = getPaymentReceiptBalances(p, targetContract, payments);
-        if (typeof snapshot.totalPaid === 'number') {
-          totalPaidStr = `${snapshot.totalPaid.toLocaleString('en-US')} د.ع`;
-        }
         if (typeof snapshot.remainingBalance === 'number') {
-          remainingStr = `${snapshot.remainingBalance.toLocaleString('en-US')} د.ع`;
+          remainingInfo = `\n💳 *المتبقي بعد التسديد:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع`;
         }
       } catch (err) {
         // ignore
       }
     }
 
-    const message = `اسم الزبون: ${customerDisplayName}
-الواصل: ${totalPaidStr}
-المبلغ رقماً: ${amountDigits}
-المبلغ كتابة: ${amountWords}
-الباقي: ${remainingStr}
-التاريخ: ${dateStr}`.trim();
+    const message = `*وصل استلام تسديد* 🧾
+━━━━━━━━━━━━━━━
+👤 *اسم الزبون:* ${customerDisplayName}
+💵 *الواصل:* ${amountDigits}
+🔢 *المبلغ رقماً:* ${amountDigits}
+✍️ *المبلغ كتابة:* ${amountWords}
+📅 *التاريخ:* ${fullDate}${targetContract?.itemName ? `\n📦 *المادة:* ${targetContract.itemName}` : ''}${remainingInfo}
+━━━━━━━━━━━━━━━
+_الكرار للموبايل والتقسيط_`.trim();
 
     const rawPhone = targetContract?.customerPhone || (targetContract as any)?.phone || (p as any)?.customerPhone;
     const cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);

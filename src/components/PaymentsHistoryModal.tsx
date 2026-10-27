@@ -542,21 +542,50 @@ _الكرار للموبايل والتقسيط_`.trim();
                   <span>{isAr ? 'تسوية وتصفير الحساب' : 'Settle Account'}</span>
                 </button>
               )}
-              {/* Share total payments PDF button */}
-              <button
-                type="button"
-                onClick={() => handleSharePdf('other')}
-                disabled={isExportingPdf || filtered.length === 0}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
-                title={isAr ? 'مشاركة كشف التسديدات الكلية كملف PDF' : 'Share total payments PDF'}
-              >
-                <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
-                <span>
-                  {isExportingPdf
-                    ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
-                    : (isAr ? 'مشاركة كشف التسديدات' : 'Share Statement')}
-                </span>
-              </button>
+              {/* Customer specific sharing buttons: واتساب الزبون and تطبيقات أخرى بشكل انفرادي */}
+              {hasCustomerPhone ? (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSharePdf('whatsapp')}
+                    disabled={isExportingPdf || filtered.length === 0}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                    title={isAr ? 'إرسال كشف التسديدات كملف PDF إلى واتساب الزبون' : 'Send payments PDF to Customer WhatsApp'}
+                  >
+                    <MessageCircle className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
+                    <span>
+                      {isExportingPdf
+                        ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                        : (isAr ? 'واتساب الزبون' : 'Customer WhatsApp')}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSharePdf('other')}
+                    disabled={isExportingPdf || filtered.length === 0}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                    title={isAr ? 'مشاركة ملف PDF عبر التطبيقات الأخرى (تليكرام، ماسنجر...)' : 'Share PDF via Other Apps'}
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'تطبيقات أخرى' : 'Other Apps'}</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleSharePdf('other')}
+                  disabled={isExportingPdf || filtered.length === 0}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                  title={isAr ? 'الزبون ليس لديه رقم - فتح قائمة التطبيقات لمشاركة ملف PDF' : 'Customer has no phone - Open apps chooser to share PDF'}
+                >
+                  <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isExportingPdf
+                      ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                      : (isAr ? 'مشاركة التطبيقات' : 'Share via Apps')}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         ) : (

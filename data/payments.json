@@ -26,32 +26,6 @@
     "isEdited": false
   },
   {
-    "id": "pay_75b381a9-dacf-4720-aec7-4b4daa7ec19b",
-    "contractId": "contract_1792515176024_ui0rc",
-    "customerName": "حميد علي حسن",
-    "amountPaid": 4000,
-    "paymentDate": "2026-10-27",
-    "repName": "ضياء المحاسب",
-    "note": "",
-    "fundId": "fund_1787412701870_5rh61",
-    "updatedAt": null,
-    "createdAt": "2026-10-27T12:43:28.684Z",
-    "isEdited": false
-  },
-  {
-    "id": "pay_d9a6b66d-95e9-4aba-8f33-93fbb3c638f5",
-    "contractId": "contract_1792515176024_ui0rc",
-    "customerName": "حميد علي حسن",
-    "amountPaid": 4000,
-    "paymentDate": "2026-10-27",
-    "repName": "ضياء المحاسب",
-    "note": "",
-    "fundId": "fund_1787412701870_5rh61",
-    "updatedAt": null,
-    "createdAt": "2026-10-27T10:55:22.831Z",
-    "isEdited": false
-  },
-  {
     "id": "pay_f068d676-3b42-47ad-a0cd-d8f7c7efaac0",
     "contractId": "contract_1791619048835_tf79q",
     "customerName": "اثير صباح عبود",
