@@ -8,7 +8,7 @@ import { getApiBaseUrl, isNativeOrApkEnvironment } from '../lib/apiConfig';
 /**
  * Production VPS backend URL for mobile APK and external environments
  */
-export const CLOUD_API_URL = 'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app/api';
+export const CLOUD_API_URL = 'http://72.62.158.128:3000/api';
 
 /**
  * Dynamic API Base URL resolver:

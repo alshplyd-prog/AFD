@@ -8,8 +8,8 @@
 		"cleartext": true,
 		"allowNavigation": [
 			"*",
-			"https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app",
-			"https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app"
+			"https://ais-dev-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app",
+			"https://ais-pre-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app"
 		]
 	},
 	"plugins": {

@@ -166,8 +166,8 @@ export const ContractCard: React.FC<ContractCardProps> = ({
 
       {/* Customer Header Info */}
       <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-slate-100 break-words leading-snug">
+        <div className="min-w-0">
+          <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-slate-100 truncate leading-snug">
             {contract.customerName}
           </h3>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold truncate mt-0.5">

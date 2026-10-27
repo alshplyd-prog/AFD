@@ -250,10 +250,10 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
     const cleanName = customerName.trim();
     if (!cleanName) {
       errs.customerName = isAr ? 'اسم الزبون مطلوب' : 'Customer name is required';
-    } else if (cleanName.length < 3) {
+    } else if (cleanName.length < 9) {
       errs.customerName = isAr
-        ? 'يرجى إدخال اسم الزبون بشكل صحيح (الاسم الكامل)'
-        : 'Please enter a valid full customer name';
+        ? 'اسم الزبون يجب ألا يقل عن 9 أحرف (مثال: الاسم الثلاثي)'
+        : 'Customer name must be at least 9 characters (e.g. full three-part name)';
     }
     
     const cleanPhone = customerPhone.replace(/\D/g, '');
@@ -446,89 +446,87 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body - with sticky footer and scrollable content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="p-3.5 sm:p-4 overflow-y-auto flex-1 space-y-2.5 text-xs">
-            {/* Row 1: Customer Name & Phone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
-                  <span>{isAr ? 'اسم الزبون الكامل *' : 'Customer Full Name *'}</span>
-                  {isNonAdminEdit ? (
-                    <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5 shrink-0" />
-                      <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      {isAr ? '(الاسم الثلاثي أو الرباعي)' : '(Full name)'}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <User className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={customerName}
-                    disabled={isNonAdminEdit}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="words"
-                    spellCheck={false}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder={isAr ? 'مثال: أحمد جاسم محمد' : 'e.g. Ahmed Jasim Mohammed'}
-                    className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
-                      isNonAdminEdit
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
-                        : 'bg-slate-50 dark:bg-slate-900/50'
-                    }`}
-                  />
-                </div>
-                {errors.customerName && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerName}</p>}
+        {/* Form Body - Compact layout to fit on screen */}
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 overflow-y-auto space-y-2.5 text-xs">
+          {/* Row 1: Customer Name & Phone */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
+                <span>{isAr ? 'اسم الزبون الكامل *' : 'Customer Full Name *'}</span>
+                {isNonAdminEdit ? (
+                  <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5 shrink-0" />
+                    <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {isAr ? '(9 أحرف كحد أدنى)' : '(min 9 chars)'}
+                  </span>
+                )}
+              </label>
+              <div className="relative">
+                <User className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={customerName}
+                  disabled={isNonAdminEdit}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder={isAr ? 'مثال: أحمد جاسم محمد' : 'e.g. Ahmed Jasim Mohammed'}
+                  className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
+                    isNonAdminEdit
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
+                      : 'bg-slate-50 dark:bg-slate-900/50'
+                  }`}
+                />
               </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
-                  <span>{isAr ? 'رقم الهاتف *' : 'Phone Number *'}</span>
-                  {isNonAdminEdit ? (
-                    <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5 shrink-0" />
-                      <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      {isAr ? '(11 رقم 078/077/075)' : '(11 digits)'}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={11}
-                    value={customerPhone}
-                    disabled={isNonAdminEdit}
-                    autoComplete="tel"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    onChange={(e) => {
-                      const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
-                      const onlyNums = converted.replace(/\D/g, '');
-                      setCustomerPhone(onlyNums);
-                    }}
-                    placeholder="07801234567"
-                    className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 dir-ltr text-left font-mono ${
-                      isNonAdminEdit
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
-                        : 'bg-slate-50 dark:bg-slate-900/50'
-                    }`}
-                  />
-                </div>
-                {errors.customerPhone && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerPhone}</p>}
-              </div>
+              {errors.customerName && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerName}</p>}
             </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
+                <span>{isAr ? 'رقم الهاتف *' : 'Phone Number *'}</span>
+                {isNonAdminEdit ? (
+                  <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5 shrink-0" />
+                    <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {isAr ? '(11 رقم 078/077/075)' : '(11 digits)'}
+                  </span>
+                )}
+              </label>
+              <div className="relative">
+                <Phone className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  pattern="[0-9]*"
+                  maxLength={11}
+                  value={customerPhone}
+                  disabled={isNonAdminEdit}
+                  autoComplete="tel"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  onChange={(e) => {
+                    const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+                    const onlyNums = converted.replace(/\D/g, '');
+                    setCustomerPhone(onlyNums);
+                  }}
+                  placeholder="07801234567"
+                  className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 dir-ltr ${
+                    isNonAdminEdit
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
+                      : 'bg-slate-50 dark:bg-slate-900/50'
+                  }`}
+                />
+              </div>
+              {errors.customerPhone && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerPhone}</p>}
+            </div>
+          </div>
 
           {/* Row: Customer Address & GPS Location */}
           <div className="bg-slate-50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-2">
@@ -838,37 +836,23 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
             </div>
           )}
 
-          </div>
-
-          {/* Sticky Modal Footer - ALWAYS VISIBLE */}
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/95 dark:bg-slate-850 shrink-0 shadow-lg z-10">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
-              {numericTotal > 0 && (
-                <span>
-                  {isAr ? 'الإجمالي: ' : 'Total: '}
-                  <span className="font-black text-slate-900 dark:text-slate-100 dir-ltr text-xs sm:text-sm font-mono">
-                    {numericTotal.toLocaleString('en-US')} د.ع
-                  </span>
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-3.5 sm:px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-              >
-                {isAr ? 'إلغاء' : 'Cancel'}
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                {editingContract && editingContract.id
-                  ? (isAr ? 'حفظ التعديلات' : 'Save Changes')
-                  : (isAr ? 'حفظ' : 'Save')}
-              </button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              {isAr ? 'إلغاء' : 'Cancel'}
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+            >
+              {editingContract && editingContract.id
+                ? (isAr ? 'حفظ التعديلات' : 'Save Changes')
+                : (isAr ? 'حفظ' : 'Save')}
+            </button>
           </div>
         </form>
       </div>

@@ -355,62 +355,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
     return true;
   });
 
-  const handleSendPaymentWhatsApp = (
-    p: PaymentRecord,
-    targetContract?: InstallmentContract | null
-  ) => {
-    const amountNum = Number(p.amountPaid ?? (p as any).amount ?? 0);
-    const amountDigits = `${amountNum.toLocaleString('en-US')} د.ع`;
-    const amountWords = `فقط ${numberToArabicWords(amountNum)} لا غير`;
-    const customerDisplayName = p.customerName || targetContract?.customerName || (isAr ? 'زبون' : 'Customer');
-    const dateStr = formatPaymentDateTime(p, isAr);
-
-    let remainingInfo = '';
-    if (targetContract) {
-      try {
-        const snapshot = getPaymentReceiptBalances(p, targetContract, safePayments);
-        if (typeof snapshot.remainingBalance === 'number') {
-          remainingInfo = `\n💳 *المتبقي بعد التسديد:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع`;
-        }
-      } catch (err) {
-        // ignore
-      }
-    }
-
-    const message = `*وصل استلام تسديد* 🧾
-━━━━━━━━━━━━━━━
-👤 *اسم الزبون:* ${customerDisplayName}
-💵 *الواصل:* ${amountDigits}
-🔢 *المبلغ رقماً:* ${amountDigits}
-✍️ *المبلغ كتابة:* ${amountWords}
-📅 *التاريخ:* ${dateStr}${targetContract?.itemName ? `\n📦 *المادة:* ${targetContract.itemName}` : ''}${remainingInfo}
-━━━━━━━━━━━━━━━
-_الكرار للموبايل والتقسيط_`.trim();
-
-    const rawPhone = targetContract?.customerPhone || (targetContract as any)?.phone || (p as any)?.customerPhone;
-    const cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
-    const encodedText = encodeURIComponent(message);
-
-    const waUrl = cleanPhone
-      ? `https://wa.me/${cleanPhone}?text=${encodedText}`
-      : `https://api.whatsapp.com/send?text=${encodedText}`;
-
-    showToast(isAr ? 'جاري فتح تطبيق واتساب لإرسال الوصل...' : 'Opening WhatsApp...', 'success');
-
-    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-    if (isMobile) {
-      const waScheme = cleanPhone
-        ? `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`
-        : `whatsapp://send?text=${encodedText}`;
-      window.location.href = waScheme;
-      setTimeout(() => {
-        window.open(waUrl, '_blank');
-      }, 500);
-    } else {
-      window.open(waUrl, '_blank');
-    }
-  };
-
   const startEditPayment = (p: PaymentRecord) => {
     setEditingPayment(p);
     setEditAmount(String(p.amountPaid ?? p.amount ?? ''));
@@ -965,16 +909,6 @@ _الكرار للموبايل والتقسيط_`.trim();
                         {/* Actions: Print, Edit, Delete */}
                         <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
-                            {/* WhatsApp Receipt Button */}
-                            <button
-                              type="button"
-                              onClick={() => handleSendPaymentWhatsApp(p, contract)}
-                              className="p-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center group"
-                              title={isAr ? 'إرسال وصل التسديد عبر واتساب (الاسم، الواصل، المبلغ رقماً وكتابة، التاريخ)' : 'Send payment receipt via WhatsApp'}
-                            >
-                              <MessageCircle className="w-4 h-4 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                            </button>
-
                             {/* Print Receipt button - matches screenshot styling */}
                             {onPrintReceipt && contract && (
                               <button

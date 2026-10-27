@@ -7,7 +7,6 @@ import { ZeroBalanceCountdown } from './ZeroBalanceCountdown';
 import { openUniversalPdfPrintWindow } from '../lib/bluetoothPrinter';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
 import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
-import { universalApiFetch } from '../lib/apiConfig';
 
 interface CustomerStatementModalProps {
   isOpen: boolean;
@@ -80,7 +79,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   const handleFetchAllFromServer = async () => {
     setIsFetchingServerPayments(true);
     try {
-      const res = await universalApiFetch('/api/payments');
+      const res = await fetch('/api/payments');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -707,8 +706,8 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
           showToast(
             target === 'whatsapp'
               ? (isAr
-                  ? 'تم فتح محادثة واتساب الزبون - اضغط (لصق / Paste) أو إرسال لنشر صورة الكشف'
-                  : 'Customer WhatsApp opened - Tap Paste or Send for statement image')
+                  ? 'تم تجهيز ملف الـ PDF كملف مستند - اختر واتساب لإرساله للزبون'
+                  : 'PDF document ready - Select WhatsApp to send file')
               : (isAr
                   ? 'تم تجهيز ملف الـ PDF - اختر التطبيق المطلوب للمشاركة'
                   : 'PDF ready - Select app to share file'),
@@ -1671,21 +1670,50 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                {/* Customer payments PDF share button */}
-                <button
-                  type="button"
-                  onClick={() => handleShareHistoryModalPdf('other')}
-                  disabled={isExportingSubColPdf}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  title={isAr ? 'مشاركة كشف التسديدات كملف PDF' : 'Share payments PDF'}
-                >
-                  <Share2 className={`w-3.5 h-3.5 ${isExportingSubColPdf ? 'animate-spin' : ''}`} />
-                  <span>
-                    {isExportingSubColPdf
-                      ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
-                      : (isAr ? 'مشاركة الكشف' : 'Share Statement')}
-                  </span>
-                </button>
+                {/* Subcollection customer sharing buttons: واتساب الزبون and تطبيقات أخرى بشكل انفرادي */}
+                {Boolean(formatIraqiPhoneForWhatsApp(historyModalContract.customerPhone)) ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleShareHistoryModalPdf('whatsapp')}
+                      disabled={isExportingSubColPdf}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                      title={isAr ? 'إرسال كشف التسديدات كملف PDF إلى واتساب الزبون' : 'Send payments PDF to Customer WhatsApp'}
+                    >
+                      <MessageCircle className={`w-3.5 h-3.5 ${isExportingSubColPdf ? 'animate-spin' : ''}`} />
+                      <span>
+                        {isExportingSubColPdf
+                          ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                          : (isAr ? 'واتساب الزبون' : 'Customer WhatsApp')}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleShareHistoryModalPdf('other')}
+                      disabled={isExportingSubColPdf}
+                      className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                      title={isAr ? 'مشاركة ملف PDF عبر التطبيقات الأخرى (تليكرام، ماسنجر...)' : 'Share PDF via Other Apps'}
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'تطبيقات أخرى' : 'Other Apps'}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleShareHistoryModalPdf('other')}
+                    disabled={isExportingSubColPdf}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    title={isAr ? 'الزبون ليس لديه رقم - فتح قائمة التطبيقات لمشاركة ملف PDF' : 'Customer has no phone - Open apps chooser to share PDF'}
+                  >
+                    <Share2 className={`w-3.5 h-3.5 ${isExportingSubColPdf ? 'animate-spin' : ''}`} />
+                    <span>
+                      {isExportingSubColPdf
+                        ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                        : (isAr ? 'مشاركة التطبيقات' : 'Share via Apps')}
+                    </span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setHistoryModalContract(null)}
