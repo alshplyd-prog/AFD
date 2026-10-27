@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2, FileSpreadsheet, Share2, CheckCircle2, AlertCircle, MessageCircle } from 'lucide-react';
+import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2, FileSpreadsheet, Share2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
-import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, shareGeneralPaymentsPdf, formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
+import { shareCustomerPaymentsPdf } from '../lib/pdfShareHelper';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
@@ -63,61 +63,35 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
     }, 4000);
   };
 
-  const handleSharePdf = async (target: 'whatsapp' | 'other' = 'whatsapp') => {
+  const handleSharePdf = async () => {
     if (isExportingPdf || filtered.length === 0) return;
     setIsExportingPdf(true);
     try {
-      let result;
-      if (customerFilterId) {
-        const targetContract =
-          activeContract ||
-          contracts.find(
-            (c) =>
-              c &&
-              (String(c.id).trim() === String(customerFilterId).trim() ||
-                c.customerName === customerFilterId ||
-                (c.customerName && normalizeEntityName(c.customerName) === normFilterId) ||
-                (filtered[0]?.customerName && normalizeEntityName(c.customerName) === normalizeEntityName(filtered[0].customerName)))
-          ) ||
-          null;
+      const targetContract =
+        activeContract ||
+        contracts.find(
+          (c) =>
+            c.id === customerFilterId ||
+            (filtered[0]?.customerName && normalizeEntityName(c.customerName) === normalizeEntityName(filtered[0].customerName))
+        ) ||
+        null;
 
-        result = await shareCustomerPaymentsOrDirectWhatsApp({
-          contract: targetContract,
-          payments: filtered,
-          lang,
-          targetApp: target,
-          forceAppsChooser: target === 'other',
-        });
-      } else {
-        const selectedListObj = customerLists.find((l) => l.id === filterListId);
-        result = await shareGeneralPaymentsPdf({
-          payments: filtered,
-          startDate,
-          endDate,
-          listName: filterListId !== 'all' ? selectedListObj?.name : undefined,
-          lang,
-        });
-      }
+      const result = await shareCustomerPaymentsPdf({
+        contract: targetContract,
+        payments: filtered,
+        lang,
+      });
 
       if (result && result.success) {
         if (result.method !== 'user_cancelled') {
-          showToast(
-            target === 'whatsapp'
-              ? (isAr
-                  ? 'تم تجهيز ملف مستند الـ PDF - اختر واتساب لإرسال الملف للزبون'
-                  : 'PDF document file ready - Select WhatsApp to send file')
-              : (isAr
-                  ? 'تم تجهيز ملف مستند الـ PDF - اختر التطبيق المطلوب للمشاركة'
-                  : 'PDF document file ready - Select app to share file'),
-            'success'
-          );
+          showToast(isAr ? 'تم تجهيز ومشاركة ملف PDF بنجاح' : 'PDF generated and shared successfully', 'success');
         }
       } else if (result?.error) {
-        showToast(isAr ? 'تعذر إتمام المشاركة' : 'Failed to share', 'error');
+        showToast(isAr ? 'تعذر مشاركة الملف' : 'Failed to share PDF', 'error');
       }
     } catch (err) {
-      console.error('Export/Share failed:', err);
-      showToast(isAr ? 'حدث خطأ أثناء المشاركة' : 'Error sharing', 'error');
+      console.error('Export PDF failed:', err);
+      showToast(isAr ? 'حدث خطأ أثناء تصدير ملف PDF' : 'Error exporting PDF', 'error');
     } finally {
       setIsExportingPdf(false);
     }
@@ -355,62 +329,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
     return true;
   });
 
-  const handleSendPaymentWhatsApp = (
-    p: PaymentRecord,
-    targetContract?: InstallmentContract | null
-  ) => {
-    const amountNum = Number(p.amountPaid ?? (p as any).amount ?? 0);
-    const amountDigits = `${amountNum.toLocaleString('en-US')} د.ع`;
-    const amountWords = `فقط ${numberToArabicWords(amountNum)} لا غير`;
-    const customerDisplayName = p.customerName || targetContract?.customerName || (isAr ? 'زبون' : 'Customer');
-    const dateStr = formatPaymentDateTime(p, isAr);
-
-    let remainingInfo = '';
-    if (targetContract) {
-      try {
-        const snapshot = getPaymentReceiptBalances(p, targetContract, safePayments);
-        if (typeof snapshot.remainingBalance === 'number') {
-          remainingInfo = `\n💳 *المتبقي بعد التسديد:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع`;
-        }
-      } catch (err) {
-        // ignore
-      }
-    }
-
-    const message = `*وصل استلام تسديد* 🧾
-━━━━━━━━━━━━━━━
-👤 *اسم الزبون:* ${customerDisplayName}
-💵 *الواصل:* ${amountDigits}
-🔢 *المبلغ رقماً:* ${amountDigits}
-✍️ *المبلغ كتابة:* ${amountWords}
-📅 *التاريخ:* ${dateStr}${targetContract?.itemName ? `\n📦 *المادة:* ${targetContract.itemName}` : ''}${remainingInfo}
-━━━━━━━━━━━━━━━
-_الكرار للموبايل والتقسيط_`.trim();
-
-    const rawPhone = targetContract?.customerPhone || (targetContract as any)?.phone || (p as any)?.customerPhone;
-    const cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
-    const encodedText = encodeURIComponent(message);
-
-    const waUrl = cleanPhone
-      ? `https://wa.me/${cleanPhone}?text=${encodedText}`
-      : `https://api.whatsapp.com/send?text=${encodedText}`;
-
-    showToast(isAr ? 'جاري فتح تطبيق واتساب لإرسال الوصل...' : 'Opening WhatsApp...', 'success');
-
-    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-    if (isMobile) {
-      const waScheme = cleanPhone
-        ? `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`
-        : `whatsapp://send?text=${encodedText}`;
-      window.location.href = waScheme;
-      setTimeout(() => {
-        window.open(waUrl, '_blank');
-      }, 500);
-    } else {
-      window.open(waUrl, '_blank');
-    }
-  };
-
   const startEditPayment = (p: PaymentRecord) => {
     setEditingPayment(p);
     setEditAmount(String(p.amountPaid ?? p.amount ?? ''));
@@ -451,21 +369,6 @@ _الكرار للموبايل والتقسيط_`.trim();
       : 0;
   const isExcess = excessAmount > 0;
 
-  const targetCustomerContract =
-    activeContract ||
-    (customerFilterId
-      ? contracts.find(
-          (c) =>
-            c &&
-            (String(c.id).trim() === String(customerFilterId).trim() ||
-              c.customerName === customerFilterId ||
-              (c.customerName && normalizeEntityName(c.customerName) === normFilterId) ||
-              (filtered[0]?.customerName && normalizeEntityName(c.customerName) === normalizeEntityName(filtered[0].customerName)))
-        )
-      : null);
-  const customerPhone = targetCustomerContract?.customerPhone;
-  const hasCustomerPhone = Boolean(formatIraqiPhoneForWhatsApp(customerPhone));
-
   const formatMoney = (val: number | undefined | null) => {
     return (Number(val) || 0).toLocaleString('en-US') + (isAr ? ' د.ع' : ' IQD');
   };
@@ -488,22 +391,16 @@ _الكرار للموبايل والتقسيط_`.trim();
           </div>
 
           <div className="flex items-center gap-2">
-            {!customerFilterId && (
-              <button
-                type="button"
-                onClick={() => handleSharePdf('other')}
-                disabled={isExportingPdf || filtered.length === 0}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white font-black text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50 bg-blue-600 hover:bg-blue-700"
-                title={isAr ? 'مشاركة سجل التسديدات العام كملف PDF عبر التطبيقات (واتساب، تليكرام...)' : 'Share general payments as PDF via apps'}
-              >
-                <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
-                <span>
-                  {isExportingPdf
-                    ? (isAr ? 'جاري تجهيز PDF...' : 'Processing...')
-                    : (isAr ? 'مشاركة التطبيقات (PDF)' : 'Share via Apps (PDF)')}
-                </span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleSharePdf}
+              disabled={isExportingPdf || filtered.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              title={isAr ? 'مشاركة سجل التسديدات كملف PDF' : 'Share Payments as PDF'}
+            >
+              <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
+              <span>{isExportingPdf ? (isAr ? 'جاري التحضير...' : 'Generating...') : (isAr ? 'مشاركة PDF' : 'Share PDF')}</span>
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -526,9 +423,25 @@ _الكرار للموبايل والتقسيط_`.trim();
               </span>
             </div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              {isExcess && (
-                <span className="font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-xs">
-                  {isAr ? `فائض بحوزة المندوب: ${formatMoney(excessAmount)}` : `Excess with rep: ${formatMoney(excessAmount)}`}
+              {activeContract && (
+                <span className="text-xs font-bold text-teal-800 dark:text-teal-200 bg-white/60 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 flex-wrap">
+                  <span>{isAr ? 'الواصل: ' : 'Paid: '}</span>
+                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                    {formatMoney(Math.min(expectedInstallmentTotal, totalSum))}
+                  </span>
+                  <span>{' | '}</span>
+                  <span>{isAr ? 'الباقي: ' : 'Remaining: '}</span>
+                  <span className="font-extrabold text-rose-600 dark:text-rose-400">
+                    {formatMoney(Math.max(0, expectedInstallmentTotal - totalSum))}
+                  </span>
+                  {isExcess && (
+                    <>
+                      <span>{' | '}</span>
+                      <span className="font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700">
+                        {isAr ? `فائض بحوزة المندوب: ${formatMoney(excessAmount)}` : `Excess with rep: ${formatMoney(excessAmount)}`}
+                      </span>
+                    </>
+                  )}
                 </span>
               )}
               {isExcess && onSettleExcessPayment && activeContract && (
@@ -542,50 +455,23 @@ _الكرار للموبايل والتقسيط_`.trim();
                   <span>{isAr ? 'تسوية وتصفير الحساب' : 'Settle Account'}</span>
                 </button>
               )}
-              {/* Customer specific sharing buttons: واتساب الزبون and تطبيقات أخرى بشكل انفرادي */}
-              {hasCustomerPhone ? (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleSharePdf('whatsapp')}
-                    disabled={isExportingPdf || filtered.length === 0}
-                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
-                    title={isAr ? 'إرسال كشف التسديدات كملف PDF إلى واتساب الزبون' : 'Send payments PDF to Customer WhatsApp'}
-                  >
-                    <MessageCircle className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
-                    <span>
-                      {isExportingPdf
-                        ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
-                        : (isAr ? 'واتساب الزبون' : 'Customer WhatsApp')}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSharePdf('other')}
-                    disabled={isExportingPdf || filtered.length === 0}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
-                    title={isAr ? 'مشاركة ملف PDF عبر التطبيقات الأخرى (تليكرام، ماسنجر...)' : 'Share PDF via Other Apps'}
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    <span>{isAr ? 'تطبيقات أخرى' : 'Other Apps'}</span>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleSharePdf('other')}
-                  disabled={isExportingPdf || filtered.length === 0}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
-                  title={isAr ? 'الزبون ليس لديه رقم - فتح قائمة التطبيقات لمشاركة ملف PDF' : 'Customer has no phone - Open apps chooser to share PDF'}
-                >
-                  <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
-                  <span>
-                    {isExportingPdf
-                      ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
-                      : (isAr ? 'مشاركة التطبيقات' : 'Share via Apps')}
-                  </span>
-                </button>
+              {activeContract?.itemName && (
+                <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300">
+                  {isAr
+                    ? `المادة: ${activeContract.itemName}`
+                    : `Item: ${activeContract.itemName}`}
+                </span>
               )}
+              <button
+                type="button"
+                onClick={handleSharePdf}
+                disabled={isExportingPdf || filtered.length === 0}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                title={isAr ? 'مشاركة تسديدات الزبون كملف PDF' : 'Share Customer Payments as PDF'}
+              >
+                <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
+                <span>{isExportingPdf ? (isAr ? 'جاري...' : 'Generating...') : (isAr ? 'مشاركة PDF' : 'Share PDF')}</span>
+              </button>
             </div>
           </div>
         ) : (
@@ -965,16 +851,6 @@ _الكرار للموبايل والتقسيط_`.trim();
                         {/* Actions: Print, Edit, Delete */}
                         <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5">
-                            {/* WhatsApp Receipt Button */}
-                            <button
-                              type="button"
-                              onClick={() => handleSendPaymentWhatsApp(p, contract)}
-                              className="p-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center group"
-                              title={isAr ? 'إرسال وصل التسديد عبر واتساب (الاسم، الواصل، المبلغ رقماً وكتابة، التاريخ)' : 'Send payment receipt via WhatsApp'}
-                            >
-                              <MessageCircle className="w-4 h-4 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-                            </button>
-
                             {/* Print Receipt button - matches screenshot styling */}
                             {onPrintReceipt && contract && (
                               <button
