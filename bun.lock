@@ -17,6 +17,7 @@
         "@capacitor/preferences": "^8.0.1",
         "@capacitor/share": "^8.0.3",
         "@capawesome/capacitor-background-task": "^8.0.3",
+        "@capgo/capacitor-updater": "^8.54.0",
         "@google/genai": "^2.4.0",
         "@tailwindcss/vite": "^4.1.14",
         "@types/leaflet": "^1.9.22",
@@ -120,6 +121,8 @@
     "@capacitor/synapse": ["@capacitor/synapse@1.0.4", "", {}, "sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw=="],
 
     "@capawesome/capacitor-background-task": ["@capawesome/capacitor-background-task@8.0.3", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-MAeohDZ65gFYlYYivcXcs1rdgpab4biaTfKFoSktfydun7w+VEr415bk3qTd8u9Z95P0Edp6Cw0hYnFEbQ3FTw=="],
+
+    "@capgo/capacitor-updater": ["@capgo/capacitor-updater@8.54.0", "", { "peerDependencies": { "@capacitor/core": "^8.0.0" } }, "sha512-943wFpm+Bwe5hF/fWrjQ6RoZZ8fmVd9r+XpdMEaaqYU1KxXff4blwCw+/kf9UR7nXYWKwf/V0bmff5LbiaNFxQ=="],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
 

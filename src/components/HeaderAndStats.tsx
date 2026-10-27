@@ -43,7 +43,6 @@ import {
   BellRing
 } from 'lucide-react';
 import { Language, InstallmentContract, PaymentRecord, ActiveTab, SalesRepresentative, CustomerList, Employee, EmployeeTransaction, PaymentConflictRecord, AppointmentRecord } from '../types';
-import { DEFAULT_REPS } from '../data/initialContracts';
 import { reconcileAllLocalWithDatabase } from '../lib/postgresClient';
 import { requestAllBackgroundAndSyncPermissions } from '../lib/offlineQueue';
 import { isAppointmentDueForNotification, requestExternalNotificationPermission, showBrowserNotification } from '../lib/dateUtils';

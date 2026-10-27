@@ -2,14 +2,43 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>الكرار للتقسيط للموبايل - Al-Karrar Installment</title>
-    <link rel="icon" type="image/png" href="./icon.png" />
-    <link rel="apple-touch-icon" href="./icon.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./pwa-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#0d9488" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="الكرار" />
     <meta name="description" content="تطبيق الكرار للتقسيط للموبايل - الحلول المالية والتقسيط المريح" />
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname || '';
+          var s = window.location.search || '';
+          if (
+            p.startsWith('/s/') || p.startsWith('/statement/') || p === '/s' || p === '/statement' ||
+            p.startsWith('/r/') || p.startsWith('/receipt/') || p === '/r' || p === '/receipt' ||
+            s.indexOf('statement_id=') !== -1 || s.indexOf('receipt_id=') !== -1 ||
+            s.indexOf('view_statement=') !== -1 || s.indexOf('view_receipt=') !== -1 ||
+            s.indexOf('s=') !== -1 || s.indexOf('r=') !== -1
+          ) {
+            document.documentElement.classList.add('is-document-route');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <style>
+      html.is-document-route body {
+        background-color: #e2e8f0 !important;
+      }
+      html.is-document-route .initial-loader {
+        display: none !important;
+      }
       body {
         margin: 0;
         padding: 0;
@@ -66,8 +95,8 @@
         to { transform: rotate(360deg); }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-CY1r_2fp.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-CIgRM9T9.css">
+    <script type="module" crossorigin src="./assets/index-D6nr25Xi.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-xtsEBl92.css">
   </head>
   <body>
     <div id="root">

@@ -18,7 +18,9 @@ import {
   Settings,
   Flame,
   Trash2,
-  CalendarClock
+  CalendarClock,
+  Globe,
+  Server
 } from 'lucide-react';
 import { Language } from '../types';
 import {
@@ -39,8 +41,10 @@ import {
 } from '../lib/offlineQueue';
 import {
   get5DayPruneAndPollStatus,
-  run5DayPruneAndPollingInspection
+  run5DayPruneAndPollingInspection,
+  reconcileAllLocalWithDatabase
 } from '../lib/postgresClient';
+import { getCustomServerUrl, setCustomServerUrl, checkServerHealth } from '../lib/apiConfig';
 
 interface BackgroundSyncModalProps {
   isOpen: boolean;
@@ -421,7 +425,7 @@ export const BackgroundSyncModal: React.FC<BackgroundSyncModalProps> = ({
               <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
                 <span className="text-slate-500 block">{isAr ? 'آخر فحص وتنظيف:' : 'Last Cleaned:'}</span>
                 <span className="text-slate-800 dark:text-slate-200 font-mono">
-                  {pruneStatus.lastRun ? new Date(pruneStatus.lastRun).toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : (isAr ? 'اليوم' : 'Today')}
+                  {pruneStatus.lastRun ? new Date(pruneStatus.lastRun).toLocaleDateString('en-US') : (isAr ? 'اليوم' : 'Today')}
                 </span>
               </div>
               <div className="p-2 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 col-span-2 sm:col-span-1">
@@ -581,13 +585,13 @@ export const BackgroundSyncModal: React.FC<BackgroundSyncModalProps> = ({
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-400">
-                        {item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : ''}
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        {item.timestamp ? new Date(item.timestamp).toLocaleTimeString('en-US') : ''}
                       </div>
                     </div>
                     {item.payload?.amount ? (
-                      <span className="font-black text-emerald-600 dark:text-emerald-400">
-                        {Number(item.payload.amount).toLocaleString()} د.ع
+                      <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                        {Number(item.payload.amount).toLocaleString('en-US')} د.ع
                       </span>
                     ) : null}
                   </div>

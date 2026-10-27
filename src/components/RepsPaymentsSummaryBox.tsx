@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText, Share2 } from 'lucide-react';
+import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText, Share2, MessageCircle } from 'lucide-react';
 import { SalesRepresentative, PaymentRecord, InstallmentContract, CustomerList, Language } from '../types';
 import { silentIframePrint, openUniversalPdfPrintWindow, directPrintReceipt, DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { RepReceiptModal, RepReceiptData, directPrintRepReceipt } from './RepReceiptModal';
@@ -8,6 +8,7 @@ import { numberToArabicWords } from '../lib/tafqeet';
 import { getPaymentFormattedDateAndTime } from '../lib/dateUtils';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { normalizeEntityName } from '../lib/nameHelpers';
+import { formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
 
 interface RepsPaymentsSummaryBoxProps {
   currentRep: SalesRepresentative | null;
@@ -163,6 +164,68 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
 
     // Direct Instant Print without preview modal (same as collection receipt)
     directPrintRepReceipt(repReceipt);
+  };
+
+  const handleSendPaymentWhatsApp = (p: PaymentRecord) => {
+    const amountNum = Number(p.amountPaid ?? (p as any).amount ?? 0);
+    const amountDigits = `${amountNum.toLocaleString('en-US')} د.ع`;
+    const amountWords = numberToArabicWords(amountNum);
+    const customerDisplayName = p.customerName || (isAr ? 'زبون' : 'Customer');
+    const { dateStr } = getPaymentFormattedDateAndTime(p, isAr);
+
+    const targetContract = contracts.find(
+      (c) =>
+        c &&
+        (c.id === p.contractId ||
+          c.customerName === p.customerName ||
+          normalizeEntityName(c.customerName) === normalizeEntityName(p.customerName))
+    );
+
+    let totalPaidStr = amountDigits;
+    let remainingStr = '0 د.ع';
+    if (targetContract) {
+      try {
+        const snapshot = getPaymentReceiptBalances(p, targetContract, payments);
+        if (typeof snapshot.totalPaid === 'number') {
+          totalPaidStr = `${snapshot.totalPaid.toLocaleString('en-US')} د.ع`;
+        }
+        if (typeof snapshot.remainingBalance === 'number') {
+          remainingStr = `${snapshot.remainingBalance.toLocaleString('en-US')} د.ع`;
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    const message = `اسم الزبون: ${customerDisplayName}
+الواصل: ${totalPaidStr}
+المبلغ رقماً: ${amountDigits}
+المبلغ كتابة: ${amountWords}
+الباقي: ${remainingStr}
+التاريخ: ${dateStr}`.trim();
+
+    const rawPhone = targetContract?.customerPhone || (targetContract as any)?.phone || (p as any)?.customerPhone;
+    const cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
+    const encodedText = encodeURIComponent(message);
+
+    const waUrl = cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encodedText}`
+      : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    showToast(isAr ? 'جاري فتح تطبيق واتساب لإرسال الوصل...' : 'Opening WhatsApp...', 'success');
+
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (isMobile) {
+      const waScheme = cleanPhone
+        ? `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`
+        : `whatsapp://send?text=${encodedText}`;
+      window.location.href = waScheme;
+      setTimeout(() => {
+        window.open(waUrl, '_blank');
+      }, 500);
+    } else {
+      window.open(waUrl, '_blank');
+    }
   };
 
   const handlePrintAllRepsSummary = (
@@ -401,86 +464,77 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
         </div>
       )}
 
-      {/* Date Range Selection Bar - Responsive across mobile and desktop */}
-      <div className="bg-slate-50 dark:bg-slate-900/70 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2 shrink-0">
-        {/* Same Row: From Date & To Date (Compact, Half-Size) + Close Button */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 w-auto max-w-[260px] sm:max-w-xs">
-            {/* From Date (Half Size) */}
-            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-0.5 shadow-2xs min-w-0 flex-1">
-              <span className="text-[10px] sm:text-xs font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-0.5 pointer-events-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                {isAr ? 'من:' : 'From:'}
-              </span>
-              <span className="font-mono font-bold text-[10px] sm:text-xs text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
-                {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
-              </span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                title={isAr ? 'من تاريخ' : 'From Date'}
-              />
-            </div>
-
-            {/* To Date (Half Size) */}
-            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-0.5 shadow-2xs min-w-0 flex-1">
-              <span className="text-[10px] sm:text-xs font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-0.5 pointer-events-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-                {isAr ? 'إلى:' : 'To:'}
-              </span>
-              <span className="font-mono font-bold text-[10px] sm:text-xs text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
-                {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
-              </span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                title={isAr ? 'إلى تاريخ' : 'To Date'}
-              />
-            </div>
+      {/* Date & List Filter Bar - Fits strictly on a single row on all mobile screens */}
+      <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-1.5 shrink-0">
+        {/* Row 1: List selection, From Date, To Date strictly in 1 single row */}
+        <div className="grid grid-cols-3 gap-1 w-full text-[10px] sm:text-xs">
+          {/* Customer List Selector */}
+          <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 py-1 shadow-2xs w-full min-w-0">
+            <FolderKanban className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
+            <select
+              value={boxListId}
+              onChange={(e) => setBoxListId(e.target.value)}
+              className="bg-transparent text-[10px] sm:text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer border-0 p-0 w-full truncate"
+              title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
+            >
+              <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                {isAr ? `كل القوائم (${visibleLists.length})` : `All Lists (${visibleLists.length})`}
+              </option>
+              {visibleLists.map((l) => (
+                <option key={l.id} value={l.id} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                  {l.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
-              title={isAr ? 'إغلاق' : 'Close'}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+          {/* From Date Picker */}
+          <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 py-1 shadow-2xs w-full min-w-0">
+            <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
+              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                {isAr ? 'من:' : 'From:'}
+              </span>
+            </div>
+            <span className="font-mono font-bold text-[10px] sm:text-xs text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              {startDate ? startDate.replace(/-/g, '/') : '----/--/--'}
+            </span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+              title={isAr ? 'من تاريخ' : 'From Date'}
+            />
+          </div>
+
+          {/* To Date Picker */}
+          <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 py-1 shadow-2xs w-full min-w-0">
+            <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
+              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+                {isAr ? 'إلى:' : 'To:'}
+              </span>
+            </div>
+            <span className="font-mono font-bold text-[10px] sm:text-xs text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              {endDate ? endDate.replace(/-/g, '/') : '----/--/--'}
+            </span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+              title={isAr ? 'إلى تاريخ' : 'To Date'}
+            />
+          </div>
         </div>
 
-        {/* Quick Presets in Single Horizontal Row */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {visibleLists.length > 1 && (
-            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 shadow-2xs shrink-0">
-              <FolderKanban className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <select
-                value={boxListId}
-                onChange={(e) => setBoxListId(e.target.value)}
-                className="bg-transparent text-[11px] sm:text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer border-0 p-0"
-                title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
-              >
-                <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                  {isAr ? `كل القوائم (${visibleLists.length})` : `All Lists (${visibleLists.length})`}
-                </option>
-                {visibleLists.map((l) => (
-                  <option key={l.id} value={l.id} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+        {/* Row 2: Quick Presets, Print Report & Close Button */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full">
           <button
             type="button"
             onClick={() => setQuickPreset('today')}
-            className={`flex-1 min-w-[70px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
+            className={`flex-1 min-w-[55px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
               startDate && startDate === endDate && startDate === getLocalDateString()
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
@@ -491,21 +545,21 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
           <button
             type="button"
             onClick={() => setQuickPreset('yesterday')}
-            className="flex-1 min-w-[70px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+            className="flex-1 min-w-[55px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
           >
             {isAr ? 'أمس' : 'Yesterday'}
           </button>
           <button
             type="button"
             onClick={() => setQuickPreset('month')}
-            className="flex-1 min-w-[80px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+            className="flex-1 min-w-[65px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
           >
-            {isAr ? 'هذا الشهر' : 'This Month'}
+            {isAr ? 'هذا الشهر' : 'Month'}
           </button>
           <button
             type="button"
             onClick={() => setQuickPreset('all')}
-            className={`flex-1 min-w-[70px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
+            className={`flex-1 min-w-[55px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
               !startDate && !endDate
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
@@ -513,26 +567,27 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
           >
             {isAr ? 'الكل' : 'All'}
           </button>
-          {(startDate || endDate) && (
-            <button
-              type="button"
-              onClick={() => setQuickPreset('all')}
-              className="py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 cursor-pointer flex items-center justify-center gap-1 shrink-0 transition-all shadow-2xs"
-            >
-              <X className="w-3 h-3" />
-              <span>{isAr ? 'إلغاء' : 'Reset'}</span>
-            </button>
-          )}
 
           {activeRepStats.length > 0 && (
             <button
               type="button"
               onClick={() => handlePrintAllRepsSummary(grandTotal, activeRepStats)}
-              className="py-1 px-2.5 rounded-lg text-[11px] sm:text-xs font-black text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-600 hover:text-white border border-teal-300 dark:border-teal-800 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-all shadow-2xs mr-auto"
+              className="py-1 px-2 rounded-lg text-[10px] sm:text-xs font-black text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-600 hover:text-white border border-teal-300 dark:border-teal-800 cursor-pointer flex items-center justify-center gap-1 shrink-0 transition-all shadow-2xs"
               title={isAr ? 'طباعة كشف إجمالي تسديدات جميع المندوبين' : 'Print All Reps Collections Summary'}
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>{isAr ? 'طباعة كشف شامل' : 'Print Report'}</span>
+              <span className="hidden xs:inline">{isAr ? 'طباعة كشف' : 'Print'}</span>
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-lg bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
+              title={isAr ? 'إغلاق' : 'Close'}
+            >
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -805,9 +860,19 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
                 >
                   <div className="flex items-center justify-between text-xs sm:text-sm font-black">
                     <span className="text-slate-900 dark:text-slate-100 truncate">{p.customerName}</span>
-                    <span className="text-emerald-700 dark:text-emerald-300 dir-ltr font-black shrink-0">
-                      {p.amountPaid.toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-emerald-700 dark:text-emerald-300 dir-ltr font-black">
+                        {p.amountPaid.toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSendPaymentWhatsApp(p)}
+                        className="p-1 rounded-lg border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center group"
+                        title={isAr ? 'إرسال وصل التسديد عبر واتساب (الاسم، الواصل، المبلغ رقماً وكتابة، التاريخ)' : 'Send payment receipt via WhatsApp'}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
                   </div>
                   {cleanNote && (
                     <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-bold truncate mt-0.5">

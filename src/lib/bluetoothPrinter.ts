@@ -552,6 +552,21 @@ export function buildReceiptCanvas(receiptData: ThermalReceiptData): HTMLCanvasE
   ctx.font = 'bold 17px monospace';
   ctx.fillText('==================', width / 2, y);
 
+  // Crop canvas height immediately after text ends (tight 8px bottom padding) to prevent empty paper space
+  const exactHeight = Math.ceil(y + 8);
+  if (exactHeight < canvas.height) {
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = width;
+    trimmedCanvas.height = exactHeight;
+    const tCtx = trimmedCanvas.getContext('2d');
+    if (tCtx) {
+      tCtx.fillStyle = '#ffffff';
+      tCtx.fillRect(0, 0, width, exactHeight);
+      tCtx.drawImage(canvas, 0, 0, width, exactHeight, 0, 0, width, exactHeight);
+      return trimmedCanvas;
+    }
+  }
+
   return canvas;
 }
 
@@ -564,7 +579,7 @@ export function buildReceiptCanvasTable(receiptData: ThermalReceiptData): HTMLCa
   const amountInWordsText = receiptData.amountInWords || (typeof numberToArabicWords === 'function' ? numberToArabicWords(receiptData.paidAmount) : '');
 
   // Dynamic height calculation
-  let estimatedHeight = 65; // header "الكرار للموبايل" + divider
+  let estimatedHeight = 105; // header "الكرار للموبايل" + divider + 1cm margin space
   if (isDuplicate) estimatedHeight += 120;
   estimatedHeight += 130; // Table 1: Customer info (3 rows)
   estimatedHeight += 180; // Table 2: Accounts (4 rows, paid highlighted)
@@ -709,6 +724,21 @@ export function buildReceiptCanvasTable(receiptData: ThermalReceiptData): HTMLCa
   ctx.textAlign = 'center';
   ctx.font = 'bold 15px system-ui, Arial, sans-serif';
   ctx.fillText('شكراً لتعاملكم معنا', width / 2, y);
+
+  // Crop canvas height immediately after text ends (tight 8px bottom padding) to prevent empty paper space
+  const exactHeight = Math.ceil(y + 8);
+  if (exactHeight < canvas.height) {
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = width;
+    trimmedCanvas.height = exactHeight;
+    const tCtx = trimmedCanvas.getContext('2d');
+    if (tCtx) {
+      tCtx.fillStyle = '#ffffff';
+      tCtx.fillRect(0, 0, width, exactHeight);
+      tCtx.drawImage(canvas, 0, 0, width, exactHeight, 0, 0, width, exactHeight);
+      return trimmedCanvas;
+    }
+  }
 
   return canvas;
 }
@@ -1153,6 +1183,22 @@ export function renderInvoiceToImageBase64(invoiceData: any): string {
   ctx.lineTo(canvas.width - 30, y + 10);
   ctx.stroke();
 
+  // Crop canvas height immediately after line
+  const exactHeight = Math.ceil(y + 18);
+  if (exactHeight < canvas.height) {
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = canvas.width;
+    trimmedCanvas.height = exactHeight;
+    const tCtx = trimmedCanvas.getContext('2d');
+    if (tCtx) {
+      tCtx.fillStyle = '#ffffff';
+      tCtx.fillRect(0, 0, canvas.width, exactHeight);
+      tCtx.drawImage(canvas, 0, 0, canvas.width, exactHeight, 0, 0, canvas.width, exactHeight);
+      const dataUrl = trimmedCanvas.toDataURL('image/png');
+      return dataUrl.split(',')[1] || '';
+    }
+  }
+
   const dataUrl = canvas.toDataURL('image/png');
   return dataUrl.split(',')[1] || '';
 }
@@ -1271,34 +1317,24 @@ export function sendReceiptToRawBTIntent(receiptData: any): boolean {
 </html>`.trim();
 
     const base64Html = encodeHtmlToUtf8Base64(htmlContent);
-
-    // 1. Send Direct HTML/PDF to RawBT
-    try {
-      window.location.href = `rawbt:html;base64,${base64Html}`;
-    } catch (e) {}
-
-    // 2. Android Intent for RawBT package ru.a402d.rawbtprinter (HTML/PDF mode)
     const intentHtmlUrl = `intent:#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};S.base64=${base64Html};S.type=html;end;`;
 
-    setTimeout(() => {
+    try {
+      const link = document.createElement('a');
+      link.href = intentHtmlUrl;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        try { if (document.body.contains(link)) document.body.removeChild(link); } catch (e) {}
+      }, 500);
+      return true;
+    } catch (e) {
       try {
-        const link = document.createElement('a');
-        link.href = intentHtmlUrl;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          try { if (document.body.contains(link)) document.body.removeChild(link); } catch (e) {}
-        }, 500);
-      } catch (e) {}
-    }, 200);
-
-    // 3. Fallback: Trigger System PDF Print Spooler window
-    setTimeout(() => {
-      try {
-        openThermalPrintWindow(receiptData);
-      } catch (e) {}
-    }, 600);
+        window.location.href = intentHtmlUrl;
+        return true;
+      } catch (err) {}
+    }
 
     return true;
   } catch (err) {
@@ -1321,29 +1357,26 @@ export function sendToRawBTHtml(invoiceData: any): boolean {
     const isAndroid = (typeof Platform !== 'undefined' && (Platform.isAndroid || Platform.isAPK)) || /Android/i.test(navigator.userAgent || '') || !!(window as any).isAndroidAPK;
     const targetUrl = isAndroid ? intentUrl : rawbtUrl;
 
-    setTimeout(() => {
-      try {
-        window.location.href = targetUrl;
-      } catch (e) {
-        // ignore
-      }
-
+    try {
       const link = document.createElement('a');
       link.href = targetUrl;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-
       setTimeout(() => {
         try {
           if (document.body.contains(link)) {
             document.body.removeChild(link);
           }
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
       }, 500);
-    }, 200);
+      return true;
+    } catch (e) {
+      try {
+        window.location.href = targetUrl;
+        return true;
+      } catch (err) {}
+    }
 
     return true;
   } catch (err) {
@@ -1462,22 +1495,25 @@ export function sendReceiptImageToRawBTIntent(receiptData: ThermalReceiptData): 
     const RAWBT_PACKAGE = 'ru.a404m.rawbt';
     
     const intentImageUrl = `intent:#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};S.base64=${base64Image};S.type=image;end;`;
-    const rawbtImageUrl = `rawbt:data:image/png;base64,${base64Image}`;
     
     try {
-      window.location.href = intentImageUrl;
-    } catch (e) {}
-
-    const link = document.createElement('a');
-    link.href = intentImageUrl;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = intentImageUrl;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        try {
+          if (document.body.contains(link)) document.body.removeChild(link);
+        } catch (e) {}
+      }, 500);
+      return true;
+    } catch (e) {
       try {
-        if (document.body.contains(link)) document.body.removeChild(link);
-      } catch (e) {}
-    }, 500);
+        window.location.href = intentImageUrl;
+        return true;
+      } catch (err) {}
+    }
 
     return true;
   } catch (err) {
@@ -1488,26 +1524,18 @@ export function sendReceiptImageToRawBTIntent(receiptData: ThermalReceiptData): 
 
 export function formatReceiptAsPlainText(receiptData: ThermalReceiptData): string {
   const amountInWordsText = receiptData.amountInWords || (typeof numberToArabicWords === 'function' ? numberToArabicWords(receiptData.paidAmount) : '');
-  const titlePart = receiptData.shopTitle && receiptData.shopTitle !== 'الكرار للموبايل' ? `${receiptData.shopTitle}\n\n` : '';
   const isDuplicate = receiptData.isDuplicate || Boolean(receiptData.warningNote);
   const warningText = receiptData.warningNote || DEFAULT_DUPLICATE_RECEIPT_WARNING;
   const duplicateWarning = isDuplicate
     ? `\n--------------------------------\n⚠️ ${warningText}\n--------------------------------`
     : '';
-  
-  return `
-${titlePart}رقم الوصل: ${receiptData.receiptNo || ''}
-الزبون: ${receiptData.customerName || ''}${duplicateWarning}
-المادة المباعة: ${receiptData.itemName || ''}
-المبلغ الكلي: ${Number(receiptData.totalPrice || 0).toLocaleString('en-US')} د.ع
-المبلغ الواصل: ${Number(receiptData.totalPaid || 0).toLocaleString('en-US')} د.ع
-المبلغ المتبقي: ${Number(receiptData.remainingBalance || 0).toLocaleString('en-US')} د.ع
-المبلغ المدفوع: ${Number(receiptData.paidAmount || 0).toLocaleString('en-US')} د.ع
+
+  return `اسم الزبون: ${receiptData.customerName || ''}${duplicateWarning}
+الواصل: ${Number(receiptData.totalPaid || 0).toLocaleString('en-US')} د.ع
+المبلغ رقماً: ${Number(receiptData.paidAmount || 0).toLocaleString('en-US')} د.ع
 المبلغ كتابة: ${amountInWordsText || 'صفر دينار'}
-تاريخ الدفع: ${receiptData.dateStr || ''}
-الوقت: ${receiptData.timeStr || ''}
-================================
-`.trim();
+الباقي: ${Number(receiptData.remainingBalance || 0).toLocaleString('en-US')} د.ع
+التاريخ: ${receiptData.dateStr || ''}`.trim();
 }
 
 /**
@@ -1521,8 +1549,8 @@ export function sendToRawBTDirectly(receiptData: ThermalReceiptData) {
   const androidBridge = (window as any).AndroidPrinter || (window as any).AndroidInterface || (window as any).Android;
   if (androidBridge && typeof androidBridge.printRawBT === 'function') {
     try {
-      const ok = androidBridge.printRawBT(textReceipt);
-      if (ok) return true;
+      androidBridge.printRawBT(textReceipt);
+      return true;
     } catch (e) {
       console.warn('Native Android printRawBT error:', e);
     }
@@ -1530,10 +1558,6 @@ export function sendToRawBTDirectly(receiptData: ThermalReceiptData) {
 
   // Pure plain text Android Intent for RawBT (NO base64 / NO encryption)
   const rawbtIntentUrl = `intent:#Intent;scheme=rawbt;package=ru.a404m.rawbt;S.text=${encodeURIComponent(textReceipt)};end;`;
-
-  try {
-    window.location.href = rawbtIntentUrl;
-  } catch (e) {}
 
   try {
     const link = document.createElement('a');
@@ -1546,7 +1570,13 @@ export function sendToRawBTDirectly(receiptData: ThermalReceiptData) {
         if (document.body.contains(link)) document.body.removeChild(link);
       } catch (e) {}
     }, 400);
-  } catch (e) {}
+    return true;
+  } catch (e) {
+    try {
+      window.location.href = rawbtIntentUrl;
+      return true;
+    } catch (err) {}
+  }
   return true;
 }
 
@@ -1696,7 +1726,7 @@ export async function shareReceiptImage(receiptData: ThermalReceiptData) {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'وصل تسديد - الكرار للموبايل',
+          title: 'وصل تسديد',
           text: `وصل تسديد للزبون: ${receiptData.customerName}`,
         });
         return;
@@ -2736,10 +2766,12 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
     document.body.appendChild(iframe);
 
     // Also trigger Native Android PrintManager if inside Capacitor Bridge
+    let handledByNative = false;
     const androidBridge = (window as any).AndroidPrinter || (window as any).AndroidInterface || (window as any).Android;
     if (androidBridge && typeof androidBridge.printSystemDocument === 'function') {
       try {
         androidBridge.printSystemDocument(title);
+        handledByNative = true;
       } catch (e) {
         console.warn('androidBridge.printSystemDocument error:', e);
       }
@@ -2799,19 +2831,21 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
 </html>`);
       doc.close();
 
-      setTimeout(() => {
-        try {
-          if (iframe.contentWindow) {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-          } else {
-            window.print();
+      if (!handledByNative) {
+        setTimeout(() => {
+          try {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+            } else {
+              window.print();
+            }
+          } catch (printErr) {
+            console.warn('iframe print exception, falling back to window.print():', printErr);
+            try { window.print(); } catch (e) {}
           }
-        } catch (printErr) {
-          console.warn('iframe print exception, falling back to window.print():', printErr);
-          try { window.print(); } catch (e) {}
-        }
-      }, 300);
+        }, 300);
+      }
       return true;
     }
   } catch (err) {
