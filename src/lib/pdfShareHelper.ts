@@ -469,6 +469,26 @@ export async function shareCustomerPaymentsOrDirectWhatsApp({
 }
 
 /**
+ * Generates and shares a PDF report for Reps Payments Summary Box (صندوق تسديدات المندوبين).
+ */
+export async function shareRepsPaymentsSummaryPdf(args: {
+  visiblePayments?: PaymentRecord[];
+  activeRepStats?: any[];
+  startDate?: string;
+  endDate?: string;
+  listLabel?: string;
+  lang?: string;
+}): Promise<{ success: boolean; method: string; error?: string }> {
+  return shareGeneralPaymentsPdf({
+    payments: args.visiblePayments || [],
+    startDate: args.startDate,
+    endDate: args.endDate,
+    listName: args.listLabel,
+    lang: args.lang || 'ar',
+  });
+}
+
+/**
  * Generates and shares a PDF report for ALL selected/filtered payments in General Payments View (صندوق التسديدات العامة).
  * Includes all selected payments across all customers and reps, with no single customer bias.
  */

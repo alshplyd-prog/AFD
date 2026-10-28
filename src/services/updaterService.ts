@@ -26,12 +26,12 @@ export class AppUpdaterService {
       await CapacitorUpdater.notifyAppReady();
       console.log('Capgo Updater initialized: notifyAppReady sent.');
 
-      // Setup listeners
-      CapacitorUpdater.addListener('downloadProgress', (progress) => {
-        console.log(`Update downloading: ${progress.percent}%`);
+      // Setup listeners safely
+      (CapacitorUpdater as any).addListener?.('downloadProgress', (progress: any) => {
+        console.log(`Update downloading: ${progress?.percent}%`);
       });
 
-      CapacitorUpdater.addListener('updateAvailable', (info) => {
+      (CapacitorUpdater as any).addListener?.('updateAvailable', (info: any) => {
         console.log('Update available event:', info);
       });
     } catch (error) {

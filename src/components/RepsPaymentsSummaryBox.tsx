@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText, Share2 } from 'lucide-react';
+import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText } from 'lucide-react';
 import { SalesRepresentative, PaymentRecord, InstallmentContract, CustomerList, Language } from '../types';
 import { silentIframePrint, openUniversalPdfPrintWindow, directPrintReceipt, DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { RepReceiptModal, RepReceiptData, directPrintRepReceipt } from './RepReceiptModal';
@@ -9,7 +9,6 @@ import { getPaymentFormattedDateAndTime } from '../lib/dateUtils';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { normalizeEntityName } from '../lib/nameHelpers';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
-import { shareRepsPaymentsSummaryPdf } from '../lib/pdfShareHelper';
 
 interface RepsPaymentsSummaryBoxProps {
   currentRep: SalesRepresentative | null;
@@ -61,7 +60,6 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
   const [activePaymentReceipt, setActivePaymentReceipt] = useState<ReceiptData | null>(null);
   const [isPaymentReceiptModalOpen, setIsPaymentReceiptModalOpen] = useState<boolean>(false);
 
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -70,37 +68,6 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
     setTimeout(() => {
       setToastMessage((prev) => (prev?.text === text ? null : prev));
     }, 4000);
-  };
-
-  const handleSharePdf = async () => {
-    if (isExportingPdf) return;
-    setIsExportingPdf(true);
-    try {
-      const selectedListObj = visibleLists.find((l) => l.id === boxListId);
-      const listLabel = boxListId === 'all' ? (isAr ? 'جميع القوائم' : 'All Lists') : selectedListObj?.name;
-
-      const result = await shareRepsPaymentsSummaryPdf({
-        visiblePayments,
-        activeRepStats,
-        startDate,
-        endDate,
-        listLabel,
-        lang,
-      });
-
-      if (result && result.success) {
-        if (result.method !== 'user_cancelled') {
-          showToast(isAr ? 'تم تجهيز ومشاركة ملف PDF بنجاح' : 'PDF generated and shared successfully', 'success');
-        }
-      } else if (result?.error) {
-        showToast(isAr ? 'تعذر مشاركة الملف' : 'Failed to share PDF', 'error');
-      }
-    } catch (err) {
-      console.error('Export PDF failed:', err);
-      showToast(isAr ? 'حدث خطأ أثناء تصدير ملف PDF' : 'Error exporting PDF', 'error');
-    } finally {
-      setIsExportingPdf(false);
-    }
   };
 
   const handleExportExcel = async () => {
