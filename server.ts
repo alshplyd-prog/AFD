@@ -3347,8 +3347,31 @@ async function startServer() {
 
       fileDb.update("reps", id, updates);
       await executePg(
-        `UPDATE reps SET name = COALESCE($1, name), phone = COALESCE($2, phone), code = COALESCE($3, code), role = COALESCE($4, role), can_edit = COALESCE($5, can_edit), can_delete = COALESCE($6, can_delete), can_move_customer = COALESCE($7, can_move_customer), can_sell = COALESCE($8, can_sell), allowed_list_ids = COALESCE($9, allowed_list_ids), avatar_url = COALESCE($10, avatar_url) WHERE id = $11`,
-        [updates.name, updates.phone, updates.code, updates.role, updates.canEdit, updates.canDelete, updates.canMoveCustomer, updates.canSell, updates.allowedListIds ? JSON.stringify(updates.allowedListIds) : null, updates.avatarUrl ?? updates.avatar_url ?? null, id]
+        `UPDATE reps SET 
+           name = COALESCE(NULLIF($1, ''), name), 
+           phone = COALESCE(NULLIF($2, ''), phone), 
+           code = COALESCE(NULLIF($3, ''), code), 
+           role = COALESCE(NULLIF($4, ''), role), 
+           can_edit = COALESCE($5, can_edit), 
+           can_delete = COALESCE($6, can_delete), 
+           can_move_customer = COALESCE($7, can_move_customer), 
+           can_sell = COALESCE($8, can_sell), 
+           allowed_list_ids = COALESCE($9, allowed_list_ids), 
+           avatar_url = COALESCE(NULLIF($10, ''), avatar_url) 
+         WHERE id = $11`,
+        [
+          updates.name ? String(updates.name).trim() : null,
+          updates.phone ? String(updates.phone).trim() : null,
+          updates.code ? String(updates.code).trim() : null,
+          updates.role ? String(updates.role).trim() : null,
+          updates.canEdit !== undefined ? Boolean(updates.canEdit) : null,
+          updates.canDelete !== undefined ? Boolean(updates.canDelete) : null,
+          updates.canMoveCustomer !== undefined ? Boolean(updates.canMoveCustomer) : null,
+          updates.canSell !== undefined ? Boolean(updates.canSell) : null,
+          updates.allowedListIds ? (Array.isArray(updates.allowedListIds) ? JSON.stringify(updates.allowedListIds) : String(updates.allowedListIds)) : null,
+          updates.avatarUrl ?? updates.avatar_url ?? null,
+          id
+        ]
       );
       bumpSyncVersion();
       res.json({ success: true });
@@ -5472,7 +5495,7 @@ async function startServer() {
                 repName,
                 saved.phone || '',
                 saved.code || '0000',
-                saved.role || 'rep',
+                saved.role || existing?.role || '',
                 saved.canEdit !== false,
                 saved.canDelete !== false,
                 saved.canMoveCustomer !== false,

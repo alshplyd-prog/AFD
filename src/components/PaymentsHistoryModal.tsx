@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2, FileSpreadsheet, Share2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
-import { shareCustomerPaymentsPdf } from '../lib/pdfShareHelper';
+import { shareCustomerPaymentsPdf, shareGeneralPaymentsPdf } from '../lib/pdfShareHelper';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { fetchWithFallback } from '../lib/apiConfig';
@@ -68,20 +68,35 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
     if (isExportingPdf || filtered.length === 0) return;
     setIsExportingPdf(true);
     try {
-      const targetContract =
-        activeContract ||
-        contracts.find(
-          (c) =>
-            c.id === customerFilterId ||
-            (filtered[0]?.customerName && normalizeEntityName(c.customerName) === normalizeEntityName(filtered[0].customerName))
-        ) ||
-        null;
+      let result;
+      if (customerFilterId) {
+        const targetContract =
+          activeContract ||
+          contracts.find(
+            (c) =>
+              c.id === customerFilterId ||
+              (filtered[0]?.customerName && normalizeEntityName(c.customerName) === normalizeEntityName(filtered[0].customerName))
+          ) ||
+          null;
 
-      const result = await shareCustomerPaymentsPdf({
-        contract: targetContract,
-        payments: filtered,
-        lang,
-      });
+        result = await shareCustomerPaymentsPdf({
+          contract: targetContract,
+          payments: filtered,
+          lang,
+        });
+      } else {
+        const selectedListName = filterListId === 'all'
+          ? (isAr ? 'جميع القوائم' : 'All Lists')
+          : (customerLists.find((l) => l.id === filterListId)?.name || '');
+
+        result = await shareGeneralPaymentsPdf({
+          payments: filtered,
+          startDate,
+          endDate,
+          listName: selectedListName,
+          lang,
+        });
+      }
 
       if (result && result.success) {
         if (result.method !== 'user_cancelled') {

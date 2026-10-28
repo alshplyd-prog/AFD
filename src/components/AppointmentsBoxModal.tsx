@@ -75,7 +75,11 @@ export const AppointmentsBoxModal: React.FC<AppointmentsBoxModalProps> = ({
     // Strict restriction: representative must have explicit access to this appointment's list
     const matchedContract = contracts.find((c) => c.id === app.contractId || (app.customerName && c.customerName.trim().toLowerCase() === app.customerName.trim().toLowerCase()));
     const effectiveListId = app.listId || matchedContract?.listId;
-    if (!effectiveListId) return false;
+    if (!effectiveListId) {
+      if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0 || currentRep.allowedListIds.includes('all')) return true;
+      if (app.createdByRepId === currentRep.id || (app.createdByRepName && currentRep.name && app.createdByRepName.trim().toLowerCase() === currentRep.name.trim().toLowerCase())) return true;
+      return true;
+    }
     if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;
     return currentRep.allowedListIds.includes(effectiveListId);
   });

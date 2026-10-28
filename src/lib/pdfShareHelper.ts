@@ -238,7 +238,12 @@ async function renderHtmlToPdfBlob(htmlString: string): Promise<Blob> {
   container.style.fontFamily = "system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif";
   container.style.boxSizing = 'border-box';
   container.style.zIndex = '-9999';
-  container.innerHTML = htmlString;
+  container.innerHTML = `
+    <style>
+      tr, td, th, .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+    </style>
+    ${htmlString}
+  `;
   document.body.appendChild(container);
 
   try {
@@ -326,7 +331,7 @@ export async function shareCustomerPaymentsPdf({
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       const rep = p.repName || '—';
       return `
-        <tr style="border-bottom: 2px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+        <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border: 2px solid #cbd5e1; border-radius: 10px; page-break-inside: avoid; break-inside: avoid;">
           <td style="padding: 16px 12px; text-align: center; font-weight: 900; color: #475569; font-size: 20px;">${idx + 1}</td>
           <td style="padding: 16px 12px; text-align: center; font-weight: 900; color: #0f766e; font-size: 25px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
           <td style="padding: 16px 12px; text-align: center; font-weight: 900; color: #0f172a; font-size: 20px; direction: ltr;">${dateStr}</td>
@@ -340,7 +345,7 @@ export async function shareCustomerPaymentsPdf({
   const htmlContent = `
     <div style="padding: 30px 36px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
       <!-- Header -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f766e; padding-bottom: 18px; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #0f766e; padding-bottom: 18px; margin-bottom: 24px; page-break-inside: avoid; break-inside: avoid;">
         <div>
           <div style="font-size: 32px; font-weight: 900; color: #0f766e; letter-spacing: -0.5px;">كشف وسجل تسديدات الزبون</div>
         </div>
@@ -351,7 +356,7 @@ export async function shareCustomerPaymentsPdf({
       </div>
 
       <!-- Customer Summary Card -->
-      <div style="background: #f0fdfa; border: 3px solid #2dd4bf; border-radius: 20px; padding: 22px 26px; margin-bottom: 26px;">
+      <div style="background: #f0fdfa; border: 3px solid #2dd4bf; border-radius: 20px; padding: 22px 26px; margin-bottom: 26px; page-break-inside: avoid; break-inside: avoid;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 2px solid #99f6e4; padding-bottom: 14px;">
           <div>
             <span style="font-size: 22px; font-weight: 800; color: #0f766e;">اسم الزبون: </span>
@@ -389,9 +394,9 @@ export async function shareCustomerPaymentsPdf({
       </div>
 
       <!-- Payments Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 26px; border: 2px solid #cbd5e1; border-radius: 14px; overflow: hidden;">
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-bottom: 26px;">
         <thead>
-          <tr style="background-color: #0f766e; color: #ffffff;">
+          <tr style="background-color: #0f766e; color: #ffffff; page-break-inside: avoid; break-inside: avoid;">
             <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: center; width: 60px;">#</th>
             <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: center; width: 190px;">المبلغ المسدد</th>
             <th style="padding: 16px 12px; font-size: 22px; font-weight: 900; text-align: center; width: 180px;">التاريخ</th>
@@ -522,13 +527,13 @@ export async function shareGeneralPaymentsPdf({
       const { dateStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
       const amount = Number(p.amountPaid ?? p.amount ?? 0);
       return `
-        <tr style="border-bottom: 1.5px solid #cbd5e1; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-          <td style="padding: 8px 8px; text-align: center; font-weight: 800; color: #64748b; font-size: 13px;">${idx + 1}</td>
-          <td style="padding: 8px 8px; text-align: right; font-weight: 900; color: #1e293b; font-size: 14.5px;">${p.customerName || '—'}</td>
-          <td style="padding: 8px 8px; text-align: center; font-weight: 900; color: #047857; font-size: 16px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
-          <td style="padding: 8px 8px; text-align: center; font-weight: 900; color: #0f172a; font-size: 13.5px; direction: ltr;">${dateStr}</td>
-          <td style="padding: 8px 8px; text-align: center; font-weight: 800; color: #334155; font-size: 13.5px;">${p.repName || '—'}</td>
-          <td style="padding: 8px 8px; text-align: right; font-weight: 700; color: #64748b; font-size: 13px;">${cleanNote || '—'}</td>
+        <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border: 1.5px solid #cbd5e1; page-break-inside: avoid; break-inside: avoid;">
+          <td style="padding: 10px 8px; text-align: center; font-weight: 800; color: #64748b; font-size: 13px;">${idx + 1}</td>
+          <td style="padding: 10px 8px; text-align: right; font-weight: 900; color: #1e293b; font-size: 14.5px;">${p.customerName || '—'}</td>
+          <td style="padding: 10px 8px; text-align: center; font-weight: 900; color: #047857; font-size: 16px; direction: ltr;">${amount.toLocaleString('en-US')} د.ع</td>
+          <td style="padding: 10px 8px; text-align: center; font-weight: 900; color: #0f172a; font-size: 13.5px; direction: ltr;">${dateStr}</td>
+          <td style="padding: 10px 8px; text-align: center; font-weight: 800; color: #334155; font-size: 13.5px;">${p.repName || '—'}</td>
+          <td style="padding: 10px 8px; text-align: right; font-weight: 700; color: #64748b; font-size: 13px;">${cleanNote || '—'}</td>
         </tr>
       `;
     })
@@ -537,7 +542,7 @@ export async function shareGeneralPaymentsPdf({
   const htmlContent = `
     <div style="padding: 20px 24px; direction: rtl; text-align: right; color: #0f172a; font-family: system-ui, -apple-system, sans-serif;">
       <!-- Header -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; page-break-inside: avoid; break-inside: avoid;">
         <div>
           <div style="font-size: 22px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px;">تقرير وسجل التسديدات العام (كافة الزبائن)</div>
         </div>
@@ -549,7 +554,7 @@ export async function shareGeneralPaymentsPdf({
       </div>
 
       <!-- General Statistics Grid -->
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; page-break-inside: avoid; break-inside: avoid;">
         <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 10px 14px; text-align: center;">
           <div style="font-size: 12.5px; font-weight: 800; color: #166534;">إجمالي التحصيلات المقبوضة</div>
           <div style="font-size: 20px; font-weight: 900; color: #15803d; direction: ltr; margin-top: 3px;">${totalPaid.toLocaleString('en-US')} د.ع</div>
@@ -568,9 +573,9 @@ export async function shareGeneralPaymentsPdf({
       </div>
 
       <!-- Itemized Payments Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px;">
+      <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px; margin-bottom: 18px;">
         <thead>
-          <tr style="background-color: #0284c7; color: #ffffff;">
+          <tr style="background-color: #0284c7; color: #ffffff; page-break-inside: avoid; break-inside: avoid;">
             <th style="padding: 10px 8px; font-size: 13.5px; font-weight: 900; text-align: center; width: 40px;">#</th>
             <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: right;">اسم الزبون</th>
             <th style="padding: 10px 8px; font-size: 14px; font-weight: 900; text-align: center; width: 135px;">المبلغ (د.ع)</th>

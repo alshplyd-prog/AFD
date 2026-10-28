@@ -124,8 +124,7 @@
     "createdAt": "2026-09-22T08:23:51.036Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T08:23:51.882Z",
-    "isEdited": false,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1790065601829_de04g",
@@ -1148,8 +1147,7 @@
     "createdAt": "2026-09-22T10:20:14.291Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T10:20:14.581Z",
-    "isEdited": false,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1790072484026_3fbng",
@@ -1178,10 +1176,7 @@
     "createdAt": "2026-09-22T10:21:24.026Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T10:21:24.302Z",
-    "isEdited": false,
-    "latitude": null,
-    "longitude": null,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1790072556698_i5059",
@@ -1242,10 +1237,7 @@
     "createdAt": "2026-09-22T10:25:24.987Z",
     "completedAt": null,
     "updatedAt": "2026-09-22T10:25:25.329Z",
-    "isEdited": false,
-    "latitude": null,
-    "longitude": null,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1791618917978_uc19n",
@@ -1452,15 +1444,15 @@
     "listName": "هيثم",
     "totalPrice": 1400000,
     "advancePayment": 0,
-    "remainingBalance": 1220000,
+    "remainingBalance": 1244000,
     "dailyInstallment": 12000,
     "startDate": "2026-10-13",
     "notes": "",
     "status": "active",
     "lastPaymentDate": "2026-10-27",
-    "totalPaid": 180000,
+    "totalPaid": 156000,
     "excessAmount": 0,
-    "rawTotalPaid": 180000,
+    "rawTotalPaid": 156000,
     "repName": "ضياء المحاسب",
     "latitude": 31.98889,
     "longitude": 44.9223483,
@@ -1498,10 +1490,7 @@
     "createdAt": "2026-10-15T10:06:58.307Z",
     "completedAt": null,
     "updatedAt": "2026-10-15T10:07:10.002Z",
-    "isEdited": false,
-    "latitude": null,
-    "longitude": null,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1792149137851_6g649",
@@ -1580,15 +1569,15 @@
     "listName": "هيثم",
     "totalPrice": 350000,
     "advancePayment": 0,
-    "remainingBalance": 170000,
+    "remainingBalance": 326000,
     "dailyInstallment": 4000,
     "startDate": "2026-10-19",
     "notes": "",
     "status": "active",
     "lastPaymentDate": "2026-10-27",
-    "totalPaid": 180000,
+    "totalPaid": 24000,
     "excessAmount": 0,
-    "rawTotalPaid": 180000,
+    "rawTotalPaid": 24000,
     "repName": "ضياء المحاسب",
     "latitude": 31.98889,
     "longitude": 44.9223483,
@@ -1596,8 +1585,7 @@
     "createdAt": "2026-10-19T19:58:25.264Z",
     "completedAt": null,
     "updatedAt": "2026-10-19T20:45:29.280Z",
-    "isEdited": false,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1792821660734_8m0u3",
@@ -1676,24 +1664,21 @@
     "listName": "كربلاء الاولى",
     "totalPrice": 420000,
     "advancePayment": 0,
-    "remainingBalance": 412000,
+    "remainingBalance": 420000,
     "dailyInstallment": 4000,
     "startDate": "2026-10-27",
     "notes": "",
     "status": "active",
-    "lastPaymentDate": "2026-10-28",
-    "totalPaid": 8000,
+    "lastPaymentDate": null,
+    "totalPaid": 0,
     "excessAmount": 0,
-    "rawTotalPaid": 8000,
+    "rawTotalPaid": 0,
     "repName": "ضياء المحاسب",
     "locationAddress": "",
     "createdAt": "2026-10-27T16:08:51.925Z",
     "completedAt": null,
     "updatedAt": "2026-10-27T16:08:53.026Z",
-    "isEdited": false,
-    "latitude": null,
-    "longitude": null,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1793170015374_0yy3l",
@@ -1724,8 +1709,7 @@
     "createdAt": "2026-10-28T06:46:55.374Z",
     "completedAt": null,
     "updatedAt": "2026-10-28T14:35:35.819Z",
-    "isEdited": false,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1793207324013_ec63i",
@@ -1754,15 +1738,12 @@
     "createdAt": "2026-10-28T17:08:44.013Z",
     "completedAt": null,
     "updatedAt": "2026-10-28T17:10:56.146Z",
-    "isEdited": false,
-    "latitude": null,
-    "longitude": null,
-    "locationUpdatedAt": null
+    "isEdited": false
   },
   {
     "id": "contract_1793209567818_nj6ri",
     "customerName": "محمد علي حسين",
-    "customerPhone": "07838811514",
+    "customerPhone": "07829899513",
     "customerAddress": "",
     "itemId": "item_1790065183357_qgfnm",
     "itemName": "اجهزه 175 (عدد 2)",
@@ -1785,10 +1766,7 @@
     "locationAddress": "",
     "createdAt": "2026-10-28T17:46:07.818Z",
     "completedAt": null,
-    "updatedAt": "2026-10-28T17:46:09.514Z",
-    "isEdited": false,
-    "latitude": null,
-    "longitude": null,
-    "locationUpdatedAt": null
+    "updatedAt": "2026-10-28T18:01:24.181Z",
+    "isEdited": false
   }
 ]
