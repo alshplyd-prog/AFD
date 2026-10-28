@@ -4,9 +4,11 @@ import App from './App.tsx';
 import './index.css';
 import { registerBackgroundSyncWorker, requestAllBackgroundAndSyncPermissions, initBackgroundSync, enableForegroundService, isKeepAliveModeEnabled, setFieldKeepAliveMode } from './lib/offlineQueue';
 import { initCapacitorPush } from './lib/capacitorPush';
+import { AppUpdaterService } from './services/updaterService';
 
-// Register background sync service worker and initialize notification channels safely
+// Initialize Capgo Capacitor OTA Updater and background sync worker
 try {
+  AppUpdaterService.init().catch(() => {});
   initCapacitorPush().catch(() => {});
   registerBackgroundSyncWorker();
   initBackgroundSync();

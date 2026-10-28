@@ -2,7 +2,7 @@
   {
     "id": "fund-4",
     "name": "صندوق ماهر 1",
-    "balance": 5360000,
+    "balance": 6343000,
     "description": "",
     "orderIndex": 0,
     "createdAt": "2026-09-04T18:20:53.845Z"
@@ -10,7 +10,7 @@
   {
     "id": "fund-2",
     "name": "ماهر 2",
-    "balance": 0,
+    "balance": 30000,
     "description": "",
     "orderIndex": 1,
     "createdAt": "2026-09-04T18:19:54.513Z"
@@ -18,7 +18,7 @@
   {
     "id": "fund_1787350326789_erqgt",
     "name": "صندوق الديوانية العام 🌟🌹",
-    "balance": 12000,
+    "balance": 0,
     "description": "",
     "orderIndex": 2,
     "createdAt": "2026-08-21T22:12:07.489Z"
@@ -90,7 +90,7 @@
   {
     "id": "fund_1791618782897_u79cy",
     "name": "هيثم",
-    "balance": 285000,
+    "balance": 249000,
     "description": "",
     "orderIndex": 11,
     "createdAt": "2026-10-10T07:53:02.897Z"

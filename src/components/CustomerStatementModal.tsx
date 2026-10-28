@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Printer, Filter, Calendar, FolderKanban, Download, Search, FileText, ArrowUpRight, ArrowDownLeft, RotateCcw, ChevronDown, Check, RefreshCw, CheckCircle2, AlertCircle, DownloadCloud, Loader2, Share2 } from 'lucide-react';
+import { X, Printer, Filter, Calendar, FolderKanban, Download, Search, FileText, ArrowUpRight, ArrowDownLeft, RotateCcw, ChevronDown, Check, RefreshCw, CheckCircle2, AlertCircle, DownloadCloud, Loader2, Share2, MessageCircle } from 'lucide-react';
 import { InstallmentContract, PaymentRecord, CustomerList, Language, CustomerTransaction, SalesRepresentative } from '../types';
 import { calculateCustomerStatement, fetchCustomerSubCollectionStatement, SubCollectionStatementResult } from '../lib/statementCalculator';
 import { getLocalDateString, isZeroBalanceExpired24h, formatZeroBalanceCountdown, calculateAccumulatedInstallment } from '../lib/dateUtils';
 import { ZeroBalanceCountdown } from './ZeroBalanceCountdown';
 import { openUniversalPdfPrintWindow } from '../lib/bluetoothPrinter';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
-import { shareCustomerPaymentsPdf } from '../lib/pdfShareHelper';
+import { shareCustomerPaymentsPdf, shareCustomerPaymentsOrDirectWhatsApp, formatIraqiPhoneForWhatsApp } from '../lib/pdfShareHelper';
+import { universalApiFetch } from '../lib/apiConfig';
 
 interface CustomerStatementModalProps {
   isOpen: boolean;
@@ -79,7 +80,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   const handleFetchAllFromServer = async () => {
     setIsFetchingServerPayments(true);
     try {
-      const res = await fetch('/api/payments');
+      const res = await universalApiFetch('/api/payments');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -689,22 +690,37 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
   const [isExportingSubColPdf, setIsExportingSubColPdf] = useState(false);
 
-  const handleShareHistoryModalPdf = async () => {
+  const handleShareHistoryModalPdf = async (target: 'whatsapp' | 'other' = 'whatsapp') => {
     if (!historyModalContract || isExportingSubColPdf) return;
     setIsExportingSubColPdf(true);
     try {
       const custPayments = safePayments.filter((p) => p && p.contractId === historyModalContract.id);
-      const result = await shareCustomerPaymentsPdf({
+      const result = await shareCustomerPaymentsOrDirectWhatsApp({
         contract: historyModalContract,
         payments: custPayments,
         lang,
+        targetApp: target,
+        forceAppsChooser: target === 'other',
       });
-      if (result && result.success && result.method !== 'user_cancelled') {
-        showToast(isAr ? 'تم تصدير ومشاركة PDF بنجاح' : 'PDF shared successfully', 'success');
+      if (result && result.success) {
+        if (result.method !== 'user_cancelled') {
+          showToast(
+            target === 'whatsapp'
+              ? (isAr
+                  ? 'تم فتح محادثة واتساب الزبون - اضغط (لصق / Paste) أو إرسال لنشر صورة الكشف'
+                  : 'Customer WhatsApp opened - Tap Paste or Send for statement image')
+              : (isAr
+                  ? 'تم تجهيز ملف الـ PDF - اختر التطبيق المطلوب للمشاركة'
+                  : 'PDF ready - Select app to share file'),
+            'success'
+          );
+        }
+      } else if (result?.error) {
+        showToast(isAr ? 'تعذر إتمام المشاركة' : 'Failed to share', 'error');
       }
     } catch (e) {
-      console.error('Error sharing customer PDF:', e);
-      showToast(isAr ? 'فشل تصدير ملف PDF' : 'Failed to export PDF', 'error');
+      console.error('Error sharing customer statement:', e);
+      showToast(isAr ? 'حدث خطأ أثناء المشاركة' : 'Error sharing', 'error');
     } finally {
       setIsExportingSubColPdf(false);
     }
@@ -888,7 +904,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         } else if (result.method === 'clipboard_copy') {
           showToast(isAr ? 'تم نسخ بيانات الكشف إلى الحافظة بنجاح، يمكنك لصقها في Excel' : 'Statement copied to clipboard', 'success');
         } else {
-          showToast(isAr ? 'تم تصدير وحفظ كشف Excel بنجاح' : 'Excel statement exported successfully', 'success');
+          showToast(isAr ? 'تم تجهيز ملف Excel - اختر التطبيق المطلوب للمشاركة' : 'Excel statement ready for sharing', 'success');
         }
       } else {
         showToast(isAr ? `تعذر تصدير الملف: ${result.error}` : `Export failed: ${result.error}`, 'error');
@@ -1654,16 +1670,21 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                {/* Customer payments PDF share button */}
                 <button
                   type="button"
-                  onClick={handleShareHistoryModalPdf}
+                  onClick={() => handleShareHistoryModalPdf('other')}
                   disabled={isExportingSubColPdf}
-                  className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  title={isAr ? 'مشاركة سجل تسديدات الزبون كملف PDF' : 'Share Customer Payments as PDF'}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  title={isAr ? 'مشاركة كشف التسديدات كملف PDF' : 'Share payments PDF'}
                 >
                   <Share2 className={`w-3.5 h-3.5 ${isExportingSubColPdf ? 'animate-spin' : ''}`} />
-                  <span>{isExportingSubColPdf ? (isAr ? 'جاري التحضير...' : 'Generating...') : (isAr ? 'مشاركة PDF' : 'Share PDF')}</span>
+                  <span>
+                    {isExportingSubColPdf
+                      ? (isAr ? 'جاري تجهيز PDF...' : 'Generating PDF...')
+                      : (isAr ? 'مشاركة الكشف' : 'Share Statement')}
+                  </span>
                 </button>
                 <button
                   type="button"

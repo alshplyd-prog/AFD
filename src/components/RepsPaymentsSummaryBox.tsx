@@ -506,16 +506,16 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
 
       {/* Date Range Selection Bar - Responsive across mobile and desktop */}
       <div className="bg-slate-50 dark:bg-slate-900/70 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2 shrink-0">
-        {/* Same Row: From Date & To Date Facing Each Other + Close Button */}
-        <div className="flex items-center gap-2">
-          <div className="grid grid-cols-2 gap-2 flex-1 items-center">
-            {/* From Date */}
-            <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs min-w-0">
-              <span className="text-xs sm:text-sm font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+        {/* Same Row: From Date & To Date Facing Each Other (half size) + Close Button */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="grid grid-cols-2 gap-1.5 flex-1 max-w-sm sm:max-w-md items-center">
+            {/* From Date - Reduced by half */}
+            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 shadow-2xs min-w-0">
+              <span className="text-[9px] sm:text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 {isAr ? 'من:' : 'From:'}
               </span>
-              <span className="font-mono font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
+              <span className="font-mono font-bold text-[8.5px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
                 {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
@@ -527,13 +527,13 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
               />
             </div>
 
-            {/* To Date */}
-            <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs min-w-0">
-              <span className="text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
-                <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+            {/* To Date - Reduced by half */}
+            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 shadow-2xs min-w-0">
+              <span className="text-[9px] sm:text-[10.5px] font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
                 {isAr ? 'إلى:' : 'To:'}
               </span>
-              <span className="font-mono font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
+              <span className="font-mono font-bold text-[8.5px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
                 {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
@@ -546,29 +546,16 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          {onClose && (
             <button
               type="button"
-              onClick={handleSharePdf}
-              disabled={isExportingPdf}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
-              title={isAr ? 'مشاركة تقرير صندوق التسديدات كملف PDF' : 'Share PDF Report'}
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
+              title={isAr ? 'إغلاق' : 'Close'}
             >
-              <Share2 className={`w-4 h-4 ${isExportingPdf ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isExportingPdf ? (isAr ? 'جاري التحضير...' : 'Generating...') : (isAr ? 'مشاركة PDF' : 'Share PDF')}</span>
+              <X className="w-3.5 h-3.5" />
             </button>
-
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
-                title={isAr ? 'إغلاق' : 'Close'}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Quick Presets in Single Horizontal Row */}

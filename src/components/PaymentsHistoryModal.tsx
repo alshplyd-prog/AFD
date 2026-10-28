@@ -462,16 +462,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
                     : `Item: ${activeContract.itemName}`}
                 </span>
               )}
-              <button
-                type="button"
-                onClick={handleSharePdf}
-                disabled={isExportingPdf || filtered.length === 0}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
-                title={isAr ? 'مشاركة تسديدات الزبون كملف PDF' : 'Share Customer Payments as PDF'}
-              >
-                <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
-                <span>{isExportingPdf ? (isAr ? 'جاري...' : 'Generating...') : (isAr ? 'مشاركة PDF' : 'Share PDF')}</span>
-              </button>
             </div>
           </div>
         ) : (
