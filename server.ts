@@ -115,12 +115,13 @@ function mapRepRow(r: any) {
   }
   if (!Array.isArray(allowed)) allowed = ['all'];
   const isDhia = Boolean(r.name && (r.name.includes('ضياء') || r.id === 'rep-1'));
+  const storedRole = r.role ?? r.role_name;
   return {
     id: r.id,
     name: r.name ?? '',
     phone: r.phone ?? '',
     code: r.code ?? '',
-    role: isDhia ? 'admin' : (r.role ?? 'rep'),
+    role: storedRole ? storedRole : (isDhia ? 'admin' : 'rep'),
     canEdit: isDhia ? true : (r.can_edit !== false && r.canEdit !== false),
     canDelete: isDhia ? true : Boolean(r.can_delete ?? r.canDelete),
     canMoveCustomer: isDhia ? true : (r.can_move_customer !== false && r.canMoveCustomer !== false),

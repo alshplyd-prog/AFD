@@ -409,6 +409,11 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
         if (type === 'CREATE_PAYMENT_CONFLICT' && payload.id) {
           map.set(payload.id, payload);
         }
+      } else if (tableName === 'appointments' && (type === 'CREATE_APPOINTMENT' || type === 'UPDATE_APPOINTMENT')) {
+        if (payload.id) {
+          const existing = map.get(payload.id) || {};
+          map.set(payload.id, { ...existing, ...payload });
+        }
       }
       // Strictly NO fallback else block: never cross-insert actions into unrelated tables!
     }
@@ -461,6 +466,15 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
           recalculateAllContractsFromPayments(undefined, items, true);
         }, 10);
       } catch (e) {}
+      return items as unknown as T[];
+    }
+
+    if (tableName === 'appointments') {
+      items.sort((a: any, b: any) => {
+        const dateA = new Date(a.appointmentDate || a.appointment_date || a.createdAt || 0).getTime();
+        const dateB = new Date(b.appointmentDate || b.appointment_date || b.createdAt || 0).getTime();
+        return dateA - dateB;
+      });
       return items as unknown as T[];
     }
 

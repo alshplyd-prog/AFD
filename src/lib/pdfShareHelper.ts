@@ -226,6 +226,10 @@ export async function sharePdfBlob({
  * Converts an HTML element container to a clean, exact jsPDF Blob.
  * Strictly avoids adding blank/trailing extra pages.
  */
+/**
+ * Converts an HTML element container to a clean, exact jsPDF Blob.
+ * Improved with safety margins to prevent data from being cut in half.
+ */
 async function renderHtmlToPdfBlob(htmlString: string): Promise<Blob> {
   const container = document.createElement('div');
   container.style.position = 'fixed';
@@ -240,18 +244,24 @@ async function renderHtmlToPdfBlob(htmlString: string): Promise<Blob> {
   container.style.zIndex = '-9999';
   container.innerHTML = `
     <style>
-      tr, td, th, .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+      @media print {
+        tr, td, th, .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+      }
+      tr, td, th, .avoid-break { break-inside: avoid !important; page-break-inside: avoid !important; }
+      .pdf-page-container { padding-bottom: 60px !important; padding-top: 10px !important; } 
+      table { border-collapse: collapse !important; width: 100% !important; }
     </style>
-    ${htmlString}
+    <div class="pdf-page-container">
+      ${htmlString}
+    </div>
   `;
   document.body.appendChild(container);
 
   try {
-    // Ultra-short layout stabilization
-    await new Promise((r) => setTimeout(r, 60));
+    await new Promise((r) => setTimeout(r, 100));
 
     const canvas = await html2canvas(container, {
-      scale: 2, // High resolution (300 DPI equivalent)
+      scale: 2,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
@@ -265,28 +275,31 @@ async function renderHtmlToPdfBlob(htmlString: string): Promise<Blob> {
       compress: true,
     });
 
-    const pdfWidth = 210; // A4 width mm
-    const pageHeight = 297; // A4 height mm
+    const pdfWidth = 210; 
+    const pageHeight = 297;
+    const margin = 10; // Safety margin in mm
+    const usableHeight = pageHeight - (margin * 2);
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    // Single Page Fit: if content height is within 1 page (with 10mm tolerance), strictly use 1 page!
-    if (pdfHeight <= pageHeight + 10) {
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, Math.min(pdfHeight, pageHeight));
+    if (pdfHeight <= pageHeight) {
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       return pdf.output('blob');
     }
 
-    // Multipage: only add an extra page if remaining content height is strictly > 25mm (eliminates blank trailing pages)
     let heightLeft = pdfHeight;
     let position = 0;
+    let pageNum = 1;
 
-    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 25) {
-      position = heightLeft - pdfHeight;
-      pdf.addPage();
+    while (heightLeft > 0) {
+      if (pageNum > 1) pdf.addPage();
+      
       pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
+      
+      heightLeft -= usableHeight;
+      position -= usableHeight;
+      pageNum++;
+
+      if (heightLeft <= 5) break; // Don't add nearly-empty pages
     }
 
     return pdf.output('blob');
@@ -522,6 +535,12 @@ export async function shareGeneralPaymentsPdf({
       ? `الفترة من: ${startDate || 'البداية'} إلى: ${endDate || 'اليوم'}`
       : 'الكشف الشامل لجميع التواريخ المسجلة';
 
+  // Improvement: Title should reflect the list name if provided, instead of a generic title
+  const listLabel = listName && listName !== (isAr ? 'جميع القوائم' : 'All Lists') ? listName : '';
+  const mainTitle = listLabel
+    ? (isAr ? `تقرير تسديدات قائمة: ${listLabel}` : `Payments Report for List: ${listLabel}`)
+    : (isAr ? 'تقرير وسجل التسديدات العام (كافة القوائم)' : 'General Payments Report (All Lists)');
+
   const paymentsRowsHtml = payments
     .map((p, idx) => {
       const { dateStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
@@ -544,7 +563,7 @@ export async function shareGeneralPaymentsPdf({
       <!-- Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3.5px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; page-break-inside: avoid; break-inside: avoid;">
         <div>
-          <div style="font-size: 22px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px;">تقرير وسجل التسديدات العام (كافة الزبائن)</div>
+          <div style="font-size: 22px; font-weight: 900; color: #0284c7; letter-spacing: -0.5px;">${mainTitle}</div>
         </div>
         <div style="text-align: left;">
           <div style="font-size: 13px; font-weight: 800; color: #475569;">تاريخ التصدير: <span style="direction: ltr; font-weight: 900; color: #0f172a;">${printDateStr}</span></div>
@@ -610,9 +629,11 @@ export async function shareGeneralPaymentsPdf({
   return sharePdfBlob({
     filename,
     pdfBlob,
-    title: 'تقرير وسجل التسديدات العام',
-    text: `تقرير وسجل التسديدات العام بمجموع ${totalPaid.toLocaleString('en-US')} د.ع لعدد ${payments.length} تسديد`,
-    dialogTitle: 'اختر التطبيق لمشاركة تقرير التسديدات العام (تليكرام، واتساب، ماسنجر...)',
+    title: isAr ? `مشاركة تقرير تسديدات ${listLabel || 'عام'}` : `Share ${listLabel || 'General'} Payments Report`,
+    text: (isAr 
+      ? `تقرير تسديدات ${listLabel ? `قائمة ${listLabel}` : 'العام'} بمجموع ${totalPaid.toLocaleString('en-US')} د.ع`
+      : `General Payments Report ${listLabel ? `for ${listLabel}` : ''} - Total: ${totalPaid.toLocaleString('en-US')}`),
+    dialogTitle: isAr ? 'مشاركة ملف التسديدات (PDF)' : 'Share Payments PDF',
   });
 }
 

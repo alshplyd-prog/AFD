@@ -421,6 +421,9 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
       }
     }
 
+    const selectedItem = inventory.find(i => i.id === selectedItemId);
+    const itemPurchasePrice = selectedItem?.purchasePrice || 0;
+
     clearDraft();
     onSave(
       {
@@ -432,6 +435,8 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
         locationAddress: resolvedLocationAddress || '',
         itemId: selectedItemId || '',
         itemName: effectiveItemName || (isAr ? 'مادة مبيعات' : 'Sales Item'),
+        itemQuantity: itemQuantity,
+        purchasePrice: itemPurchasePrice,
         listId: effectiveListId,
         listName: matchedList ? matchedList.name : '',
         totalPrice: numericTotal,

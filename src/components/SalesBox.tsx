@@ -78,26 +78,68 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     });
   }, [contracts, selectedListId, startDate, endDate, searchQuery, currentRep]);
 
-  // Helper to get purchase price for a contract
-  const getPurchasePrice = (c: InstallmentContract): number => {
-    if (c.purchasePrice !== undefined && c.purchasePrice > 0) {
-      return c.purchasePrice;
+  // Helper to get device count for a contract
+  // User rule: "if mentioned only devices for example 170 or 175 or 215... consider it 1 device and in count also count it 1"
+  const getDeviceCount = (c: InstallmentContract): number => {
+    const name = (c.itemName || '').toLowerCase();
+    // Check if name contains the magic numbers
+    const isSpecial = name.includes('170') || name.includes('175') || name.includes('215');
+    if (isSpecial) {
+      return 1;
     }
-    if (c.itemId) {
-      const found = inventory.find((i) => i.id === c.itemId);
-      if (found && found.purchasePrice && found.purchasePrice > 0) {
-        const qty = c.itemQuantity || 1;
-        return found.purchasePrice * qty;
+    return Number(c.itemQuantity) || 1;
+  };
+
+  // Helper to get purchase price for a contract
+  // User rule: "Purchase price field in sales box multiply it by number of devices"
+  // Also: "this first sale automatically make its count 1 and purchase price like selling price automatically multiply it by the count"
+  const getPurchasePrice = (c: InstallmentContract): number => {
+    const devCount = getDeviceCount(c);
+    let basePurchasePrice = c.purchasePrice || 0;
+
+    // If purchase price is 0, try fetching from inventory or default to selling price for special items
+    if (basePurchasePrice === 0) {
+      if (c.itemId) {
+        const found = inventory.find((i) => i.id === c.itemId);
+        if (found && found.purchasePrice && found.purchasePrice > 0) {
+          basePurchasePrice = found.purchasePrice;
+        }
+      }
+      
+      // If still 0 and it's a special item (like selling price automatically)
+      const name = (c.itemName || '').toLowerCase();
+      const isSpecial = name.includes('170') || name.includes('175') || name.includes('215');
+      if (basePurchasePrice === 0 && isSpecial) {
+        // Use total price divided by actual quantity as unit purchase price, 
+        // but since we count it as 1 device, we'll effectively use totalPrice as the purchase cost
+        // if the user says "like selling price".
+        // Actually, if it's "اجهزه 175 (عدد 2)" and selling is 350,000. 
+        // If purchase is 0, we'll use 350,000 as total purchase if we want profit to be 0.
+        basePurchasePrice = c.totalPrice; 
+        return basePurchasePrice; // Already the total for 1 device
       }
     }
-    return 0;
+
+    return basePurchasePrice * devCount;
   };
 
   // Helper to format Item Name & Quantity in the same cell
   const formatItemAndQty = (c: InstallmentContract): string => {
     const rawName = c.itemName || (isAr ? 'مادة غير محددة' : 'Unspecified Item');
-    if (c.itemQuantity && c.itemQuantity > 1 && !rawName.includes('عدد')) {
-      return `${rawName} (العدد: ${c.itemQuantity})`;
+    const displayQty = Number(c.itemQuantity) || 1;
+    
+    // Check if it's a special item for naming
+    const nameLower = rawName.toLowerCase();
+    const isSpecial = nameLower.includes('170') || nameLower.includes('175') || nameLower.includes('215');
+    
+    if (isSpecial) {
+      // Just return the raw name (which usually includes the count like "عدد 2")
+      // but the logical count remains 1 device.
+      return rawName;
+    }
+
+    if (displayQty > 1 && !rawName.includes('عدد')) {
+      return `${rawName} (العدد: ${displayQty})`;
     }
     return rawName;
   };
@@ -107,14 +149,16 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     let totalSelling = 0;
     let totalPurchase = 0;
     let totalDailyInst = 0;
+    let totalQty = 0;
 
     filteredSales.forEach((c) => {
       totalSelling += c.totalPrice || 0;
       totalPurchase += getPurchasePrice(c);
       totalDailyInst += c.dailyInstallment || 0;
+      totalQty += getDeviceCount(c);
     });
 
-    const totalProfit = Math.max(0, totalSelling - totalPurchase);
+    const totalProfit = totalSelling - totalPurchase;
 
     return {
       count: filteredSales.length,
@@ -122,6 +166,7 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
       totalPurchase,
       totalDailyInst,
       totalProfit,
+      totalQty,
     };
   }, [filteredSales, inventory]);
 
@@ -417,8 +462,11 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
           {filteredSales.length > 0 && (
             <tfoot className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 font-black text-slate-900 dark:text-slate-100 border-t-2 border-slate-900 dark:border-slate-500 shadow-md">
               <tr>
-                <td colSpan={4} className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
+                <td colSpan={3} className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
                   {isAr ? 'الإجمالي للفترة المحددة' : 'Period Totals'}
+                </td>
+                <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-center font-black text-xs sm:text-sm">
+                  {isAr ? `العدد: ${totals.totalQty}` : `Qty: ${totals.totalQty}`}
                 </td>
                 <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2 py-2 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-amber-900 dark:text-amber-200 text-xs sm:text-sm whitespace-nowrap">
                   {totals.totalDailyInst.toLocaleString('en-US')}

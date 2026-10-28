@@ -173,7 +173,7 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
         @media print {
           @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 15mm;
           }
           body {
             background-color: #ffffff !important;
@@ -185,10 +185,11 @@ export const CustomerStatementView: React.FC<CustomerStatementViewProps> = ({ co
           #customer-statement-container {
             box-shadow: none !important;
             border: none !important;
-            padding: 0 !important;
+            padding: 20px !important;
             width: 100% !important;
             max-width: 100% !important;
             min-height: auto !important;
+            margin-bottom: 40px !important; /* Safety margin for printing */
           }
         }
       `}</style>

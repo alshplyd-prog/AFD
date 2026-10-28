@@ -35,6 +35,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState('');
   const [dailyInstallment, setDailyInstallment] = useState('');
   const [error, setError] = useState('');
 
@@ -53,12 +54,14 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       setEditingItem(item);
       setName(item.name);
       setPrice(item.price.toString());
+      setPurchasePrice(item.purchasePrice ? item.purchasePrice.toString() : '');
       setQuantity(item.quantity.toString());
       setDailyInstallment(item.dailyInstallment ? item.dailyInstallment.toString() : '');
     } else {
       setEditingItem(null);
       setName('');
       setPrice('');
+      setPurchasePrice('');
       setQuantity('');
       setDailyInstallment('');
     }
@@ -74,6 +77,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     }
     let validPrice = Number(price) || 0;
     if (validPrice > 0 && validPrice < 1000) validPrice = validPrice * 1000;
+
+    let validPurchasePrice = Number(purchasePrice) || 0;
+    if (validPurchasePrice > 0 && validPurchasePrice < 1000) validPurchasePrice = validPurchasePrice * 1000;
 
     let validDaily = Number(dailyInstallment) || 0;
     if (validDaily > 0 && validDaily < 1000) validDaily = validDaily * 1000;
@@ -91,6 +97,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       onUpdateItem(editingItem.id, {
         name: name.trim(),
         price: validPrice,
+        purchasePrice: validPurchasePrice,
         quantity: Number(quantity),
         dailyInstallment: validDaily,
       });
@@ -98,6 +105,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       onAddItem({
         name: name.trim(),
         price: validPrice,
+        purchasePrice: validPurchasePrice,
         quantity: Number(quantity),
         dailyInstallment: validDaily,
         createdAt: new Date().toISOString(),
@@ -201,10 +209,15 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                         {item.name}
                       </h4>
 
-                      <div className="flex items-center justify-between gap-2 text-xs font-bold mt-1">
+                      <div className="flex flex-col gap-1 text-xs font-bold mt-1">
                         <span className="text-teal-600 dark:text-teal-400">
-                          {isAr ? 'السعر:' : 'Price:'} {formatMoney(item.price)}
+                          {isAr ? 'سعر البيع:' : 'Price:'} {formatMoney(item.price)}
                         </span>
+                        {item.purchasePrice ? (
+                          <span className="text-amber-600 dark:text-amber-400">
+                            {isAr ? 'سعر الشراء:' : 'Cost:'} {formatMoney(item.purchasePrice)}
+                          </span>
+                        ) : null}
                         {item.dailyInstallment ? (
                           <span className="text-blue-600 dark:text-blue-400">
                             {isAr ? 'القسط:' : 'Rate:'} {formatMoney(item.dailyInstallment)}
@@ -309,25 +322,47 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-                    <span>{isAr ? 'قسط المادة (د.ع)' : 'Daily Rate'}</span>
-                    {Number(dailyInstallment) > 0 && Number(dailyInstallment) < 1000 && (
+                    <span>{isAr ? 'سعر الشراء (د.ع)' : 'Purchase Price'}</span>
+                    {Number(purchasePrice) > 0 && Number(purchasePrice) < 1000 && (
                       <span className="text-[10px] font-bold text-teal-600">
-                        {isAr ? `سيصبح: ${(Number(dailyInstallment) * 1000).toLocaleString('en-US')}` : `Will be: ${(Number(dailyInstallment) * 1000).toLocaleString('en-US')}`}
+                        {isAr ? `سيصبح: ${(Number(purchasePrice) * 1000).toLocaleString('en-US')}` : `Will be: ${(Number(purchasePrice) * 1000).toLocaleString('en-US')}`}
                       </span>
                     )}
                   </label>
                   <input
                     type="number"
-                    value={dailyInstallment}
-                    onChange={(e) => setDailyInstallment(e.target.value)}
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
                     onBlur={() => {
-                      const d = Number(dailyInstallment);
-                      if (d > 0 && d < 1000) setDailyInstallment((d * 1000).toString());
+                      const p = Number(purchasePrice);
+                      if (p > 0 && p < 1000) setPurchasePrice((p * 1000).toString());
                     }}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-sm font-semibold dir-ltr"
-                    placeholder="10000"
+                    placeholder="300000"
                   />
                 </div>
+              </div>
+              
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>{isAr ? 'قسط المادة (د.ع)' : 'Daily Rate'}</span>
+                  {Number(dailyInstallment) > 0 && Number(dailyInstallment) < 1000 && (
+                    <span className="text-[10px] font-bold text-teal-600">
+                      {isAr ? `سيصبح: ${(Number(dailyInstallment) * 1000).toLocaleString('en-US')}` : `Will be: ${(Number(dailyInstallment) * 1000).toLocaleString('en-US')}`}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="number"
+                  value={dailyInstallment}
+                  onChange={(e) => setDailyInstallment(e.target.value)}
+                  onBlur={() => {
+                    const d = Number(dailyInstallment);
+                    if (d > 0 && d < 1000) setDailyInstallment((d * 1000).toString());
+                  }}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-sm font-semibold dir-ltr"
+                  placeholder="10000"
+                />
               </div>
 
               <div>
