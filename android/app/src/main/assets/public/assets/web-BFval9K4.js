@@ -1,0 +1,1 @@
+import{W as t}from"./index-CzW16eKj.js";class i extends t{beforeExit(e){throw this.unimplemented("Not implemented on web.")}finish(e){throw this.unimplemented("Not implemented on web.")}}export{i as BackgroundTaskWeb};

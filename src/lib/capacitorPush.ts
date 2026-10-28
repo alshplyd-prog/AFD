@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { fetchWithFallback } from './apiConfig';
 
 export interface PushNotificationPayload {
   title?: string;
@@ -29,7 +30,6 @@ export async function initCapacitorPush(
             description: 'إشعارات وتنبيهات المبيعات والمواعيد والتعارضات المالية والتسديدات',
             importance: 5, // High importance (heads-up banner and sound on lockscreen)
             visibility: 1, // Public visibility (shows on lockscreen)
-            sound: 'beep.wav',
             vibration: true,
             lights: true,
             lightColor: '#0d9488',
@@ -44,11 +44,20 @@ export async function initCapacitorPush(
       try {
         const perm = await LocalNotifications.checkPermissions();
         if (perm.display !== 'granted') {
-          await LocalNotifications.requestPermissions();
+          const reqRes = await LocalNotifications.requestPermissions();
+          console.log('[Push] Notification permission requested:', reqRes?.display);
         }
       } catch (permErr) {
         console.warn('[Push] Permission check notice:', permErr);
       }
+
+      // Also request permissions via Android bridge if available
+      try {
+        const bridge = (window as any).AndroidInterface || (window as any).AndroidPrinter || (window as any).Android;
+        if (bridge && typeof bridge.requestPermissions === 'function') {
+          bridge.requestPermissions();
+        }
+      } catch (e) {}
 
       // 3. Register click listener to bring app to front or navigate
       try {
@@ -106,7 +115,7 @@ export async function registerWebPushSubscription(currentRep?: any): Promise<voi
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
-      const keyRes = await fetch('/api/push-vapid-public-key').then(r => r.json()).catch(() => null);
+      const keyRes = await fetchWithFallback('/api/push-vapid-public-key').then(r => r.json()).catch(() => null);
       if (!keyRes || !keyRes.publicKey) return;
       const applicationServerKey = urlBase64ToUint8Array(keyRes.publicKey);
       sub = await reg.pushManager.subscribe({
@@ -116,7 +125,7 @@ export async function registerWebPushSubscription(currentRep?: any): Promise<voi
     }
 
     if (sub) {
-      await fetch('/api/push-subscribe', {
+      await fetchWithFallback('/api/push-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -210,9 +219,33 @@ export async function sendExternalNotification(
       }
     }
 
-    // 1. Native Capacitor Android / iOS (APK)
+    // 1. Native Capacitor Android / iOS (APK) or Android Javascript Interface
+    try {
+      const androidBridge = (window as any).AndroidInterface || (window as any).AndroidPrinter || (window as any).Android;
+      if (androidBridge && typeof androidBridge.showNotification === 'function') {
+        const ok = androidBridge.showNotification(title || 'الكرار للتقسيط', body || '');
+        if (ok) return true;
+      }
+    } catch (bridgeErr) {}
+
     if (Capacitor.isNativePlatform()) {
       try {
+        if (!isChannelCreated) {
+          try {
+            await LocalNotifications.createChannel({
+              id: CHANNEL_ID,
+              name: 'تنبيهات الكرار للتقسيط',
+              description: 'إشعارات وتنبيهات المبيعات والمواعيد والتعارضات المالية والتسديدات',
+              importance: 5,
+              visibility: 1,
+              vibration: true,
+              lights: true,
+              lightColor: '#0d9488',
+            });
+            isChannelCreated = true;
+          } catch (chanErr) {}
+        }
+
         const notifId = options?.id ?? Math.floor(Math.random() * 2147483640) + 1;
         await LocalNotifications.schedule({
           notifications: [
@@ -221,11 +254,10 @@ export async function sendExternalNotification(
               title: title || 'الكرار للتقسيط',
               body: body || '',
               channelId: CHANNEL_ID,
-              schedule: { at: new Date(Date.now() + 50) }, // Schedule immediately
-              sound: 'beep.wav',
-              extra: options?.data || {},
-              smallIcon: 'ic_stat_icon_config_sample',
+              smallIcon: 'ic_launcher',
               iconColor: '#0d9488',
+              schedule: { at: new Date(Date.now() + 50) }, // Schedule immediately
+              extra: options?.data || {},
             },
           ],
         });

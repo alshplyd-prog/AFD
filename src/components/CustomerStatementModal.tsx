@@ -697,7 +697,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
       const result = await shareCustomerPaymentsOrDirectWhatsApp({
         contract: historyModalContract,
         payments: custPayments,
-        phone: historyModalContract.customerPhone,
         lang,
         targetApp: target,
         forceAppsChooser: target === 'other',
@@ -957,7 +956,10 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
       >
         {/* Modal Header - Ultra Compact */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/90 print:hidden shrink-0">
-          <div>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="p-1 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+              <FolderKanban className="w-4 h-4" />
+            </div>
             <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-slate-100">
               {isAr ? 'كشف الحركات وسجل الحسابات' : 'Transactions Ledger'}
             </h2>

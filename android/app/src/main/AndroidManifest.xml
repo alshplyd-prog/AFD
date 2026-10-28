@@ -49,6 +49,7 @@
     </queries>
 
     <application
+        android:usesCleartextTraffic="true"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@null"

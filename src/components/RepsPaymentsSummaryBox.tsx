@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText, Share2 } from 'lucide-react';
+import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText } from 'lucide-react';
 import { SalesRepresentative, PaymentRecord, InstallmentContract, CustomerList, Language } from '../types';
 import { silentIframePrint, openUniversalPdfPrintWindow, directPrintReceipt, DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { RepReceiptModal, RepReceiptData, directPrintRepReceipt } from './RepReceiptModal';
@@ -8,6 +8,7 @@ import { numberToArabicWords } from '../lib/tafqeet';
 import { getPaymentFormattedDateAndTime } from '../lib/dateUtils';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { normalizeEntityName } from '../lib/nameHelpers';
+import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
 
 interface RepsPaymentsSummaryBoxProps {
   currentRep: SalesRepresentative | null;
@@ -59,6 +60,7 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
   const [activePaymentReceipt, setActivePaymentReceipt] = useState<ReceiptData | null>(null);
   const [isPaymentReceiptModalOpen, setIsPaymentReceiptModalOpen] = useState<boolean>(false);
 
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
@@ -66,6 +68,74 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
     setTimeout(() => {
       setToastMessage((prev) => (prev?.text === text ? null : prev));
     }, 4000);
+  };
+
+  const handleExportExcel = async () => {
+    if (isExportingExcel) return;
+    setIsExportingExcel(true);
+    try {
+      const headers = [
+        isAr ? 'اسم المندوب' : 'Representative',
+        isAr ? 'عدد التسديدات' : 'Payments Count',
+        isAr ? 'المبلغ المحصل (د.ع)' : 'Total Collected (IQD)',
+        isAr ? 'إجمالي الديون المتبقية (د.ع)' : 'Total Remaining Debt (IQD)',
+      ];
+
+      const rows = activeRepStats.map((rs) => [
+        rs.rep.name || (isAr ? 'مندوب' : 'Rep'),
+        rs.paymentsCount,
+        rs.totalCollected,
+        rs.totalDebt,
+      ]);
+
+      const paymentHeaders = [
+        isAr ? 'التاريخ والوقت' : 'Date & Time',
+        isAr ? 'اسم الزبون' : 'Customer',
+        isAr ? 'المبلغ (د.ع)' : 'Amount (IQD)',
+        isAr ? 'المندوب' : 'Rep',
+        isAr ? 'ملاحظات' : 'Notes',
+      ];
+
+      const paymentRows = visiblePayments.map((p) => {
+        const { dateStr, timeStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
+        return [
+          `${dateStr} ${timeStr}`,
+          p.customerName || '',
+          Number(p.amountPaid ?? p.amount ?? 0),
+          p.repName || '',
+          cleanNote || '',
+        ];
+      });
+
+      const sheets: ExcelSheetData[] = [
+        {
+          sheetName: isAr ? 'ملخص تسديدات المندوبين' : 'Reps Summary',
+          headers,
+          rows,
+        },
+        {
+          sheetName: isAr ? 'تفاصيل الحركات' : 'Payments Detail',
+          headers: paymentHeaders,
+          rows: paymentRows,
+        },
+      ];
+
+      const result = await exportToExcelFile({
+        filename: `تسديدات_المندوبين_${startDate || 'بداية'}_إلى_${endDate || 'اليوم'}`,
+        sheets,
+        title: isAr ? 'تقرير تسديدات المندوبين' : 'Reps Payments Report',
+        text: isAr ? 'ملف تسديدات المندوبين وحركات التحصيل (Excel)' : 'Reps payments and collections report (Excel)',
+      });
+
+      if (result && result.success) {
+        showToast(isAr ? 'تم تصدير وحفظ تقرير Excel بنجاح' : 'Excel report exported successfully', 'success');
+      }
+    } catch (err) {
+      console.error('Export Excel failed:', err);
+      showToast(isAr ? 'حدث خطأ أثناء تصدير ملف Excel' : 'Error exporting Excel file', 'error');
+    } finally {
+      setIsExportingExcel(false);
+    }
   };
 
   // Mobile Back Button / popstate handling for rep details modal
@@ -401,77 +471,86 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
         </div>
       )}
 
-      {/* Date & List Filter Bar - Fits strictly on a single row on all mobile screens */}
-      <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 sm:p-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-1.5 shrink-0">
-        {/* Row 1: List selection, From Date, To Date strictly in 1 single row */}
-        <div className="grid grid-cols-3 gap-1 w-full text-[10px] sm:text-xs">
-          {/* Customer List Selector */}
-          <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 py-1 shadow-2xs w-full min-w-0">
-            <FolderKanban className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
-            <select
-              value={boxListId}
-              onChange={(e) => setBoxListId(e.target.value)}
-              className="bg-transparent text-[10px] sm:text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer border-0 p-0 w-full truncate"
-              title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
-            >
-              <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                {isAr ? `كل القوائم (${visibleLists.length})` : `All Lists (${visibleLists.length})`}
-              </option>
-              {visibleLists.map((l) => (
-                <option key={l.id} value={l.id} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* From Date Picker */}
-          <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 py-1 shadow-2xs w-full min-w-0">
-            <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="text-[10px] sm:text-xs font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+      {/* Date Range Selection Bar - Responsive across mobile and desktop */}
+      <div className="bg-slate-50 dark:bg-slate-900/70 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2 shrink-0">
+        {/* Same Row: From Date & To Date Facing Each Other (half size) + Close Button */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="grid grid-cols-2 gap-1.5 flex-1 max-w-sm sm:max-w-md items-center">
+            {/* From Date - Reduced by half */}
+            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 shadow-2xs min-w-0">
+              <span className="text-[9px] sm:text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 {isAr ? 'من:' : 'From:'}
               </span>
+              <span className="font-mono font-bold text-[8.5px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+                {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
+              </span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                title={isAr ? 'من تاريخ' : 'From Date'}
+              />
             </div>
-            <span className="font-mono font-bold text-[10px] sm:text-xs text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
-              {startDate ? startDate.replace(/-/g, '/') : '----/--/--'}
-            </span>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-              title={isAr ? 'من تاريخ' : 'From Date'}
-            />
-          </div>
 
-          {/* To Date Picker */}
-          <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 py-1 shadow-2xs w-full min-w-0">
-            <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-              <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-              <span className="text-[10px] sm:text-xs font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+            {/* To Date - Reduced by half */}
+            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 shadow-2xs min-w-0">
+              <span className="text-[9px] sm:text-[10.5px] font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
                 {isAr ? 'إلى:' : 'To:'}
               </span>
+              <span className="font-mono font-bold text-[8.5px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+                {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
+              </span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                title={isAr ? 'إلى تاريخ' : 'To Date'}
+              />
             </div>
-            <span className="font-mono font-bold text-[10px] sm:text-xs text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
-              {endDate ? endDate.replace(/-/g, '/') : '----/--/--'}
-            </span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-              title={isAr ? 'إلى تاريخ' : 'To Date'}
-            />
           </div>
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
+              title={isAr ? 'إغلاق' : 'Close'}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Row 2: Quick Presets, Print Report & Close Button */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full">
+        {/* Quick Presets in Single Horizontal Row */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {visibleLists.length > 1 && (
+            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 shadow-2xs shrink-0">
+              <FolderKanban className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <select
+                value={boxListId}
+                onChange={(e) => setBoxListId(e.target.value)}
+                className="bg-transparent text-[11px] sm:text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer border-0 p-0"
+                title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
+              >
+                <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                  {isAr ? `كل القوائم (${visibleLists.length})` : `All Lists (${visibleLists.length})`}
+                </option>
+                {visibleLists.map((l) => (
+                  <option key={l.id} value={l.id} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => setQuickPreset('today')}
-            className={`flex-1 min-w-[55px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
+            className={`flex-1 min-w-[70px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
               startDate && startDate === endDate && startDate === getLocalDateString()
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
@@ -482,21 +561,21 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
           <button
             type="button"
             onClick={() => setQuickPreset('yesterday')}
-            className="flex-1 min-w-[55px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+            className="flex-1 min-w-[70px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
           >
             {isAr ? 'أمس' : 'Yesterday'}
           </button>
           <button
             type="button"
             onClick={() => setQuickPreset('month')}
-            className="flex-1 min-w-[65px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
+            className="flex-1 min-w-[80px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shadow-2xs"
           >
-            {isAr ? 'هذا الشهر' : 'Month'}
+            {isAr ? 'هذا الشهر' : 'This Month'}
           </button>
           <button
             type="button"
             onClick={() => setQuickPreset('all')}
-            className={`flex-1 min-w-[55px] text-center py-1 px-1.5 rounded-lg text-[10px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
+            className={`flex-1 min-w-[70px] text-center py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black transition-all cursor-pointer shadow-2xs ${
               !startDate && !endDate
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
@@ -504,27 +583,26 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
           >
             {isAr ? 'الكل' : 'All'}
           </button>
+          {(startDate || endDate) && (
+            <button
+              type="button"
+              onClick={() => setQuickPreset('all')}
+              className="py-1 px-2 rounded-lg text-[11px] sm:text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 cursor-pointer flex items-center justify-center gap-1 shrink-0 transition-all shadow-2xs"
+            >
+              <X className="w-3 h-3" />
+              <span>{isAr ? 'إلغاء' : 'Reset'}</span>
+            </button>
+          )}
 
           {activeRepStats.length > 0 && (
             <button
               type="button"
               onClick={() => handlePrintAllRepsSummary(grandTotal, activeRepStats)}
-              className="py-1 px-2 rounded-lg text-[10px] sm:text-xs font-black text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-600 hover:text-white border border-teal-300 dark:border-teal-800 cursor-pointer flex items-center justify-center gap-1 shrink-0 transition-all shadow-2xs"
+              className="py-1 px-2.5 rounded-lg text-[11px] sm:text-xs font-black text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-600 hover:text-white border border-teal-300 dark:border-teal-800 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-all shadow-2xs mr-auto"
               title={isAr ? 'طباعة كشف إجمالي تسديدات جميع المندوبين' : 'Print All Reps Collections Summary'}
             >
               <Printer className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">{isAr ? 'طباعة كشف' : 'Print'}</span>
-            </button>
-          )}
-
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1 rounded-lg bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
-              title={isAr ? 'إغلاق' : 'Close'}
-            >
-              <X className="w-3.5 h-3.5" />
+              <span>{isAr ? 'طباعة كشف شامل' : 'Print Report'}</span>
             </button>
           )}
         </div>

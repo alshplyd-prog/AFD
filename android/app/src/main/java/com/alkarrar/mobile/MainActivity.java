@@ -18,6 +18,11 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.net.Uri;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import androidx.core.app.NotificationCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -334,6 +339,54 @@ public class MainActivity extends BridgeActivity {
                 return true;
             } catch (Throwable e) {
                 Log.w(TAG, "hasOverlayPermission check error: " + e.getMessage());
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean showNotification(String title, String body) {
+            try {
+                NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (manager == null) return false;
+
+                String channelId = "alkarrar_main_channel";
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    NotificationChannel channel = new NotificationChannel(
+                        channelId,
+                        "تنبيهات الكرار للتقسيط",
+                        NotificationManager.IMPORTANCE_HIGH
+                    );
+                    channel.setDescription("إشعارات وتنبيهات المبيعات والمواعيد والتعارضات المالية والتسديدات");
+                    channel.enableVibration(true);
+                    channel.enableLights(true);
+                    manager.createNotificationChannel(channel);
+                }
+
+                Intent intent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+                if (intent == null) {
+                    intent = new Intent(MainActivity.this, MainActivity.class);
+                }
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                PendingIntent pendingIntent = PendingIntent.getActivity(
+                    MainActivity.this,
+                    (int) (System.currentTimeMillis() % 100000),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+                );
+
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(MainActivity.this, channelId)
+                    .setContentTitle(title != null && !title.isEmpty() ? title : "الكرار للتقسيط")
+                    .setContentText(body != null ? body : "")
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(Notification.DEFAULT_ALL)
+                    .setContentIntent(pendingIntent);
+
+                manager.notify((int) (System.currentTimeMillis() % 100000), builder.build());
+                return true;
+            } catch (Throwable e) {
+                Log.w(TAG, "Native showNotification error: " + e.getMessage());
                 return false;
             }
         }
@@ -943,6 +996,19 @@ public class MainActivity extends BridgeActivity {
                 if (cleanPhone == null || cleanPhone.isEmpty()) return false;
 
                 String encodedMsg = Uri.encode(message != null ? message : "");
+
+                // 1. Direct native whatsapp:// URI intent (preserves full message and link directly)
+                try {
+                    Uri nativeUri = Uri.parse("whatsapp://send?phone=" + cleanPhone + "&text=" + encodedMsg);
+                    Intent nativeIntent = new Intent(Intent.ACTION_VIEW, nativeUri);
+                    nativeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(nativeIntent);
+                    return true;
+                } catch (Throwable nativeErr) {
+                    Log.d(TAG, "whatsapp:// URI fallback: " + nativeErr.getMessage());
+                }
+
+                // 2. HTTPS wa.me fallback
                 String uriStr = "https://wa.me/" + cleanPhone + (encodedMsg.isEmpty() ? "" : "?text=" + encodedMsg);
                 Uri uri = Uri.parse(uriStr);
 

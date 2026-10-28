@@ -830,7 +830,7 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
                   className="shrink-0 px-2.5 xs:px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-[11px] xs:text-xs sm:text-sm font-black flex items-center justify-center gap-1 xs:gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
                   title={isAr ? 'فتح كشف الحسابات' : 'Open Statement'}
                 >
-                  <FolderKanban className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <FolderKanban className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-amber-300 dark:text-amber-300" />
                   <span>{isAr ? 'كشف الحساب' : 'Statement'}</span>
                 </button>
               )}

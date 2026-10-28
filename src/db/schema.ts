@@ -146,6 +146,7 @@ export const employees = pgTable('employees', {
 export const employeeTransactions = pgTable('employee_transactions', {
   id: text('id').primaryKey(),
   employeeId: text('employee_id').notNull(),
+  employeeName: text('employee_name'),
   fundId: text('fund_id').notNull(),
   type: text('type').notNull(),
   amount: doublePrecision('amount').notNull(),
@@ -199,6 +200,13 @@ export const deletedRecords = pgTable('deleted_records', {
   recordId: text('record_id').primaryKey(),
   tableName: text('table_name').notNull(),
   deletedAt: timestamp('deleted_at').defaultNow(),
+});
+
+// Define 'shared_pdfs'
+export const sharedPdfs = pgTable('shared_pdfs', {
+  filename: text('filename').primaryKey(),
+  dataBase64: text('data_base64').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // Relations
