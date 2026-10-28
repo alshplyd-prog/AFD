@@ -1483,7 +1483,7 @@ export default function App() {
 
   // Check appointments in real-time and alert ONLY AT THEIR EXACT TIME (وليس عند إضافة الموعد أو قبله)
   useEffect(() => {
-    if (!appointments || appointments.length === 0) return;
+    if (!currentRep || !appointments || appointments.length === 0) return;
 
     const checkDueAppointments = () => {
       const now = new Date();

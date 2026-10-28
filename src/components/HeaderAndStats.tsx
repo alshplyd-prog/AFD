@@ -501,10 +501,15 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
     }
   };
 
-  const isAdmin = !currentRep || currentRep.role === 'admin';
-  const isSupervisorOrAdmin = !currentRep || currentRep.role === 'admin' || currentRep.role === 'supervisor';
+  const isAdmin = Boolean(currentRep && currentRep.role === 'admin');
+  const isSupervisorOrAdmin = Boolean(currentRep && (currentRep.role === 'admin' || currentRep.role === 'supervisor'));
 
   const notifications: AppNotificationItem[] = useMemo(() => {
+    // CRITICAL SECURITY: Prevent all notifications before login!
+    if (!currentRep) {
+      return [];
+    }
+
     const listMap = new Map(customerLists.map((l) => [l.id, l.name]));
     const items: AppNotificationItem[] = [];
 
@@ -517,9 +522,9 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
         cleanCreator === 'المسؤول' ||
         cleanCreator === 'مدير النظام';
 
-      if (!currentRep || currentRep.role === 'admin') {
+      if (currentRep.role === 'admin') {
         if (isAdminCreator) return true;
-        if (currentRep && cleanCreator === currentRep.name.trim().toLowerCase()) return true;
+        if (cleanCreator === currentRep.name.trim().toLowerCase()) return true;
         return false;
       }
 
@@ -531,8 +536,8 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
 
     // Strict list permission checker: non-admin reps can ONLY see items belonging to lists they have access to
     const isRepAllowedList = (listId?: string | null): boolean => {
-      if (isSupervisorOrAdmin) return true;
-      if (!currentRep) return true;
+      if (!currentRep) return false;
+      if (currentRep.role === 'admin') return true;
       if (currentRep.allowedListIds && currentRep.allowedListIds.includes('all')) return true;
       if (!listId) return false;
       if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;

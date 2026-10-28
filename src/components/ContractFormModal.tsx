@@ -46,7 +46,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
   onDeleteInventoryItem,
 }) => {
   const currentKey = editingContract
-    ? (editingContract.id ? `edit_${editingContract.id}` : `new_sale_${editingContract.customerName || 'custom'}`)
+    ? (editingContract.id ? `edit_${editingContract.id}` : 'editing_new_contract')
     : '__NEW_BLANK_CONTRACT__';
 
   const [customerName, setCustomerName] = useState('');
@@ -620,6 +620,8 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                 type="text"
                 value={customerAddress}
                 autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 onChange={(e) => setCustomerAddress(e.target.value)}
                 placeholder={isAr ? 'مثال: بغداد - الكرادة - قرب جامع الخضيري' : 'e.g. Baghdad, Karrada'}
                 className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-slate-900"
