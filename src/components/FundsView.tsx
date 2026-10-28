@@ -1305,23 +1305,12 @@ export const FundsView: React.FC<FundsViewProps> = ({
                   {isAr ? 'المبلغ (د.ع) *' : 'Amount (IQD) *'}
                 </label>
                 <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  dir="ltr"
+                  type="number"
                   value={dwAmount}
-                  onChange={(e) => {
-                    const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
-                    setDwAmount(converted.replace(/[^0-9]/g, ''));
-                  }}
+                  onChange={(e) => setDwAmount(e.target.value)}
                   placeholder="50000"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none dir-ltr text-left font-mono"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none"
                 />
-                {dwAmount && Number(dwAmount) > 0 && (
-                  <div className="mt-1 text-xs font-black text-emerald-600 dark:text-emerald-400 dir-ltr text-left font-mono">
-                    = {Number(dwAmount).toLocaleString('en-US')} د.ع
-                  </div>
-                )}
               </div>
 
               <div>
@@ -1435,34 +1424,21 @@ export const FundsView: React.FC<FundsViewProps> = ({
                     const src = funds.find((f) => f.id === transferSourceId);
                     if (!src) return null;
                     return (
-                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 dir-ltr font-mono">
-                        {isAr ? `الرصيد المتاح: ${src.balance.toLocaleString('en-US')} د.ع` : `Available: ${src.balance.toLocaleString('en-US')} IQD`}
+                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                        {isAr ? `الرصيد المتاح: ${src.balance.toLocaleString('en-US')} د.ع` : `Available: ${src.balance.toLocaleString()} IQD`}
                       </span>
                     );
                   })()}
                 </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    dir="ltr"
-                    value={transferAmount}
-                    onChange={(e) => {
-                      const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
-                      setTransferAmount(converted.replace(/[^0-9]/g, ''));
-                    }}
-                    placeholder="250000"
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none dir-ltr text-left font-mono"
-                  />
-                  {transferAmount && Number(transferAmount) > 0 && (
-                    <div className="mt-1 text-xs font-black text-blue-600 dark:text-blue-400 dir-ltr text-left font-mono">
-                      = {Number(transferAmount).toLocaleString('en-US')} د.ع
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="number"
+                  value={transferAmount}
+                  onChange={(e) => setTransferAmount(e.target.value)}
+                  placeholder="250000"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-black text-slate-900 dark:text-slate-100 focus:outline-none"
+                />
                 <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
-                  {isAr ? 'تم إدراج رصيد الصندوق تلقائياً بالأرقام الإنكليزية، ويمكنك تعديله لأي مبلغ ترغب بتحويله.' : 'Fund balance pre-filled automatically; you can edit it to any amount.'}
+                  {isAr ? 'تم إدراج رصيد الصندوق تلقائياً، ويمكنك تعديله لأي مبلغ ترغب بتحويله.' : 'Fund balance pre-filled automatically; you can edit it to any amount.'}
                 </p>
               </div>
 

@@ -5,17 +5,13 @@ addEventListener('syncOfflineQueue', async (resolve, reject, args) => {
   try {
     console.log('[BackgroundRunner] Woke up to check and sync offlineQueue...');
     
-    // 1. Read stored server config or use candidate cloud servers
-    let candidateServers = [
-      'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
-      'https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
-      'http://72.62.158.128:3000'
-    ];
+    // 1. Read stored server config or use default Hostinger server
+    let serverUrl = 'http://72.62.158.128:3000';
     if (typeof CapacitorKV !== 'undefined') {
       try {
         const custom = await CapacitorKV.get('alkarrar_custom_server_url');
         if (custom && typeof custom === 'string' && (custom.startsWith('http://') || custom.startsWith('https://'))) {
-          candidateServers.unshift(custom.replace(/\/+$/, ''));
+          serverUrl = custom.replace(/\/+$/, '');
         }
       } catch (e) {}
     }
@@ -42,32 +38,26 @@ addEventListener('syncOfflineQueue', async (resolve, reject, args) => {
       return resolve({ status: 'no_pending_items', syncedCount: 0 });
     }
 
-    console.log(`[BackgroundRunner] Found ${pendingActions.length} pending items. Uploading to backend servers...`);
+    console.log(`[BackgroundRunner] Found ${pendingActions.length} pending items. Uploading to Hostinger server...`);
     const processedIds = [];
 
-    // Path 1: Batch sync to PostgreSQL backend
-    let activeWorkingServer = candidateServers[0];
-    for (const sUrl of candidateServers) {
-      if (processedIds.length > 0) break;
-      try {
-        const batchResp = await fetch(`${sUrl}/api/sync/batch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ actions: pendingActions, timestamp: Date.now() }),
-        });
-        if (batchResp && batchResp.ok) {
-          activeWorkingServer = sUrl;
-          const batchJson = await batchResp.json().catch(() => ({}));
-          if (Array.isArray(batchJson.processedIds)) {
-            processedIds.push(...batchJson.processedIds);
-          } else if (batchJson.success) {
-            processedIds.push(...pendingActions.map(a => a.id));
-          }
-          break;
+    // Path 1: Batch sync to Hostinger PostgreSQL backend
+    try {
+      const batchResp = await fetch(`${serverUrl}/api/sync/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ actions: pendingActions, timestamp: Date.now() }),
+      });
+      if (batchResp && batchResp.ok) {
+        const batchJson = await batchResp.json().catch(() => ({}));
+        if (Array.isArray(batchJson.processedIds)) {
+          processedIds.push(...batchJson.processedIds);
+        } else if (batchJson.success) {
+          processedIds.push(...pendingActions.map(a => a.id));
         }
-      } catch (bErr) {
-        console.warn('[BackgroundRunner] Batch sync notice for ' + sUrl + ':', bErr);
       }
+    } catch (bErr) {
+      console.warn('[BackgroundRunner] Batch sync notice:', bErr);
     }
 
     // Path 2: Individual REST endpoints fallback for remaining items
@@ -95,7 +85,7 @@ addEventListener('syncOfflineQueue', async (resolve, reject, args) => {
         if (!table) continue;
 
         const isDelete = type.startsWith('DELETE_') || type.startsWith('RESOLVE_') || type.startsWith('REJECT_');
-        let url = `${activeWorkingServer}/api/${table}`;
+        let url = `${serverUrl}/api/${table}`;
         if (isDelete && docId) {
           url += `/${encodeURIComponent(docId)}`;
           method = 'DELETE';

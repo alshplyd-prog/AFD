@@ -55,8 +55,8 @@ public class ForegroundSyncService extends Service {
 
     private static final String[] CANDIDATE_SYNC_URLS = {
         "http://72.62.158.128:3000/api/sync/batch",
-        "https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app/api/sync/batch",
-        "https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app/api/sync/batch"
+        "https://ais-dev-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app/api/sync/batch",
+        "https://ais-pre-asc5xuvnur4hlmpl5rfxpz-655986077616.europe-west2.run.app/api/sync/batch"
     };
 
     private static WeakReference<WebView> activeActivityWebView = null;
@@ -688,7 +688,7 @@ public class ForegroundSyncService extends Service {
                 }
 
                 if (unverifiedInChunk.length() > 0) {
-                    String primaryBaseUrl = targetUrls.size() > 0 ? targetUrls.get(0).replaceAll("/api/sync/batch.*", "") : "https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app";
+                    String primaryBaseUrl = targetUrls.size() > 0 ? targetUrls.get(0).replaceAll("/api/sync/batch.*", "") : "http://72.62.158.128:3000";
                     for (int i = 0; i < unverifiedInChunk.length(); i++) {
                         JSONObject item = unverifiedInChunk.optJSONObject(i);
                         if (item == null) continue;

@@ -6,9 +6,7 @@
     "description": "",
     "orderIndex": 0,
     "receiptTemplate": "template_1",
-    "createdAt": "2026-09-21T10:40:55.564Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_1"
+    "createdAt": "2026-09-21T10:40:55.564Z"
   },
   {
     "id": "fund-2",
@@ -26,9 +24,7 @@
     "description": "سجل زبائن محافظة الديوانية",
     "orderIndex": 2,
     "receiptTemplate": "template_2",
-    "createdAt": "2026-08-21T22:10:57.548Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_2"
+    "createdAt": "2026-08-21T22:10:57.548Z"
   },
   {
     "id": "list_1787350092691_n2xzi",
@@ -37,9 +33,7 @@
     "description": "",
     "orderIndex": 3,
     "receiptTemplate": "template_2",
-    "createdAt": "2026-09-04T18:13:48.920Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_2"
+    "createdAt": "2026-09-04T18:13:48.920Z"
   },
   {
     "id": "list-3",
@@ -48,9 +42,7 @@
     "description": "سجل زبائن محافظة النجف والأحياء المجاورة",
     "orderIndex": 4,
     "receiptTemplate": "template_2",
-    "createdAt": "2026-08-21T22:21:32.852Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_2"
+    "createdAt": "2026-08-21T22:21:32.852Z"
   },
   {
     "id": "list_1787350121291_e186z",
@@ -59,9 +51,7 @@
     "description": "",
     "orderIndex": 5,
     "receiptTemplate": "template_2",
-    "createdAt": "2026-08-22T16:44:31.734Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_2"
+    "createdAt": "2026-08-22T16:44:31.734Z"
   },
   {
     "id": "list-1",
@@ -70,9 +60,7 @@
     "description": "سجل زبائن الكرخ والمنصور واليرموك",
     "orderIndex": 6,
     "receiptTemplate": "template_2",
-    "createdAt": "2026-09-04T18:12:13.160Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_2"
+    "createdAt": "2026-09-04T18:12:13.160Z"
   },
   {
     "id": "list_1787412721284_d7tle",
@@ -81,9 +69,7 @@
     "description": "",
     "orderIndex": 7,
     "receiptTemplate": "template_2",
-    "createdAt": "2026-09-04T18:13:15.207Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_2"
+    "createdAt": "2026-09-04T18:13:15.207Z"
   },
   {
     "id": "list_1789987238741_0f20f",
@@ -92,9 +78,7 @@
     "description": "",
     "orderIndex": 8,
     "receiptTemplate": "template_2",
-    "createdAt": "2026-09-21T10:40:38.741Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_2"
+    "createdAt": "2026-09-21T10:40:38.741Z"
   },
   {
     "id": "list_1791618798751_j2o66",
@@ -103,8 +87,6 @@
     "description": "",
     "orderIndex": 9,
     "receiptTemplate": "template_1",
-    "createdAt": "2026-10-10T07:53:18.751Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_1"
+    "createdAt": "2026-10-10T07:53:18.751Z"
   }
 ]
