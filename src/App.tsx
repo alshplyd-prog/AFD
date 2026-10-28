@@ -4431,6 +4431,7 @@ export default function App() {
         }}
         onSave={handleSaveContract}
         editingContract={editingContract}
+        contracts={contracts}
         inventory={inventory}
         customerLists={customerLists}
         defaultListId={selectedListId !== 'all' ? selectedListId : customerLists[0]?.id}

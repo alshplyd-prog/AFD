@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, User, Phone, MapPin, Tag, Calendar, FileText, Package, ExternalLink, Plus, Minus, FolderKanban, Lock, LocateFixed } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, User, Phone, MapPin, Tag, Calendar, FileText, Package, ExternalLink, Plus, Minus, FolderKanban, Lock, LocateFixed, Check } from 'lucide-react';
 import { InstallmentContract, InventoryItem, Language, CustomerList, SalesRepresentative } from '../types';
 import { InventoryModal } from './InventoryModal';
 import { getLocalDateString } from '../lib/dateUtils';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
+import { normalizeArabicText } from '../lib/searchUtils';
 
 interface ContractFormModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface ContractFormModalProps {
     quantityDeducted?: number
   ) => void;
   editingContract?: InstallmentContract | null;
+  contracts?: InstallmentContract[];
   inventory: InventoryItem[];
   customerLists?: CustomerList[];
   defaultListId?: string;
@@ -32,6 +34,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
   onClose,
   onSave,
   editingContract,
+  contracts = [],
   inventory,
   customerLists = [],
   defaultListId,
@@ -47,6 +50,32 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
     : '__NEW_BLANK_CONTRACT__';
 
   const [customerName, setCustomerName] = useState('');
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+
+  // Auto-suggestion list of existing customers matching full name
+  const matchedCustomerSuggestions = useMemo(() => {
+    if (!contracts || contracts.length === 0 || !customerName || customerName.trim().length === 0) return [];
+    const q = normalizeArabicText(customerName);
+    if (!q) return [];
+
+    const uniqueMap = new Map<string, { name: string; phone: string; address: string; listId?: string }>();
+    for (const c of contracts) {
+      if (c && c.customerName) {
+        const norm = normalizeArabicText(c.customerName);
+        if (norm.includes(q)) {
+          if (!uniqueMap.has(c.customerName)) {
+            uniqueMap.set(c.customerName, {
+              name: c.customerName,
+              phone: c.customerPhone || '',
+              address: c.customerAddress || '',
+              listId: c.listId,
+            });
+          }
+        }
+      }
+    }
+    return Array.from(uniqueMap.values()).slice(0, 6);
+  }, [contracts, customerName]);
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [latitude, setLatitude] = useState<number | null | undefined>(undefined);
@@ -466,23 +495,68 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                   )}
                 </label>
                 <div className="relative">
-                  <User className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  <User className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 z-10" />
                   <input
                     type="text"
                     value={customerName}
                     disabled={isNonAdminEdit}
                     autoComplete="off"
                     autoCorrect="off"
-                    autoCapitalize="words"
                     spellCheck={false}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder={isAr ? 'مثال: أحمد جاسم محمد' : 'e.g. Ahmed Jasim Mohammed'}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      setShowNameSuggestions(true);
+                    }}
+                    onFocus={() => setShowNameSuggestions(true)}
+                    onBlur={() => {
+                      setTimeout(() => setShowNameSuggestions(false), 220);
+                    }}
+                    placeholder={isAr ? 'أدخل الاسم الثلاثي الكامل للزبون...' : 'e.g. Ahmed Jasim Mohammed'}
                     className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
                       isNonAdminEdit
                         ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
                         : 'bg-slate-50 dark:bg-slate-900/50'
                     }`}
                   />
+
+                  {showNameSuggestions && matchedCustomerSuggestions.length > 0 && !isNonAdminEdit && (
+                    <div className="absolute top-full right-0 left-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60 max-h-48 overflow-y-auto">
+                      <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-900/80 text-[10px] font-black text-slate-500 dark:text-slate-400 flex justify-between items-center">
+                        <span>{isAr ? 'زبائن مسجلون سابقاً (اضغط لاختيار الاسم الثلاثي):' : 'Existing Customers:'}</span>
+                        <span className="text-[9px] text-teal-600 dark:text-teal-400 font-bold">{matchedCustomerSuggestions.length}</span>
+                      </div>
+                      {matchedCustomerSuggestions.map((cust, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onMouseDown={() => {
+                            setCustomerName(cust.name);
+                            if (cust.phone && !customerPhone) setCustomerPhone(cust.phone);
+                            if (cust.address && !customerAddress) setCustomerAddress(cust.address);
+                            if (cust.listId && !selectedListId) setSelectedListId(cust.listId);
+                            setShowNameSuggestions(false);
+                          }}
+                          className="w-full text-right px-3 py-2 hover:bg-teal-50 dark:hover:bg-teal-950/60 flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-black text-slate-900 dark:text-slate-100 text-xs block break-words">
+                              {cust.name}
+                            </span>
+                            {cust.address && (
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block truncate">
+                                {cust.address}
+                              </span>
+                            )}
+                          </div>
+                          {cust.phone && (
+                            <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded dir-ltr shrink-0">
+                              {cust.phone}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {errors.customerName && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerName}</p>}
               </div>
