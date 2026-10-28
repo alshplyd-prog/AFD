@@ -44,11 +44,20 @@ export async function initCapacitorPush(
       try {
         const perm = await LocalNotifications.checkPermissions();
         if (perm.display !== 'granted') {
-          await LocalNotifications.requestPermissions();
+          const reqRes = await LocalNotifications.requestPermissions();
+          console.log('[Push] Notification permission requested:', reqRes?.display);
         }
       } catch (permErr) {
         console.warn('[Push] Permission check notice:', permErr);
       }
+
+      // Also request permissions via Android bridge if available
+      try {
+        const bridge = (window as any).AndroidInterface || (window as any).AndroidPrinter || (window as any).Android;
+        if (bridge && typeof bridge.requestPermissions === 'function') {
+          bridge.requestPermissions();
+        }
+      } catch (e) {}
 
       // 3. Register click listener to bring app to front or navigate
       try {
@@ -221,6 +230,22 @@ export async function sendExternalNotification(
 
     if (Capacitor.isNativePlatform()) {
       try {
+        if (!isChannelCreated) {
+          try {
+            await LocalNotifications.createChannel({
+              id: CHANNEL_ID,
+              name: 'تنبيهات الكرار للتقسيط',
+              description: 'إشعارات وتنبيهات المبيعات والمواعيد والتعارضات المالية والتسديدات',
+              importance: 5,
+              visibility: 1,
+              vibration: true,
+              lights: true,
+              lightColor: '#0d9488',
+            });
+            isChannelCreated = true;
+          } catch (chanErr) {}
+        }
+
         const notifId = options?.id ?? Math.floor(Math.random() * 2147483640) + 1;
         await LocalNotifications.schedule({
           notifications: [
@@ -229,9 +254,10 @@ export async function sendExternalNotification(
               title: title || 'الكرار للتقسيط',
               body: body || '',
               channelId: CHANNEL_ID,
+              smallIcon: 'ic_launcher',
+              iconColor: '#0d9488',
               schedule: { at: new Date(Date.now() + 50) }, // Schedule immediately
               extra: options?.data || {},
-              iconColor: '#0d9488',
             },
           ],
         });

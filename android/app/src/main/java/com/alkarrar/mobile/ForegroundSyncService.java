@@ -54,9 +54,9 @@ public class ForegroundSyncService extends Service {
     private static final int NOTIFICATION_ID = 9981;
 
     private static final String[] CANDIDATE_SYNC_URLS = {
-        "https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app/api/sync/batch",
+        "http://72.62.158.128:3000/api/sync/batch",
         "https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app/api/sync/batch",
-        "http://72.62.158.128:3000/api/sync/batch"
+        "https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app/api/sync/batch"
     };
 
     private static WeakReference<WebView> activeActivityWebView = null;

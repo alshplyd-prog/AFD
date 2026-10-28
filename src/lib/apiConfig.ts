@@ -1,13 +1,16 @@
+import { Capacitor } from '@capacitor/core';
+
 /**
  * Centralized API & Server Endpoint Resolver for Web and Android APK
  */
 
 export const CANDIDATE_SERVERS: string[] = [
-  'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
+  'http://72.62.158.128:3000',
   'https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
+  'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app',
 ];
 
-const DEFAULT_REMOTE_SERVER = 'https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app';
+const DEFAULT_REMOTE_SERVER = 'http://72.62.158.128:3000';
 const SERVER_URL_STORAGE_KEY = 'alkarrar_backend_server_url';
 
 export function getCustomServerUrl(): string {
@@ -44,6 +47,11 @@ export function setActiveWorkingServer(url: string) {
 
 export function isNativeOrApkEnvironment(): boolean {
   if (typeof window === 'undefined') return false;
+  try {
+    if (Capacitor.isNativePlatform() || Capacitor.getPlatform() === 'android' || Capacitor.getPlatform() === 'ios') {
+      return true;
+    }
+  } catch (e) {}
   return (
     window.location.protocol === 'file:' ||
     window.location.protocol === 'capacitor:' ||
@@ -51,8 +59,8 @@ export function isNativeOrApkEnvironment(): boolean {
     window.location.protocol === 'content:' ||
     !!(window as any).Capacitor?.isNativePlatform?.() ||
     (window as any).Capacitor?.getPlatform?.() === 'android' ||
-    ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
-      window.location.port !== '3000' && window.location.port !== '')
+    (window.location.hostname === 'localhost' && window.location.port !== '3000' && window.location.port !== '5173') ||
+    (window.location.origin && window.location.origin.includes('localhost') && !window.location.port)
   );
 }
 

@@ -45,7 +45,7 @@ import {
   AppointmentRecord
 } from './types';
 import { getLocalDateString, playNotificationSound, showBrowserNotification, isAppointmentDueForNotification } from './lib/dateUtils';
-import { initCapacitorPush } from './lib/capacitorPush';
+import { initCapacitorPush, requestExternalNotificationPermission } from './lib/capacitorPush';
 import { INITIAL_CONTRACTS, DEFAULT_REPS, INITIAL_FUNDS, INITIAL_CUSTOMER_LISTS, INITIAL_EMPLOYEES } from './data/initialContracts';
 import { HeaderAndStats } from './components/HeaderAndStats';
 import { ContractCard } from './components/ContractCard';
@@ -161,7 +161,7 @@ import {
   run5DayPruneAndPollingInspection
 } from './lib/postgresClient';
 
-import { universalApiFetch } from './lib/apiConfig';
+import { universalApiFetch, fetchWithFallback } from './lib/apiConfig';
 import { subscribeToQueueChange, getPendingQueue, getPendingQueueSync, flushPendingQueue, scheduleIdleVerification, isUserActivelyTypingOrInputFocused } from './lib/offlineQueue';
 import { hasDuplicateName, deduplicateEntitiesByName, normalizeEntityName } from './lib/nameHelpers';
 import { normalizePin } from './lib/pinUtils';
@@ -576,9 +576,9 @@ export default function App() {
           setSyncError(true);
         }
       } else {
-        // Quick lightweight version verification
+        // Quick lightweight version verification with universal fallback
         try {
-          const res = await fetch('/api/sync/version', { method: 'GET', cache: 'no-store' }).catch(() => null);
+          const res = await fetchWithFallback('/api/sync/version', { method: 'GET', cache: 'no-store' }, 4000).catch(() => null);
           if (res && res.ok) {
             setSyncError(false);
             const data = await res.json().catch(() => null);
@@ -655,8 +655,10 @@ export default function App() {
     }
   }, []);
 
-  // One-time startup sync from PostgreSQL and enable foreground service when app boots
+  // One-time startup sync from PostgreSQL, init push notifications, and enable foreground service when app boots
   useEffect(() => {
+    initCapacitorPush().catch(() => {});
+    requestExternalNotificationPermission().catch(() => {});
     const bootSync = async () => {
       try {
         enableForegroundService().catch(() => {});
@@ -2822,7 +2824,7 @@ export default function App() {
 
   const handleRecalculateFundBalances = async () => {
     try {
-      const res = await fetch('/api/funds/recalculate', { method: 'POST' });
+      const res = await fetchWithFallback('/api/funds/recalculate', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         if (data.funds && Array.isArray(data.funds)) {

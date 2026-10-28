@@ -4,6 +4,7 @@ import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
 import { shareCustomerPaymentsPdf } from '../lib/pdfShareHelper';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
+import { fetchWithFallback } from '../lib/apiConfig';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { formatPaymentDateTime, formatPaymentTime, getLocalDateString, getPaymentFormattedDateAndTime } from '../lib/dateUtils';
 import { normalizeEntityName } from '../lib/nameHelpers';
@@ -145,7 +146,7 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
   const handleFetchAllFromServer = async () => {
     setIsFetchingFromServer(true);
     try {
-      const res = await fetch('/api/payments');
+      const res = await fetchWithFallback('/api/payments');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {

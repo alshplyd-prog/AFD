@@ -81,7 +81,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, reps, lang, onVie
 
     // 3. Fallback: Quick live verification with remote PostgreSQL server via fetchWithFallback (works on APK & Web)
     try {
-      const res = await fetchWithFallback('reps', undefined, 3500);
+      const res = await fetchWithFallback('/api/reps', undefined, 3500);
       if (res && res.ok) {
         const freshReps: SalesRepresentative[] = await res.json();
         if (Array.isArray(freshReps)) {

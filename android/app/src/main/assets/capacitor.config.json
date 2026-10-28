@@ -8,11 +8,17 @@
 		"cleartext": true,
 		"allowNavigation": [
 			"*",
-			"https://ais-pre-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app",
-			"https://ais-dev-5x4c6bq6p4ul7njqnkzon5-947254878994.europe-west2.run.app"
+			"http://72.62.158.128:3000",
+			"http://72.62.158.128:3000/*",
+			"https://*.run.app"
 		]
 	},
 	"plugins": {
+		"LocalNotifications": {
+			"smallIcon": "ic_launcher",
+			"iconColor": "#0d9488",
+			"sound": "beep.wav"
+		},
 		"CapacitorHttp": {
 			"enabled": true
 		},
@@ -29,6 +35,11 @@
 			"repeat": true,
 			"interval": 10,
 			"autoStart": true
+		},
+		"CapacitorUpdater": {
+			"autoUpdate": true,
+			"directUpdate": false,
+			"statsUrl": ""
 		}
 	},
 	"android": {
