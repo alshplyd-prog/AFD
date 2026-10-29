@@ -4,7 +4,7 @@
     "name": "اجهزه 170",
     "price": 170000,
     "purchasePrice": 0,
-    "quantity": 874,
+    "quantity": 892,
     "dailyInstallment": 1500,
     "category": "",
     "createdAt": "2026-09-22T08:06:53.382Z"
@@ -14,7 +14,7 @@
     "name": "اجهزه 175",
     "price": 175000,
     "purchasePrice": 0,
-    "quantity": 667,
+    "quantity": 803,
     "dailyInstallment": 1500,
     "category": "",
     "createdAt": "2026-09-22T08:19:43.354Z"
@@ -24,7 +24,7 @@
     "name": "اجهزه 210",
     "price": 210000,
     "purchasePrice": 0,
-    "quantity": 987,
+    "quantity": 997,
     "dailyInstallment": 2000,
     "category": "",
     "createdAt": "2026-09-22T08:07:21.264Z"
@@ -34,7 +34,7 @@
     "name": "جهزه 215",
     "price": 215000,
     "purchasePrice": 0,
-    "quantity": 919,
+    "quantity": 940,
     "dailyInstallment": 2000,
     "category": "",
     "createdAt": "2026-09-22T08:07:48.433Z"

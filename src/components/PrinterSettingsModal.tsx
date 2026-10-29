@@ -559,7 +559,7 @@ export const PrinterSettingsModal: React.FC<PrinterSettingsModalProps> = ({
               <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 block mb-1.5">
                 {isAr ? '🎯 نمط وطريقة إرسال الطباعة:' : 'Print Method:'}
               </span>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -580,6 +580,28 @@ export const PrinterSettingsModal: React.FC<PrinterSettingsModalProps> = ({
                 >
                   <Bluetooth className="w-3.5 h-3.5" />
                   <span className="truncate">{isAr ? 'بلوتوث مباشر' : 'Direct BT'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = savePrinterConfig({ printMethod: 'rawbt', deviceName: 'تطبيق RawBT للأندرويد' });
+                    if (updated) {
+                      setConfig(updated);
+                      setStatusMessage({
+                        text: isAr ? 'تم تفعيل الطباعة عبر تطبيق RawBT للأندرويد' : 'Switched to RawBT Android App',
+                        type: 'success',
+                      });
+                    }
+                  }}
+                  className={`py-2 px-1.5 rounded-xl border text-[11px] font-black flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                    config.printMethod === 'rawbt'
+                      ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
+                  }`}
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span className="truncate">{isAr ? 'تطبيق RawBT' : 'RawBT App'}</span>
                 </button>
 
                 <button

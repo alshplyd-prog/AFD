@@ -3,18 +3,15 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { registerBackgroundSyncWorker, requestAllBackgroundAndSyncPermissions, initBackgroundSync, enableForegroundService, isKeepAliveModeEnabled, setFieldKeepAliveMode } from './lib/offlineQueue';
-import { initCapacitorPush } from './lib/capacitorPush';
 
-// Register background sync service worker and initialize notification channels safely
+// Register background sync service worker and initialize background listeners safely
 try {
-  initCapacitorPush().catch(() => {});
   registerBackgroundSyncWorker();
   initBackgroundSync();
   setFieldKeepAliveMode(true).catch(() => {});
   if (typeof window !== 'undefined') {
     window.addEventListener('load', () => {
       setTimeout(() => {
-        initCapacitorPush().catch(() => {});
         requestAllBackgroundAndSyncPermissions().catch(() => {});
         enableForegroundService().catch(() => {});
         setFieldKeepAliveMode(true).catch(() => {});

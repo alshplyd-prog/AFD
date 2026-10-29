@@ -1,7 +1,7 @@
 /**
  * Statement PDF & Printable Ledger Generator
  */
-import { formatZeroBalanceCountdown, calculateAccumulatedInstallment } from './dateUtils';
+import { formatZeroBalanceCountdown } from './dateUtils';
 import { openUniversalPdfPrintWindow } from './bluetoothPrinter';
 
 export interface StatementPrintData {
@@ -32,10 +32,6 @@ export function openStatementPrintWindow(data: StatementPrintData) {
   const shopTitle = data.shopTitle || 'الكرار للموبايل';
   
   // totals
-  const totalAccumulated = data.contracts.reduce((sum, c) => {
-    const acc = calculateAccumulatedInstallment(c, data.endDate);
-    return sum + (acc.accumulated > 0 ? acc.accumulated : 0);
-  }, 0);
   const totalDaily = data.contracts.reduce((sum, c) => sum + (c.dailyInstallment || 0), 0);
   const totalPaid = data.contracts.reduce((sum, c) => sum + (c.totalPaid || 0), 0);
   const totalRemaining = data.contracts.reduce((sum, c) => sum + Math.max(0, (c.totalPrice - c.advancePayment) - (c.totalPaid || 0)), 0);
@@ -53,7 +49,6 @@ export function openStatementPrintWindow(data: StatementPrintData) {
     .map((c, idx) => {
       const remaining = Math.max(0, c.totalPrice - c.advancePayment - (c.totalPaid || 0));
       const custPayments = data.paymentMatrix[c.id] || {};
-      const accInfo = calculateAccumulatedInstallment(c, data.endDate);
 
       const dateCellsHtml = data.availableDates
         .map((dateStr) => {
@@ -72,9 +67,6 @@ export function openStatementPrintWindow(data: StatementPrintData) {
         <td style="padding: 6px 8px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 11px; text-align: right;">
           ${idx + 1}. ${c.customerName}
           ${isZero ? `<br/><span style="font-size: 8px; color: #d97706; font-weight: bold;">${formatZeroBalanceCountdown(c, true)}</span>` : ''}
-        </td>
-        <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: 900; font-size: 11px; color: ${accInfo.isOverdueDueAll ? '#b91c1c' : '#b45309'}; background-color: ${accInfo.isOverdueDueAll ? '#fee2e2' : 'transparent'};">
-          ${accInfo.isOverdueDueAll ? '<b style="color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:10px;">منتهي</b>' : (accInfo.accumulated > 0 ? accInfo.accumulated.toLocaleString('en-US') : '0')}
         </td>
         <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; font-size: 11px; color: #1e3a8a;">${(c.dailyInstallment || 0).toLocaleString('en-US')}</td>
         <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; font-size: 11px; color: #047857;">${(c.totalPaid || 0).toLocaleString('en-US')}</td>
@@ -204,7 +196,6 @@ export function openStatementPrintWindow(data: StatementPrintData) {
         <thead>
           <tr>
             <th style="text-align: right; min-width: 120px;">الزبون</th>
-            <th style="width: 75px; background-color: #0369a1;">المتراكم</th>
             <th style="width: 75px;">القسط اليومي</th>
             <th style="width: 80px;">الواصل</th>
             <th style="width: 80px;">المتبقي</th>
@@ -217,7 +208,6 @@ export function openStatementPrintWindow(data: StatementPrintData) {
         <tfoot>
           <tr>
             <td style="text-align: right; font-weight: 900; font-size: 11px;">الإجمالي الكلي</td>
-            <td style="text-align: center; font-weight: 900; color: #b45309; font-size: 11px;">${totalAccumulated.toLocaleString('en-US')}</td>
             <td style="text-align: center; font-weight: 900; color: #1e3a8a; font-size: 11px;">${totalDaily.toLocaleString('en-US')}</td>
             <td style="text-align: center; font-weight: 900; color: #047857; font-size: 11px;">${totalPaid.toLocaleString('en-US')}</td>
             <td style="text-align: center; font-weight: 900; color: #be123c; font-size: 11px;">${totalRemaining.toLocaleString('en-US')}</td>

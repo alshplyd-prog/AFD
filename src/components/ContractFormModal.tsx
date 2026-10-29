@@ -503,17 +503,14 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                 <Phone className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="tel"
-                  inputMode="tel"
-                  pattern="[0-9]*"
                   maxLength={11}
                   value={customerPhone}
                   disabled={isNonAdminEdit}
-                  autoComplete="tel"
+                  autoComplete="off"
                   autoCorrect="off"
                   spellCheck={false}
                   onChange={(e) => {
-                    const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
-                    const onlyNums = converted.replace(/\D/g, '');
+                    const onlyNums = e.target.value.replace(/\D/g, '');
                     setCustomerPhone(onlyNums);
                   }}
                   placeholder="07801234567"

@@ -1,1975 +1,5 @@
 [
   {
-    "id": "ft_emp_emptx_1792578008702_e5tac",
-    "fundId": "fund_1787350326789_erqgt",
-    "targetFundId": null,
-    "type": "employee_repay",
-    "amount": 4000,
-    "note": "راجع دين / تسديد من الموظف (ضياء المحاسب) - راجع",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T10:20:08.702Z"
-  },
-  {
-    "id": "ft_emp_tx_1792578008701_77o0o",
-    "fundId": "fund_1787350326789_erqgt",
-    "targetFundId": null,
-    "type": "employee_repay",
-    "amount": 4000,
-    "note": "راجع دين / تسديد من الموظف (زيد) - راجع",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T10:20:08.694Z"
-  },
-  {
-    "id": "ft_emp_emptx_1792577780500_m1yq2",
-    "fundId": "fund_1787350326789_erqgt",
-    "targetFundId": null,
-    "type": "employee_loan",
-    "amount": 1000,
-    "note": "دين / سلفة للموظف (ضياء المحاسب) - زيد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T10:16:20.500Z"
-  },
-  {
-    "id": "ft_emp_emptx_1792577721091_skrs3",
-    "fundId": "fund_1787350326789_erqgt",
-    "targetFundId": null,
-    "type": "employee_loan",
-    "amount": 1000,
-    "note": "دين / سلفة للموظف (ضياء المحاسب) - زيد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T10:15:21.091Z"
-  },
-  {
-    "id": "fundtx_1792577694350_41uav",
-    "fundId": "fund_1787350326789_erqgt",
-    "targetFundId": null,
-    "type": "deposit",
-    "amount": 10000,
-    "note": "نقد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T10:14:54.350Z"
-  },
-  {
-    "id": "ft_emp_emptx_1792574928493_rfier",
-    "fundId": "fund_1787350326789_erqgt",
-    "targetFundId": null,
-    "type": "employee_loan",
-    "amount": 1000,
-    "note": "دين / سلفة للموظف (ضياء المحاسب)",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T09:28:48.493Z"
-  },
-  {
-    "id": "ft_emp_emptx_1792574813870_surdq",
-    "fundId": "fund_1787350326789_erqgt",
-    "targetFundId": null,
-    "type": "employee_loan",
-    "amount": 1000,
-    "note": "دين / سلفة للموظف (ضياء المحاسب)",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T09:26:53.870Z"
-  },
-  {
-    "id": "fundtx_1792563454697_9g40n",
-    "fundId": "fund-2",
-    "targetFundId": "fund-4",
-    "type": "transfer",
-    "amount": 35000,
-    "note": "وارد يوم 20",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-21T06:17:34.697Z"
-  },
-  {
-    "id": "ft_pay_pay_6f1cb03e-2c8e-479c-b2a9-8ef9ac6699c4",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: علي كريم عبد عون",
-    "repName": "هيثم",
-    "createdAt": "2026-10-21T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_757d9190-ccfc-473e-a3bf-37f2645cd6b0",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
-    "repName": "هيثم",
-    "createdAt": "2026-10-21T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_9b830cf9-2d82-435d-bd17-d7e0edaf6953",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: حسين عبد حسن",
-    "repName": "هيثم",
-    "createdAt": "2026-10-21T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_02141301-1a17-43a2-b1eb-bb0634bc6c42",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
-    "repName": "هيثم",
-    "createdAt": "2026-10-21T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_15cea752-56e2-4e5e-b74c-c8d6484ccf14",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: اثير صباح عبود",
-    "repName": "هيثم",
-    "createdAt": "2026-10-21T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_81ba8302-8e91-4294-ab3d-41d2f579b4af",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 30000,
-    "note": "تسديد قسط زبون: زيد فالح عبد حاجم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-21T00:00:00.000Z"
-  },
-  {
-    "id": "fundtx_1792491375931_2edgq",
-    "fundId": "fund-2",
-    "targetFundId": "fund-4",
-    "type": "transfer",
-    "amount": 5000,
-    "note": "",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-20T10:16:15.931Z"
-  },
-  {
-    "id": "fundtx_1792491370371_er4fx",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "deposit",
-    "amount": 5000,
-    "note": "",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-20T10:16:10.371Z"
-  },
-  {
-    "id": "fundtx_1792491358527_o98yw",
-    "fundId": "fund-2",
-    "targetFundId": "fund-4",
-    "type": "transfer",
-    "amount": 45000,
-    "note": "",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-20T10:15:58.527Z"
-  },
-  {
-    "id": "fundtx_1792481932883_e4y85",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "withdraw",
-    "amount": 45000,
-    "note": "",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-20T07:38:52.883Z"
-  },
-  {
-    "id": "fundtx_1792479741967_b6qc5",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "withdraw",
-    "amount": 250000,
-    "note": "مبيع سيف تركي",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-20T07:02:21.967Z"
-  },
-  {
-    "id": "ft_pay_pay_10993945-294f-4f4c-9e7c-b40f450a24fa",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: حيدر تحسين جواد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_412909de-41ce-485c-92cd-271dfe5cadb0",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: اثير صباح عبود",
-    "repName": "هيثم",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_d70229d9-7c29-43fa-82a0-c64feacc1341",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: علي كريم عبد عون",
-    "repName": "هيثم",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_189d138a-d2da-4755-abba-736a341539ae",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: عباس فاضل حميد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_cbedffd1-0607-436e-a75e-b65a2142a390",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: علي محمد جاسم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_8c6371e3-6549-4934-9d51-f2e33da59a94",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: ليث صدام حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_b20574d3-9eec-468b-b8a1-8ff67b261016",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 24000,
-    "note": "تسديد قسط زبون: حسام عبدالكاضم عاجل",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_86dfa6b4-b55d-4192-af55-dbb0fc05b7d4",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 45000,
-    "note": "تسديد قسط زبون: محمد عبدالكاضم عاجل 1",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_0e44f432-3723-42f1-9e23-54856210e8e5",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: سجاد قاسم جبر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_345e4e0b-95c5-4e93-8a9f-d53c341186e1",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
-    "repName": "هيثم",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_66fc6766-920a-43a6-bf97-2719130df7c2",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: عباس عايد راضي",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_e283e487-fa50-4fbb-be34-5e0ab15e2153",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 25000,
-    "note": "تسديد قسط زبون: احمد راضي عبيد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_82bfdd4a-c797-4de8-9165-97847127e5a0",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 20000,
-    "note": "تسديد قسط زبون: كرار هاني شعلان",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_c53b3c68-c1a0-450a-894c-f87178f8d4d8",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: حسين عبد حسن",
-    "repName": "هيثم",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_cd4071f1-8889-478b-a70c-1df929cd535f",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
-    "repName": "هيثم",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_208c960e-a26f-4f8f-a28f-4fe4c5a2fa39",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_448c0cdc-89af-4042-8c0f-de87418bd4b7",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: حسن مسلم كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_84dac67e-172a-4d89-8f22-fc139c5063f6",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: حسين فاضل حميد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_725ab9ae-3bee-4fd8-9c21-57dc42c44c7f",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 7000,
-    "note": "تسديد قسط زبون: حليم عصفور حمد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_7fc8f1f8-71a7-4b4a-8f2d-90965632c051",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: عرفان هاشم مصطفى 3",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_a5bd757d-0612-4f2d-b763-01915a00558a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: مرتضى محمد عباس",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_852cf597-5fa9-4db0-ba63-d5fa7a22bd62",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 30000,
-    "note": "تسديد قسط زبون: عبدالكريم حسن سلمان 2",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_67412d4f-0ef2-4394-a229-09ba951cd837",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 35000,
-    "note": "تسديد قسط زبون: حسام عبدالكريم عاجل 2",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_2e9fca04-bbec-460a-a41f-a468d45397ed",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: حسين سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_ed0e8f74-d846-4d58-abc8-ffabedd86e25",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: امير احمد يحيى",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_09fa4ddb-7c7b-4eac-af44-959242869ed0",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 3000,
-    "note": "تسديد قسط زبون: ليث صدام حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_af8656c5-0b56-4d47-bfe0-4bc5dfee4a61",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 20000,
-    "note": "تسديد قسط زبون: وجدان مهدي كتاب",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_e07fd1bf-b230-4dd5-8626-d2c36428391a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: يوسف رزاق احمد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_dad4ebc3-2d63-44e1-9607-9ba5ba0de644",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: سناء نوري طاهر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_f447617a-55c5-494e-9adf-fa0b7afe2f01",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: زينب سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_c746c5fa-7ac5-4315-a877-1b43ef5e37eb",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 8000,
-    "note": "تسديد قسط زبون: حازم حامد عبد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-20T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_2e7857bc-4c58-45cc-8381-0e4fcac86efe",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: حسن مسلم كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_2b89f3f3-f2ed-4f27-bd69-8e74eceae225",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: اثير صباح عبود",
-    "repName": "هيثم",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_19095e2e-941b-49ce-88f2-e2768f7c9853",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: ابراهيم عناد عبد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_92076f21-1350-4147-9624-1dabc62ba4b9",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: سجاد قاسم جبر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_25536fb2-3d85-40a0-949a-41fbdf5bd87e",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: حيدر تحسين جواد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_88166aa0-2771-4bca-ab1f-92908e607c57",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: مرتضى محمد عباس",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_0e26892e-360a-41fc-accb-898640ac0ca9",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: سناء نوري طاهر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_cc4a9531-b543-4fd3-8228-d82401c528cc",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 7000,
-    "note": "تسديد قسط زبون: حليم عصفور حمد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_cd829d4c-569a-422a-9f05-697ccd4170ea",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: علي ماهر حسن",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_d143b4c5-d1dd-4ea5-b69e-f81ca71b13e4",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 20000,
-    "note": "تسديد قسط زبون: وجدان مهدي كتاب",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_5c3bcf90-fa6b-460c-bd73-767c804c3aab",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: ماهر حسن دعاش 1",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_1c8b2f38-3eb8-4fe8-827a-615fb9b87e6c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 25000,
-    "note": "تسديد قسط زبون: حسام عبدالكاضم عاجل",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_a35a552a-7457-43ba-9cb3-2fbc9b502e1c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: محمد ربيع خرجان",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_72d64aee-1df0-4c01-b605-d71dd6e83a8d",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: عرفان هاشم مصطفى 3",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_e2414b49-9e62-4458-bf4c-e908de338426",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: كرار هاني شعلان",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_dcfef482-d3ca-4618-933d-9b64a591732c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: زينب سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_fc88a99c-ddbb-4be1-bad3-1b4fb2119d82",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: علي كريم عبد عون",
-    "repName": "هيثم",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_bc760cc8-db6e-4307-9afb-d3ad08b130e5",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: حسين عبد حسن",
-    "repName": "هيثم",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_d89fd629-3abc-42ef-b713-545c5bc54b72",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: عباس عايد راضي",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_f4e92a2c-b0de-47f0-9eb1-1aaed0ce0d5d",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 35000,
-    "note": "تسديد قسط زبون: حسام عبدالكريم عاجل 2",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_7fb269a3-2453-4e59-8f52-4448fc815ca5",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_b0ec16ce-8ddc-47f6-a663-3425f2009ed2",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: حسين سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_7a579a37-2788-4132-94a0-6a6d02ab1dda",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: سعد راضي كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_71bb35ab-e8cb-48e2-a860-5d3701e1e723",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: علي محمد جاسم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3e42c0d3-1f38-409b-bf9f-4c1dbc773deb",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 30000,
-    "note": "تسديد قسط زبون: مصطفى رزاق مجهول",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3c40c9c1-8f95-4c22-bc08-cd5d0daf226a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: رضا جميل حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_fdfdd6be-7f31-4d10-a8d1-e727488f775f",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 25000,
-    "note": "تسديد قسط زبون: احمد راضي عبيد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_eede4e43-dcaa-47e2-83e3-a039d0cd3654",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 16000,
-    "note": "تسديد قسط زبون: حسن عباس كاطع",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_cb54a5f6-588f-4e10-b737-1f7a4fdc52b1",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 24000,
-    "note": "تسديد قسط زبون: حيدر كريم حجيل",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_c4c1f816-34c5-41f3-a465-05f02ea405d9",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: يوسف رزاق احمد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_fd9a06a2-f06b-494e-b0f9-024a4c56b245",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: امير احمد يحيى",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_63b34292-2e33-40a9-8f11-9b6545e203aa",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 45000,
-    "note": "تسديد قسط زبون: محمد عبدالكاضم عاجل 1",
-    "repName": "ماهر",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_62f7ad7b-9b6e-4dca-af9a-e7464703e5c9",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
-    "repName": "هيثم",
-    "createdAt": "2026-10-19T00:00:00.000Z"
-  },
-  {
-    "id": "fundtx_1792299570362_hedq2",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": "fund-4",
-    "type": "transfer",
-    "amount": 194000,
-    "note": "الى ماهر",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-18T04:59:30.362Z"
-  },
-  {
-    "id": "ft_pay_pay_5c70cac7-0ca4-4270-b141-cc6fbd272f2a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 16000,
-    "note": "تسديد قسط زبون: حسن عباس كاطع",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_1f8f38e0-4fbd-4d69-9045-2d7c332117b7",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: علي محمد جاسم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_d915be57-a46d-4b87-8e78-dc21504b5739",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 100000,
-    "note": "تسديد قسط زبون: حسين عبدالرزاق حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3b01245a-0925-4973-a244-adf3cd9c53cf",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: رضا جميل حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_b38b1033-0cc2-438f-a163-a84cf4a327fa",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: امير احمد يحيى",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_c87e4c58-cce6-4368-b386-fab5488fca01",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_8ab336be-212e-4ab5-9a03-e45d62430b11",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: سجاد قاسم جبر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_36b9be4d-935b-4fe3-b521-99a9da4eba07",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: اثير صباح عبود",
-    "repName": "هيثم",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_255b9ae2-b06e-4380-abb0-e0d6abe5d548",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 35000,
-    "note": "تسديد قسط زبون: حسام عبدالكريم عاجل 2",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_1f7127d3-135f-49ef-9c5e-aa4458613f84",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: حسين عبد حسن",
-    "repName": "هيثم",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3a728fc9-9153-4387-bebb-ab1fea18d7e8",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: ماهر حسن دعاش 1",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_8c814956-bea5-4d63-b84c-6d46455bf617",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: حسن مسلم كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_a7556a0c-8d6f-4ff9-b6cc-49d5377b91b1",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 35000,
-    "note": "تسديد قسط زبون: زيد فالح عبد حاجم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_24b1672b-ddbc-417f-b253-3418e30c43fa",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 20000,
-    "note": "تسديد قسط زبون: كرار هاني شعلان",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_0463ce5e-3aeb-462a-a146-2ed3b02e9493",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: يوسف رزاق احمد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_9b575997-4bd5-4776-8783-04f2ca6bb92b",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: حسين سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_8cb39321-ef17-435a-9688-18b14a5afd35",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: زينب سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_8e44bf0f-1a98-4408-a499-7bce7f11297c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 3000,
-    "note": "تسديد قسط زبون: ليث صدام حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_dc7ad4da-2baa-4fcf-81cc-62bcf6372dcb",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: محمد ربيع خرجان",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_004f9234-c707-49e7-9289-792caf895246",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: ابراهيم عناد عبد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_31029cbf-96e6-405b-bacb-bd03e86732e7",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: علي كريم عبد عون",
-    "repName": "هيثم",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3644ddcd-84e8-46ef-b9ee-6da4fcb6d03c",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 30000,
-    "note": "تسديد قسط زبون: عبدالكريم حسن سلمان 2",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_490e3dac-b6fd-4a46-b1d5-ec7911c41eaa",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 25000,
-    "note": "تسديد قسط زبون: احمد راضي عبيد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_9b515209-dd16-40fb-b57f-27ad8a3b91bd",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: حيدر تحسين جواد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_83c508fc-8f51-4e5d-986e-e09c592ceed4",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: حسين فاضل حميد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_cfc27cc7-94e2-49e6-b145-58ef9ec39152",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: عباس عايد راضي",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_05551816-c720-4f96-a0fc-9f4c801614ab",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: مرتضى محمد عباس",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_a670c171-06fd-4576-a11f-994fa0cf45d8",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: علي ماهر حسن",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_5c6026b6-c43c-4418-890e-ae6a439be240",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
-    "repName": "هيثم",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_38700d24-8804-48b4-8736-c32ec3cc9f60",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 20000,
-    "note": "تسديد قسط زبون: وجدان مهدي كتاب",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_ab675f93-e544-4435-ac07-3c68ee2bb9b4",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: سناء نوري طاهر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_61a5e980-72b5-4af5-9001-424f7dbd4525",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: علي رسول جابر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_41b4257f-7950-46b6-89b4-0e2c44495487",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: عباس فاضل حميد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-18T00:00:00.000Z"
-  },
-  {
-    "id": "fundtx_1792224474017_009ta",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "withdraw",
-    "amount": 7633000,
-    "note": "",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T08:07:54.017Z"
-  },
-  {
-    "id": "fundtx_1792224458934_y4h0c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "withdraw",
-    "amount": 19522000,
-    "note": "",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T08:07:38.934Z"
-  },
-  {
-    "id": "ft_pay_pay_a3d588f7-2998-42ec-996a-43ebedfaf552",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1350000,
-    "note": "تسديد قسط زبون: حسين عبدالرزاق حسين",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_73e7357a-0da7-42ef-b9a3-03440faf3b49",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 246000,
-    "note": "تسديد قسط زبون: عباس عايد راضي",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3e2c4cc0-6016-41be-84a8-d86129bfed39",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 371000,
-    "note": "تسديد قسط زبون: حيدر كريم حجيل",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_2a4d13e5-5072-48bc-999f-f640a633285a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1385000,
-    "note": "تسديد قسط زبون: حيدر تحسين جواد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_06fe930c-336b-4506-8a19-3076c1df50cb",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 20000,
-    "note": "تسديد قسط زبون: كرار هاني شعلان",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_64760920-e3ed-4aaf-b0a8-ee51a8b4c00c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 775000,
-    "note": "تسديد قسط زبون: نضال مهدي كتاب",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_e939ba5c-5fba-479b-9efe-95f737cc8ee4",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: حسن مسلم كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_b68c4f09-e583-4cb4-906f-d3ed6e56e387",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: عرفان هاشم مصطفى 3",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_9be75174-8d01-4d07-a1e4-e03090e7649b",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: عباس فاضل حميد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_016b7a9c-7e9a-44c6-a950-474a6d633f8b",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: حازم حامد عبد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_10470697-daef-42f1-bcd5-43f09c1c8e79",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 414000,
-    "note": "تسديد قسط زبون: عباس فاضل حميد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_26b36e94-f60a-4b7c-a123-59481b8b95ac",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 95000,
-    "note": "تسديد قسط زبون: حسين سلام كاضم",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3f303957-1b2b-427e-9c8d-6f13bd7f3e1a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: حسين فاضل حميد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_90a1ac91-c9d3-4a93-a5db-d63f1d0b8246",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: امير احمد يحيى",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_2a3aaa2d-633d-4828-910b-5c81fd4b5f77",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 25000,
-    "note": "تسديد قسط زبون: امير احمد يحيى",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_17c61b87-e5db-43b0-9d36-497aeb80af16",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1855000,
-    "note": "تسديد قسط زبون: عبدالكريم حسن سلمان 2",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_24a65fe0-a2ae-4c76-9481-64f90cacede6",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: عباس عايد راضي",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_a3e99288-b954-4553-b465-926529570435",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 612000,
-    "note": "تسديد قسط زبون: حسن عباس كاطع",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_87032a85-4b65-4424-96bd-cf8fd8a9b8a6",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 330000,
-    "note": "تسديد قسط زبون: علي رسول جابر",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_9ad9617f-5702-4dc6-a298-f29fec827313",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 121000,
-    "note": "تسديد قسط زبون: ليث صدام حسين",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_0d4242b7-469b-4db3-9bad-ad281605864f",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 260000,
-    "note": "تسديد قسط زبون: رضا جميل حسين",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_bf3c5d50-dfb5-49b8-8f08-038a3428c9d7",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 440000,
-    "note": "تسديد قسط زبون: عرفان هاشم مصطفى 3",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_eeba318e-70f5-42ba-b44a-74a7cb4b68e7",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 455000,
-    "note": "تسديد قسط زبون: علي محمد جاسم",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_7d8817ec-87e4-442f-a950-313545a89bda",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1657000,
-    "note": "تسديد قسط زبون: حسام عبدالكاضم عاجل",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_25e62c64-98c0-45c7-aa2c-da052357d987",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 25000,
-    "note": "تسديد قسط زبون: حسام عبدالكاضم عاجل",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_275f7710-8e6f-4a16-88f7-3223e65171c5",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1120000,
-    "note": "تسديد قسط زبون: كرار هاني شعلان",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_1328ead3-63e7-47a9-b384-8e6a18a46465",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 595000,
-    "note": "تسديد قسط زبون: علي سلام يوسف",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_0858e7e5-1d7d-4808-92fe-331570a5ebbe",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1048000,
-    "note": "تسديد قسط زبون: امير حسن جابر",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_00a25bf4-cbf0-43c7-abe2-941e21c567ca",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 309000,
-    "note": "تسديد قسط زبون: حليم عصفور حمد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_a2d79c6a-34f2-460a-909a-6ae2fd361303",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 35000,
-    "note": "تسديد قسط زبون: حسام عبدالكريم عاجل",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_1ceb2a9f-4265-4983-98ec-de73a0d28d6e",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_258331df-b0f1-4bfb-8931-910e31bb2b4a",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: حسين عبد حسن",
-    "repName": "هيثم",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_1acbcede-48b3-482d-83cd-ca615ebfcddb",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: اثير صباح عبود",
-    "repName": "هيثم",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_9277991a-d87e-482d-abd3-9ec63d1c0048",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1730000,
-    "note": "تسديد قسط زبون: وجدان مهدي كتاب",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_818152cd-8607-4fe1-8a2f-fc44ab12903a",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 245000,
-    "note": "تسديد قسط زبون: كرار حسن جابر",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_0ffce181-45f9-4a1f-a875-4cf16097629c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 750000,
-    "note": "تسديد قسط زبون: علي ماهر حسن",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_f157ef45-225a-4de5-a179-3abd04f440f9",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 25000,
-    "note": "تسديد قسط زبون: احمد راضي عبيد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_11ae24a9-1392-457a-b29a-08bea2c312f7",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 7000,
-    "note": "تسديد قسط زبون: حليم عصفور حمد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_9dfa7418-e7a1-4247-8acb-dc5efbeb8da7",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 350000,
-    "note": "تسديد قسط زبون: يوسف رزاق احمد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_bef16a11-77b8-4885-bf4b-8dbc72ad7302",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 642000,
-    "note": "تسديد قسط زبون: حسن مسلم كاضم",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_a7dbc87d-33ee-4f00-ae65-cfecb9cf1842",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: محمد ربيع خرجان",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_728ccb20-cc49-4097-923d-a299dc7edccb",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: علي ماهر حسن",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_8bdefe4a-c424-4292-bbaf-7890fd26c54e",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 115000,
-    "note": "تسديد قسط زبون: سجاد قاسم جبر",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_ce92d1a3-3739-49f8-a933-71fb940e72eb",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: ابراهيم عناد عبد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_fb3e16d3-5cfb-41b7-8f71-f3abd181dc39",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: زينب سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_7390b609-79ed-438f-bc0f-deda29d1001a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 4000,
-    "note": "تسديد قسط زبون: حازم حامد عبد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_20c5a84e-a866-440b-989c-bfd6675802ec",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 35000,
-    "note": "تسديد قسط زبون: زيد فالح عبد حاجم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_09ee370a-4a7b-447b-939d-8a0255d6891c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: حسين سلام كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_f2aa094e-6a2c-4a84-a29e-9e6dec9ffe69",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 2475000,
-    "note": "تسديد قسط زبون: محمد عبدالكاضم عاجل 1",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_dd770c34-a05c-4a73-beff-0a0b878fcf23",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 20000,
-    "note": "تسديد قسط زبون: وجدان مهدي كتاب",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_0b11f4cc-87de-4657-b78b-4f6b5e881e93",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: علي كريم عبد عون",
-    "repName": "هيثم",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_5146a4e2-e433-472d-91c8-be214e88ee87",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 2525000,
-    "note": "تسديد قسط زبون: عبدالكريم حسن سلمان 1",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_cc2e06ff-07fe-4524-8abd-c8aba79573ec",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: ماهر حسن دعاش 1",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_45b254f6-48d5-4c1c-8f01-e5d6cad85b30",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 6000,
-    "note": "تسديد قسط زبون: سعد راضي كاضم",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_4ea253fa-5d3b-4a08-80df-68838463f265",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: يوسف رزاق احمد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_2a43ddf6-c495-4739-aa7b-5500a2f67c50",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 50000,
-    "note": "تسديد قسط زبون: محمد عبدالكاضم عاجل 1",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_ba330d00-3e13-4de1-a9a4-1417866ee90c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 124000,
-    "note": "تسديد قسط زبون: حازم حامد عبد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_388307d1-95f1-4d3e-9284-b638476a0465",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 1000000,
-    "note": "تسديد قسط زبون: احمد راضي عبيد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_223afc20-19ed-46da-91bb-ef071ede545c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 270000,
-    "note": "تسديد قسط زبون: ماهر حسن دعاش 1",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_e722f1b6-2eae-4b6d-887f-ed5f311d6ce3",
-    "fundId": "fund-2",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 580000,
-    "note": "تسديد قسط زبون: منتضر رائد سعدون",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_044165ec-5034-4eee-a8b8-c91dfa8c22ab",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: رضا جميل حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_f61fe26f-9071-4a61-8b78-5c28e1f16c6a",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 191000,
-    "note": "تسديد قسط زبون: محمد ربيع خرجان",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_dc306b9f-579c-478f-a0de-0f5d36f101e0",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 910000,
-    "note": "تسديد قسط زبون: مصطفى رزاق مجهول",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_463345a7-c3dd-4fc9-bf45-6539a1fff2af",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 2625000,
-    "note": "تسديد قسط زبون: زيد فالح عبد حاجم",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_db4980c2-c768-4ac6-9f49-c8acfc75a277",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 3000,
-    "note": "تسديد قسط زبون: ليث صدام حسين",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_bb398264-3e5b-483a-9ad4-a06decd8c90f",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 490000,
-    "note": "تسديد قسط زبون: حسام عبدالكريم عاجل",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_8ffa2c50-6207-4bb9-aca1-82b9de3a1649",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 320000,
-    "note": "تسديد قسط زبون: زينب سلام كاضم",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_591ae0f5-7c32-4fb0-8ba5-7759bde6d740",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
-    "repName": "هيثم",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_6ef064b7-1555-47c1-9cb3-71aedae22f41",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 32000,
-    "note": "تسديد قسط زبون: حسن عباس كاطع",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_ca43e548-9cf0-478d-b9ac-02fb66c879bf",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 635000,
-    "note": "تسديد قسط زبون: محمد ليث علي",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_d6c9a83f-45ec-40e9-95f6-1d9b2473f5d5",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 294000,
-    "note": "تسديد قسط زبون: ابراهيم عناد عبد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_2f6c5d25-34c5-4574-9f26-c287e7353ca9",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 132000,
-    "note": "تسديد قسط زبون: حسين فاضل حميد",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_98ae78c6-8777-445b-93b4-8d891e01c7f3",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 395000,
-    "note": "تسديد قسط زبون: سناء نوري طاهر",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_b36daa1f-b310-41d2-9276-45a4dd0fd5a0",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 383000,
-    "note": "تسديد قسط زبون: سعد راضي كاضم",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_e7e0b726-66f1-40a3-ad50-0efd5e0f838c",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 15000,
-    "note": "تسديد قسط زبون: مرتضى محمد عباس",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_893e53fc-89e4-4a3b-8c92-92cd9ff82e15",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 348000,
-    "note": "تسديد قسط زبون: مرتضى محمد عباس",
-    "repName": "ضياء المحاسب",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_1368e774-7e43-4305-9504-ccb2423b84eb",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: سجاد قاسم جبر",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_3738f5f6-f818-4f12-a077-a3945e543dba",
-    "fundId": "fund-4",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: عباس فاضل حميد",
-    "repName": "ماهر",
-    "createdAt": "2026-10-17T00:00:00.000Z"
-  },
-  {
     "id": "ft_pay_pay_fea8ab5b-6680-42a7-a483-dfce6d9f7c6d",
     "fundId": "fund_1791618782897_u79cy",
     "targetFundId": null,
@@ -1980,13 +10,13 @@
     "createdAt": "2026-10-16T00:00:00.000Z"
   },
   {
-    "id": "ft_pay_pay_26a9b0df-363c-4e2b-9fd9-00f62160891e",
-    "fundId": "fund_1791618782897_u79cy",
+    "id": "ft_pay_pay_e932cf33-9116-42aa-8477-ec1ba09dc3e8",
+    "fundId": "fund-4",
     "targetFundId": null,
     "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
+    "amount": 4000,
+    "note": "تسديد قسط زبون: سعد راضي كاضم",
+    "repName": "ضياء المحاسب",
     "createdAt": "2026-10-16T00:00:00.000Z"
   },
   {
@@ -2000,6 +30,116 @@
     "createdAt": "2026-10-16T00:00:00.000Z"
   },
   {
+    "id": "ft_pay_pay_cfea14b2-15f0-462a-93d7-8575f2858979",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1000,
+    "note": "تسديد قسط زبون: ليث صدام حسين",
+    "repName": "ماهر",
+    "createdAt": "2026-10-16T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_26a9b0df-363c-4e2b-9fd9-00f62160891e",
+    "fundId": "fund_1791618782897_u79cy",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 5000,
+    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
+    "repName": "هيثم",
+    "createdAt": "2026-10-16T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_70c0951f-e754-4ef4-9428-8963610f3a6a",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 245000,
+    "note": "تسديد قسط زبون: كرار حسن جابر",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_60cc07ca-6f9c-4ab2-86de-f45de771da1a",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 402000,
+    "note": "تسديد قسط زبون: عباس فاضل حميد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_578c067b-eb55-4610-ba65-b248ad639b07",
+    "fundId": "fund_1791618782897_u79cy",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 5000,
+    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
+    "repName": "هيثم",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_4f622c09-9953-4c2c-8014-d232c765de6d",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 236000,
+    "note": "تسديد قسط زبون: عباس عايد راضي",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_109e2254-d583-4067-be33-60e2e1999bdf",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 320000,
+    "note": "تسديد قسط زبون: علي رسول جابر",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_4384a0ed-f1a8-4ce5-b30d-888f8cabf56e",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 385000,
+    "note": "تسديد قسط زبون: سناء نوري طاهر",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_d1baa298-eacc-4af4-b7e0-61e3924c66c6",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 330000,
+    "note": "تسديد قسط زبون: يوسف رزاق احمد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_0d7819be-28a9-4f3e-9aca-30c35050c947",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 775000,
+    "note": "تسديد قسط زبون: نضال مهدي كتاب",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_bb80fce7-2e0d-42e6-a0b9-c241bef68118",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1350000,
+    "note": "تسديد قسط زبون: حسين عبدالرزاق حسين",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
     "id": "ft_pay_pay_9f3921d8-0408-4dbe-9f9f-ba8b4a34a111",
     "fundId": "fund_1791618782897_u79cy",
     "targetFundId": null,
@@ -2007,6 +147,236 @@
     "amount": 150000,
     "note": "تسديد قسط زبون: احمد حسن عبيد",
     "repName": "هيثم",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_979e682e-446b-4896-b598-84f9a455a9dc",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 351000,
+    "note": "تسديد قسط زبون: حيدر كريم حجيل",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_779586bc-6b0e-430b-a617-7c063d225698",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1000,
+    "note": "تسديد قسط زبون: ليث صدام حسين",
+    "repName": "ماهر",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_797ce010-f0f6-4542-a2e2-763cae896f07",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 124000,
+    "note": "تسديد قسط زبون: حسين فاضل حميد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_6a10c4a9-e704-4eae-b2e9-f78fcefcb2ac",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 383000,
+    "note": "تسديد قسط زبون: سعد راضي كاضم",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_70e6232c-868c-4d5b-8daf-ab12ce507dab",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1690000,
+    "note": "تسديد قسط زبون: وجدان مهدي كتاب",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_659e5436-f04d-4076-aa9c-bd678de111fe",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 635000,
+    "note": "تسديد قسط زبون: محمد ليث علي",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_5c0fda42-eeba-4d11-9354-93c4e82fe37d",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 310000,
+    "note": "تسديد قسط زبون: زينب سلام كاضم",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_09332c55-1cd1-4998-b094-1df9970a1679",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1825000,
+    "note": "تسديد قسط زبون: عبدالكريم حسن سلمان 2",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_f4c9594c-5438-4498-b417-46b8ff86e800",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 116000,
+    "note": "تسديد قسط زبون: حازم حامد عبد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_d31a3746-82ec-453c-844e-62a24731462d",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 264000,
+    "note": "تسديد قسط زبون: ماهر حسن دعاش 1",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_ccd7e964-c919-420e-b94c-7364ef574b26",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1633000,
+    "note": "تسديد قسط زبون: حسام عبدالكاضم عاجل",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_7e889267-02fd-4a16-9c7e-c0f3d35c9925",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 740000,
+    "note": "تسديد قسط زبون: علي ماهر حسن",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_5dda117a-0dbd-41d8-a102-41a32cd3f9fe",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 595000,
+    "note": "تسديد قسط زبون: علي سلام يوسف",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_47dc5203-0b6e-4d4b-ba62-43d2a5aaf85c",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 90000,
+    "note": "تسديد قسط زبون: حسين سلام كاضم",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_f7d73e68-4f35-4f04-9dd1-a03de4aede35",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 2555000,
+    "note": "تسديد قسط زبون: زيد فالح عبد حاجم",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_88839586-947b-40c3-a028-bf810b703092",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 250000,
+    "note": "تسديد قسط زبون: رضا جميل حسين",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_2c484a66-f088-472c-a846-cefa321aea42",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 333000,
+    "note": "تسديد قسط زبون: مرتضى محمد عباس",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_8a614861-2fe9-4c6d-b6dc-41d07409e35d",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1355000,
+    "note": "تسديد قسط زبون: حيدر تحسين جواد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_6ab36f41-5627-41de-a7be-0abe8c4470bd",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 2385000,
+    "note": "تسديد قسط زبون: محمد عبدالكاضم عاجل 1",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_53dc46c1-e728-4b26-b579-26869894eebb",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 550000,
+    "note": "تسديد قسط زبون: منتضر رائد سعدون",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_1fda2c14-735a-4200-a11a-42b8116f2ef3",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 185000,
+    "note": "تسديد قسط زبون: محمد ربيع خرجان",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_1fdb604c-f930-47cf-b677-8bf51435724d",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 950000,
+    "note": "تسديد قسط زبون: احمد راضي عبيد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_0efbbe52-8e8b-4d35-a823-a3625306eba0",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1048000,
+    "note": "تسديد قسط زبون: امير حسن جابر",
+    "repName": "ضياء المحاسب",
     "createdAt": "2026-10-15T00:00:00.000Z"
   },
   {
@@ -2020,13 +390,153 @@
     "createdAt": "2026-10-15T00:00:00.000Z"
   },
   {
-    "id": "ft_pay_pay_578c067b-eb55-4610-ba65-b248ad639b07",
-    "fundId": "fund_1791618782897_u79cy",
+    "id": "ft_pay_pay_04d9f6b6-5c16-4420-9335-ee8353b15a89",
+    "fundId": "fund-4",
     "targetFundId": null,
     "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
+    "amount": 295000,
+    "note": "تسديد قسط زبون: حليم عصفور حمد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_00ecb144-ddd7-4bc2-aaa1-2347b19ef201",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1000,
+    "note": "تسديد قسط زبون: ليث صدام حسين",
+    "repName": "ماهر",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_e1f25cdd-3117-4707-9c95-e3d84738305d",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 2525000,
+    "note": "تسديد قسط زبون: عبدالكريم حسن سلمان 1",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_e8897fa7-3d1b-484e-b27f-4701ad758ed7",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 630000,
+    "note": "تسديد قسط زبون: حسن مسلم كاضم",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_74265350-ed6c-4bdf-9a9d-e66ace23a7a8",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 90000,
+    "note": "تسديد قسط زبون: سجاد قاسم جبر",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_b40f03fb-d90d-4ac2-8d86-d51cb7869f99",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 420000,
+    "note": "تسديد قسط زبون: حسام عبدالكريم عاجل",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_80b6274d-f56a-4774-bd5f-61578adef07e",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 596000,
+    "note": "تسديد قسط زبون: حسن عباس كاطع",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_7c7f826a-a5cd-4223-9674-b807cf1ea564",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 114000,
+    "note": "تسديد قسط زبون: ليث صدام حسين",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_635c6be8-099e-4409-bf52-af7d04b4ef62",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 283000,
+    "note": "تسديد قسط زبون: ابراهيم عناد عبد",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_5852906a-0153-4ef1-a433-a515c3cbe010",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 880000,
+    "note": "تسديد قسط زبون: مصطفى رزاق مجهول",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_0b60510b-2835-4bf0-9539-1495197428ca",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1000,
+    "note": "تسديد قسط زبون: ليث صدام حسين",
+    "repName": "ماهر",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_d9a541de-3277-4ede-9c3d-1bdaa976a994",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 1080000,
+    "note": "تسديد قسط زبون: كرار هاني شعلان",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_edc2f319-c70a-48c2-aa75-062b64f25616",
+    "fundId": "fund-2",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 445000,
+    "note": "تسديد قسط زبون: علي محمد جاسم",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_d3b944e6-cd90-4d31-bcf9-5aec97d3d8c2",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 15000,
+    "note": "تسديد قسط زبون: امير احمد يحيى",
+    "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-15T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_a205f29a-e6ca-43db-a044-c3c315572a63",
+    "fundId": "fund-4",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 420000,
+    "note": "تسديد قسط زبون: عرفان هاشم مصطفى 3",
+    "repName": "ضياء المحاسب",
     "createdAt": "2026-10-15T00:00:00.000Z"
   },
   {
@@ -2050,22 +560,22 @@
     "createdAt": "2026-10-14T00:00:00.000Z"
   },
   {
-    "id": "ft_pay_pay_27cb8395-802e-4b36-89d0-6881078dc530",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
-    "createdAt": "2026-10-14T00:00:00.000Z"
-  },
-  {
     "id": "ft_pay_pay_7d330008-1639-41e4-9872-25d6cecfdf63",
     "fundId": "fund_1791618782897_u79cy",
     "targetFundId": null,
     "type": "installment",
     "amount": 10000,
     "note": "تسديد قسط زبون: اثير صباح عبود",
+    "repName": "هيثم",
+    "createdAt": "2026-10-14T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_27cb8395-802e-4b36-89d0-6881078dc530",
+    "fundId": "fund_1791618782897_u79cy",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 5000,
+    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
     "repName": "هيثم",
     "createdAt": "2026-10-14T00:00:00.000Z"
   },
@@ -2080,12 +590,12 @@
     "createdAt": "2026-10-13T14:16:38.215Z"
   },
   {
-    "id": "ft_pay_pay_e4e8078b-e217-46f6-9747-6ccf37cb05e1",
+    "id": "ft_pay_pay_4e5fbd6f-dd8f-43e5-8080-49bd66c57be8",
     "fundId": "fund_1791618782897_u79cy",
     "targetFundId": null,
     "type": "installment",
-    "amount": 12000,
-    "note": "تسديد قسط زبون: سيف تركي معنه",
+    "amount": 10000,
+    "note": "تسديد قسط زبون: اثير صباح عبود",
     "repName": "هيثم",
     "createdAt": "2026-10-13T00:00:00.000Z"
   },
@@ -2100,24 +610,14 @@
     "createdAt": "2026-10-13T00:00:00.000Z"
   },
   {
-    "id": "ft_pay_pay_4e5fbd6f-dd8f-43e5-8080-49bd66c57be8",
+    "id": "ft_pay_pay_e4e8078b-e217-46f6-9747-6ccf37cb05e1",
     "fundId": "fund_1791618782897_u79cy",
     "targetFundId": null,
     "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: اثير صباح عبود",
+    "amount": 12000,
+    "note": "تسديد قسط زبون: سيف تركي معنه",
     "repName": "هيثم",
     "createdAt": "2026-10-13T00:00:00.000Z"
-  },
-  {
-    "id": "ft_pay_pay_6aa5272e-8b7a-473d-a637-1c8331d45ca5",
-    "fundId": "fund_1791618782897_u79cy",
-    "targetFundId": null,
-    "type": "installment",
-    "amount": 5000,
-    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
-    "repName": "هيثم",
-    "createdAt": "2026-10-12T00:00:00.000Z"
   },
   {
     "id": "ft_pay_pay_41bc8834-fcee-4c5a-a784-416c1a746109",
@@ -2130,14 +630,14 @@
     "createdAt": "2026-10-12T00:00:00.000Z"
   },
   {
-    "id": "ft_pay_pay_3a567808-3d0a-4d8f-ac14-110e885a2479",
+    "id": "ft_pay_pay_6aa5272e-8b7a-473d-a637-1c8331d45ca5",
     "fundId": "fund_1791618782897_u79cy",
     "targetFundId": null,
     "type": "installment",
-    "amount": 150000,
-    "note": "تسديد قسط زبون: احمد حسن عبيد",
+    "amount": 5000,
+    "note": "تسديد قسط زبون: رحيم حمزه بجاي",
     "repName": "هيثم",
-    "createdAt": "2026-10-11T00:00:00.000Z"
+    "createdAt": "2026-10-12T00:00:00.000Z"
   },
   {
     "id": "ft_pay_pay_f52c18c8-76ab-474f-9230-4031b0f61f43",
@@ -2147,6 +647,16 @@
     "amount": 10000,
     "note": "تسديد قسط زبون: اثير صباح عبود",
     "repName": "ضياء المحاسب",
+    "createdAt": "2026-10-11T00:00:00.000Z"
+  },
+  {
+    "id": "ft_pay_pay_0da6e767-cde1-4547-a3f6-d28f782ee3f8",
+    "fundId": "fund_1791618782897_u79cy",
+    "targetFundId": null,
+    "type": "installment",
+    "amount": 10000,
+    "note": "تسديد قسط زبون: اثير صباح عبود",
+    "repName": "هيثم",
     "createdAt": "2026-10-11T00:00:00.000Z"
   },
   {
@@ -2160,12 +670,12 @@
     "createdAt": "2026-10-11T00:00:00.000Z"
   },
   {
-    "id": "ft_pay_pay_0da6e767-cde1-4547-a3f6-d28f782ee3f8",
+    "id": "ft_pay_pay_3a567808-3d0a-4d8f-ac14-110e885a2479",
     "fundId": "fund_1791618782897_u79cy",
     "targetFundId": null,
     "type": "installment",
-    "amount": 10000,
-    "note": "تسديد قسط زبون: اثير صباح عبود",
+    "amount": 150000,
+    "note": "تسديد قسط زبون: احمد حسن عبيد",
     "repName": "هيثم",
     "createdAt": "2026-10-11T00:00:00.000Z"
   },

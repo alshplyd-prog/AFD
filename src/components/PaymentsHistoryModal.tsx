@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown } from 'lucide-react';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
@@ -38,80 +38,34 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
   onPrintReceipt,
   onSettleExcessPayment,
 }) => {
-  const prevIsOpenRef = useRef(false);
-  const prevCustomerFilterIdRef = useRef<string | null | undefined>(undefined);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  const [filterListId, setFilterListId] = useState<string>('all');
-  const [startDate, setStartDate] = useState<string>(() => getLocalDateString());
-  const [endDate, setEndDate] = useState<string>(() => getLocalDateString());
-  const [filterQuery, setFilterQuery] = useState<string>('');
-
-  const [serverPayments, setServerPayments] = useState<PaymentRecord[] | null>(null);
-  const [isFetchingFromServer, setIsFetchingFromServer] = useState<boolean>(false);
-
-  // Initialize dates and filter ONLY when modal freshly opens or customerFilterId changes
-  useEffect(() => {
-    if (!isOpen) {
-      prevIsOpenRef.current = false;
-      return;
-    }
-
-    const isJustOpening = !prevIsOpenRef.current;
-    const isCustomerFilterChanged = customerFilterId !== prevCustomerFilterIdRef.current;
-
-    if (isJustOpening || isCustomerFilterChanged) {
-      prevIsOpenRef.current = true;
-      prevCustomerFilterIdRef.current = customerFilterId;
-      setServerPayments(null);
-
-      handleFetchAllFromServer();
-
-      if (customerFilterId) {
-        // When opened for a specific customer ("عرض التسديدات"), show ALL payments across all dates for this customer
-        setStartDate('');
-        setEndDate('');
-        setFilterListId('all');
-        setFilterQuery('');
-      } else {
-        const today = getLocalDateString();
-        setStartDate(today);
-        setEndDate(today);
-        setFilterListId('all');
-      }
-    }
-  }, [isOpen, customerFilterId]);
-
   // Mobile Back Button / Gesture support (popstate)
   useEffect(() => {
     if (!isOpen) return;
+    if (customerFilterId) {
+      // When opened for a specific customer ("عرض التسديدات"), show ALL payments across all dates to everyone
+      setStartDate('');
+      setEndDate('');
+      setFilterListId('all');
+    } else {
+      const today = getLocalDateString();
+      setStartDate(today);
+      setEndDate(today);
+      setFilterListId('all');
+    }
     window.history.pushState({ modal: 'payments_history' }, '');
     const handlePopState = () => {
-      onCloseRef.current();
+      onClose();
     };
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [isOpen]);
+  }, [isOpen, customerFilterId, onClose]);
 
-  const handleFetchAllFromServer = async () => {
-    setIsFetchingFromServer(true);
-    try {
-      const res = await fetch('/api/payments');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setServerPayments(data);
-        }
-      }
-    } catch (e) {
-      console.warn('Error fetching all payments from server:', e);
-    } finally {
-      setIsFetchingFromServer(false);
-    }
-  };
+  const [filterListId, setFilterListId] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>(() => getLocalDateString());
+  const [endDate, setEndDate] = useState<string>(() => getLocalDateString());
+  const [filterQuery, setFilterQuery] = useState<string>('');
 
   // Payment editing state for Admin
   const [editingPayment, setEditingPayment] = useState<PaymentRecord | null>(null);
@@ -133,7 +87,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
       setConfirmBulkDelete(false);
       setIsBulkDeleting(false);
       setEditingPayment(null);
-      setServerPayments(null);
     }
   }, [isOpen]);
 
@@ -161,85 +114,11 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
     if (l && l.id) listMap.set(l.id, l);
   });
 
-  const activePaymentsList = serverPayments || payments;
-  const safePayments = Array.isArray(activePaymentsList) ? activePaymentsList.filter(Boolean) : [];
-
-  // Active Contract and Filter matching identifiers
-  const normFilterId = normalizeEntityName(customerFilterId);
-  const activeContract = customerFilterId
-    ? contracts.find(
-        (c) =>
-          c && (
-            String(c.id).trim() === String(customerFilterId).trim() ||
-            c.customerName === customerFilterId ||
-            (c.customerName && normalizeEntityName(c.customerName) === normFilterId)
-          )
-      )
-    : null;
-
-  // Build strict lookup sets for target customer
-  const targetContractIds = new Set<string>();
-  const targetCustomerNames = new Set<string>();
-  const targetNormalizedNames = new Set<string>();
-
-  if (customerFilterId) {
-    targetContractIds.add(String(customerFilterId).trim());
-    targetCustomerNames.add(String(customerFilterId).trim().toLowerCase());
-    if (normFilterId) targetNormalizedNames.add(normFilterId);
-  }
-  if (activeContract) {
-    if (activeContract.id) targetContractIds.add(String(activeContract.id).trim());
-    if (activeContract.customerName) {
-      targetCustomerNames.add(activeContract.customerName.trim().toLowerCase());
-      const norm = normalizeEntityName(activeContract.customerName);
-      if (norm) targetNormalizedNames.add(norm);
-    }
-  }
-  if (targetNormalizedNames.size > 0) {
-    contracts.forEach((c) => {
-      if (!c) return;
-      const cNorm = normalizeEntityName(c.customerName);
-      if (cNorm && targetNormalizedNames.has(cNorm)) {
-        if (c.id) targetContractIds.add(String(c.id).trim());
-      }
-    });
-  }
+  const safePayments = Array.isArray(payments) ? payments.filter(Boolean) : [];
 
   // Filter logic
   const filtered = safePayments.filter((p) => {
     if (!p) return false;
-
-    // 0. STRICT CUSTOMER FILTER (When viewing payments for a specific customer "عرض تسديدات")
-    if (customerFilterId) {
-      const pContractId = p.contractId ? String(p.contractId).trim() : '';
-      const pCustName = p.customerName ? String(p.customerName).trim().toLowerCase() : '';
-      const normPCust = normalizeEntityName(p.customerName);
-
-      const matchesId = Boolean(pContractId && targetContractIds.has(pContractId));
-      const matchesName = Boolean(
-        (pCustName && targetCustomerNames.has(pCustName)) ||
-        (normPCust && targetNormalizedNames.has(normPCust))
-      );
-
-      let matchesViaContract = false;
-      if (!matchesId && !matchesName && pContractId) {
-        const linkedContract = contractMap.get(pContractId);
-        if (linkedContract) {
-          const linkedNorm = normalizeEntityName(linkedContract.customerName);
-          if (
-            (linkedContract.id && targetContractIds.has(String(linkedContract.id).trim())) ||
-            (linkedNorm && targetNormalizedNames.has(linkedNorm))
-          ) {
-            matchesViaContract = true;
-          }
-        }
-      }
-
-      if (!matchesId && !matchesName && !matchesViaContract) {
-        return false;
-      }
-    }
-
     // 1. List filter
     if (filterListId !== 'all') {
       const contract = (p.contractId ? contractMap.get(p.contractId) : null) || 
@@ -312,6 +191,17 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
 
   const totalSum = filtered.reduce((sum, p) => sum + (Number(p.amountPaid ?? (p as any).amount ?? 0) || 0), 0);
 
+  const normFilterId = normalizeEntityName(customerFilterId);
+  const activeContract = customerFilterId
+    ? contracts.find(
+        (c) =>
+          c && (
+            c.id === customerFilterId ||
+            c.customerName === customerFilterId ||
+            (c.customerName && normalizeEntityName(c.customerName) === normFilterId)
+          )
+      )
+    : null;
   const expectedInstallmentTotal = activeContract
     ? ((activeContract.totalPrice || 0) - (activeContract.advancePayment || 0) > 0
         ? (activeContract.totalPrice || 0) - (activeContract.advancePayment || 0)
@@ -344,15 +234,13 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Filters Bar or Customer Info Header */}

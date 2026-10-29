@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Printer, Filter, Calendar, FolderKanban, Download, Search, FileText, ArrowUpRight, ArrowDownLeft, RotateCcw, ChevronDown, Check, RefreshCw, CheckCircle2, AlertCircle, DownloadCloud, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, Printer, Filter, Calendar, FolderKanban, Download, Search, FileText, ArrowUpRight, ArrowDownLeft, RotateCcw, ChevronDown, Check, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { InstallmentContract, PaymentRecord, CustomerList, Language, CustomerTransaction, SalesRepresentative } from '../types';
 import { calculateCustomerStatement, fetchCustomerSubCollectionStatement, SubCollectionStatementResult } from '../lib/statementCalculator';
-import { getLocalDateString, isZeroBalanceExpired24h, formatZeroBalanceCountdown, calculateAccumulatedInstallment } from '../lib/dateUtils';
+import { getLocalDateString, isZeroBalanceExpired24h, formatZeroBalanceCountdown } from '../lib/dateUtils';
 import { ZeroBalanceCountdown } from './ZeroBalanceCountdown';
 import { openUniversalPdfPrintWindow } from '../lib/bluetoothPrinter';
 import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
@@ -26,10 +26,21 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   lang,
   currentRep,
 }) => {
-  const prevIsOpenRef = useRef(false);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
+  // Back gesture / Back button support
+  useEffect(() => {
+    if (!isOpen) return;
+    const today = getLocalDateString();
+    setStartDate(today);
+    setEndDate(today);
+    window.history.pushState({ modal: 'customer_statement' }, '');
+    const handlePopState = () => {
+      onClose();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isOpen, onClose]);
   const [selectedListIds, setSelectedListIds] = useState<string[]>(['all']);
   const [isListDropdownOpen, setIsListDropdownOpen] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<string>(() => getLocalDateString());
@@ -41,62 +52,10 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   const [subColResult, setSubColResult] = useState<SubCollectionStatementResult | null>(null);
   const [loadingSubCol, setLoadingSubCol] = useState<boolean>(false);
 
-  const [serverPayments, setServerPayments] = useState<PaymentRecord[] | null>(null);
-  const [isFetchingServerPayments, setIsFetchingServerPayments] = useState<boolean>(false);
-
-  // Initialize dates ONLY on first modal open - never override user's date selection on re-render!
-  useEffect(() => {
-    if (!isOpen) {
-      prevIsOpenRef.current = false;
-      return;
-    }
-
-    if (!prevIsOpenRef.current) {
-      prevIsOpenRef.current = true;
-      const today = getLocalDateString();
-      setStartDate(today);
-      setEndDate(today);
-      // Fetch server records automatically in background without requiring user to press any button
-      handleFetchAllFromServer();
-    }
-  }, [isOpen]);
-
-  // Back gesture / Back button support
-  useEffect(() => {
-    if (!isOpen) return;
-
-    window.history.pushState({ modal: 'customer_statement' }, '');
-    const handlePopState = () => {
-      onCloseRef.current();
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [isOpen]);
-
-  const handleFetchAllFromServer = async () => {
-    setIsFetchingServerPayments(true);
-    try {
-      const res = await fetch('/api/payments');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setServerPayments(data);
-        }
-      }
-    } catch (e) {
-      console.warn('Error fetching all payments from server:', e);
-    } finally {
-      setIsFetchingServerPayments(false);
-    }
-  };
-
   const isAr = lang === 'ar';
 
   const safeContracts = Array.isArray(contracts) ? contracts : [];
-  const activePaymentsList = serverPayments || payments;
-  const safePayments = Array.isArray(activePaymentsList) ? activePaymentsList : [];
+  const safePayments = Array.isArray(payments) ? payments : [];
   const safeCustomerLists = Array.isArray(customerLists) ? customerLists : [];
 
   // 0. Filter lists allowed for the current rep
@@ -437,10 +396,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         ? `الفترة من: ${startDate || 'البداية'} إلى: ${endDate || 'اليوم'}`
         : 'الكشف الشامل لجميع التواريخ المسجلة';
 
-      const totalAccumulatedSum = filteredContracts.reduce((sum, c) => {
-        const acc = calculateAccumulatedInstallment(c, endDate || undefined);
-        return sum + (acc.accumulated > 0 ? acc.accumulated : 0);
-      }, 0);
       const totalInstallment = filteredContracts.reduce((sum, c) => sum + (c.dailyInstallment || 0), 0);
       const totalPaidSum = filteredContracts.reduce((sum, c) => sum + (c.totalPaid || 0), 0);
       const totalRemainingSum = filteredContracts.reduce((sum, c) => sum + Math.max(0, (c.totalPrice - c.advancePayment) - (c.totalPaid || 0)), 0);
@@ -453,7 +408,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         const netFinanced = c.totalPrice - c.advancePayment;
         const totalPaid = c.totalPaid || 0;
         const remaining = Math.max(0, netFinanced - totalPaid);
-        const accInfo = calculateAccumulatedInstallment(c, endDate || undefined);
 
         const dateCells = availableDates.map((d) => {
           const paid = custPayments[d] || 0;
@@ -465,9 +419,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <td class="cust-name">
               ${c.customerName}
               ${((c.remainingBalance || 0) <= 0 || c.status === 'completed' || remaining <= 0) ? `<br/><span style="font-size:8px;color:#d97706;font-weight:bold;">${formatZeroBalanceCountdown(c, isAr)}</span>` : ''}
-            </td>
-            <td class="num-cell" style="font-weight:900;color:${accInfo.isOverdueDueAll ? '#b91c1c' : '#b45309'};background:${accInfo.isOverdueDueAll ? '#fee2e2' : 'transparent'};">
-              ${accInfo.isOverdueDueAll ? '<b style="color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:11px;">منتهي</b>' : (accInfo.accumulated > 0 ? accInfo.accumulated.toLocaleString('en-US') : '0')}
             </td>
             <td class="num-cell inst-cell">${(c.dailyInstallment || 0).toLocaleString('en-US')}</td>
             <td class="num-cell paid-cell">${totalPaid.toLocaleString('en-US')}</td>
@@ -635,7 +586,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <thead>
               <tr>
                 <th style="width: 140px; text-align: right;">اسم الزبون</th>
-                <th style="width: 80px; color: #b45309; background-color: #fef3c7;">المتراكم</th>
                 <th style="width: 80px;">مبلغ القسط</th>
                 <th style="width: 90px;">إجمالي الواصل</th>
                 <th style="width: 90px;">المتبقي الباقي</th>
@@ -648,7 +598,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             <tfoot>
               <tr>
                 <td style="text-align: right; font-weight: 900;">المجموع الكلي</td>
-                <td style="color: #b45309; font-weight: 900; background-color: #fef3c7;">${totalAccumulatedSum.toLocaleString('en-US')}</td>
                 <td>${totalInstallment.toLocaleString('en-US')}</td>
                 <td>${totalPaidSum.toLocaleString('en-US')}</td>
                 <td>${totalRemainingSum.toLocaleString('en-US')}</td>
@@ -695,7 +644,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
       // Sheet 1: Matrix View (كشف المصفوفة)
       const matrixHeaders = [
         isAr ? 'اسم الزبون' : 'Customer Name',
-        isAr ? 'المتراكم' : 'Accrued',
         isAr ? 'مبلغ القسط' : 'Installment Amount',
         isAr ? 'إجمالي الواصل' : 'Total Paid',
         isAr ? 'المتبقي الباقي' : 'Remaining Balance',
@@ -709,11 +657,9 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
         const totalPaid = c.totalPaid || 0;
         const remaining = Math.max(0, netFinanced - totalPaid);
         const dateValues = availableDates.map((d) => custPayments[d] || 0);
-        const accInfo = calculateAccumulatedInstallment(c, endDate || undefined);
 
         matrixRows.push([
           c.customerName || '',
-          accInfo.displayValue,
           c.dailyInstallment || 0,
           totalPaid,
           remaining,
@@ -722,10 +668,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
       });
 
       // Totals Row for Matrix
-      const totalAccumulatedSum = filteredContracts.reduce((sum, c) => {
-        const acc = calculateAccumulatedInstallment(c, endDate || undefined);
-        return sum + (acc.accumulated > 0 ? acc.accumulated : 0);
-      }, 0);
       const totalInstallment = filteredContracts.reduce((sum, c) => sum + (c.dailyInstallment || 0), 0);
       const totalPaidSum = filteredContracts.reduce((sum, c) => sum + (c.totalPaid || 0), 0);
       const totalRemainingSum = filteredContracts.reduce(
@@ -741,7 +683,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
 
       matrixRows.push([
         isAr ? 'المجموع الكلي' : 'Total',
-        totalAccumulatedSum,
         totalInstallment,
         totalPaidSum,
         totalRemainingSum,
@@ -1056,12 +997,12 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             </div>
 
             {/* 2. Date From */}
-            <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 px-1 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
+            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 px-1.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
               <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-                <Calendar className="w-2.5 h-2.5 text-blue-600 shrink-0" />
-                <span className="text-[8px] sm:text-[9px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'من:' : 'From:'}</span>
+                <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
+                <span className="text-[8.5px] sm:text-[10px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'من:' : 'From:'}</span>
               </div>
-              <span className="font-mono font-bold text-[7.5px] xs:text-[8px] sm:text-[9px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              <span className="font-mono font-bold text-[8px] xs:text-[9px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
                 {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
@@ -1074,12 +1015,12 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
             </div>
 
             {/* 3. Date To */}
-            <div className="relative flex items-center justify-between gap-0.5 bg-white dark:bg-slate-800 px-1 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
+            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 px-1.5 py-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-2xs w-full min-w-0">
               <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-                <Calendar className="w-2.5 h-2.5 text-blue-600 shrink-0" />
-                <span className="text-[8px] sm:text-[9px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'إلى:' : 'To:'}</span>
+                <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
+                <span className="text-[8.5px] sm:text-[10px] font-black text-slate-600 dark:text-slate-300 whitespace-nowrap">{isAr ? 'إلى:' : 'To:'}</span>
               </div>
-              <span className="font-mono font-bold text-[7.5px] xs:text-[8px] sm:text-[9px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              <span className="font-mono font-bold text-[8px] xs:text-[9px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tighter whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
                 {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
@@ -1263,9 +1204,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                     <th className="sticky top-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-right">
                       {isAr ? 'اسم العميل' : 'Customer Name'}
                     </th>
-                    <th className="sticky top-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-center text-amber-950 dark:text-amber-200">
-                      {isAr ? 'المتراكم' : 'Accrued'}
-                    </th>
                     <th className="sticky top-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-right">
                       {isAr ? 'المادة / السلعة' : 'Item'}
                     </th>
@@ -1289,14 +1227,12 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                 <tbody className="divide-y divide-slate-300 dark:divide-slate-700 font-extrabold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
                   {customerSummaries.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-4 text-center text-slate-400 font-bold text-xs sm:text-sm">
+                      <td colSpan={7} className="p-4 text-center text-slate-400 font-bold text-xs sm:text-sm">
                         {isAr ? 'لا يوجد زبائن مطبقون لهذا الفلتر' : 'No matching customers found'}
                       </td>
                     </tr>
                   ) : (
-                    customerSummaries.map(({ contract, sales, payments, net, totalRemaining, txCount }) => {
-                      const accInfo = calculateAccumulatedInstallment(contract, endDate || undefined);
-                      return (
+                    customerSummaries.map(({ contract, sales, payments, net, totalRemaining, txCount }) => (
                       <tr key={contract.id} className="hover:bg-blue-50/70 dark:hover:bg-slate-700/60 transition-colors">
                         <td className="px-1.5 py-1 border border-slate-900 dark:border-slate-600 font-black text-slate-900 dark:text-slate-100">
                           {contract.customerPhone ? (
@@ -1317,22 +1253,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                               <span className="block truncate">{contract.customerName}</span>
                               <ZeroBalanceCountdown contract={contract} isAr={isAr} />
                             </button>
-                          )}
-                        </td>
-
-                        <td className="px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-xs sm:text-sm">
-                          {accInfo.isOverdueDueAll ? (
-                            <span className="inline-block px-1.5 py-0.5 rounded font-black text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300 text-xs">
-                              منتهي
-                            </span>
-                          ) : (
-                            accInfo.accumulated > 0 ? (
-                              <span className="text-amber-700 dark:text-amber-400 font-black">
-                                {accInfo.accumulated.toLocaleString('en-US')}
-                              </span>
-                            ) : (
-                              <span className="text-slate-500 font-bold">0</span>
-                            )
                           )}
                         </td>
 
@@ -1366,24 +1286,14 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                           </button>
                         </td>
                       </tr>
-                      );
-                    })
+                    ))
                   )}
                 </tbody>
                 {customerSummaries.length > 0 && (
                   <tfoot className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 font-black text-slate-900 dark:text-slate-100 border-t-2 border-slate-900 dark:border-slate-500 shadow-md">
                     <tr>
-                      <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
-                        {isAr ? 'المجموع الكلي' : 'Grand Totals'}
-                      </td>
-                      <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-amber-950 dark:text-amber-200 text-xs sm:text-sm">
-                        {customerSummaries.reduce((s, c) => {
-                          const acc = calculateAccumulatedInstallment(c.contract, endDate || undefined);
-                          return s + (acc.accumulated > 0 ? acc.accumulated : 0);
-                        }, 0).toLocaleString('en-US')}
-                      </td>
-                      <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-center text-slate-400">
-                        —
+                      <td colSpan={2} className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
+                        {isAr ? 'المجموع الكلي للمجموعة' : 'Grand Totals'}
                       </td>
                       <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-blue-900 dark:text-blue-300 text-xs sm:text-sm">
                         {customerSummaries.reduce((s, c) => s + c.sales, 0).toLocaleString('en-US')}
@@ -1415,9 +1325,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                     <th className="sticky top-0 right-0 z-30 bg-[#b8cce4] dark:bg-slate-800 px-1 sm:px-1.5 py-1 border border-slate-900 dark:border-slate-600 text-right whitespace-nowrap shadow-sm min-w-[90px] sm:min-w-[120px]">
                       {isAr ? 'اسم العميل' : 'Customer Name'}
                     </th>
-                    <th className="sticky top-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1 py-1 border border-slate-900 dark:border-slate-600 text-center whitespace-nowrap text-amber-950 dark:text-amber-200">
-                      {isAr ? 'المتراكم' : 'Accrued'}
-                    </th>
                     <th className="sticky top-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-1 py-1 border border-slate-900 dark:border-slate-600 text-center whitespace-nowrap">
                       {isAr ? 'القسط' : 'Rate'}
                     </th>
@@ -1441,7 +1348,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                   {filteredContracts.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5 + availableDates.length}
+                        colSpan={4 + availableDates.length}
                         className="p-4 text-center text-slate-400 font-bold text-xs sm:text-sm"
                       >
                         {isAr ? 'لا يوجد زبائن مطبقون لهذا الفلتر' : 'No matching customers found'}
@@ -1453,7 +1360,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                       const netFinanced = c.totalPrice - c.advancePayment;
                       const totalPaid = c.totalPaid || 0;
                       const remaining = Math.max(0, netFinanced - totalPaid);
-                      const accInfo = calculateAccumulatedInstallment(c, endDate || undefined);
 
                       return (
                         <tr key={c.id} className="hover:bg-blue-50/70 dark:hover:bg-slate-700/50 transition-colors">
@@ -1476,22 +1382,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                                 <span className="block truncate">{c.customerName}</span>
                                 <ZeroBalanceCountdown contract={c} isAr={isAr} />
                               </button>
-                            )}
-                          </td>
-
-                          <td className="px-0.5 sm:px-1.5 py-0.5 sm:py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-[10px] sm:text-xs md:text-sm whitespace-nowrap">
-                            {accInfo.isOverdueDueAll ? (
-                              <span className="inline-block px-1.5 py-0.5 rounded font-black text-rose-700 bg-rose-100 dark:bg-rose-950/80 dark:text-rose-300 text-[10px] sm:text-xs">
-                                منتهي
-                              </span>
-                            ) : (
-                              accInfo.accumulated > 0 ? (
-                                <span className="text-amber-700 dark:text-amber-400 font-black">
-                                  {accInfo.accumulated.toLocaleString('en-US')}
-                                </span>
-                              ) : (
-                                <span className="text-slate-500 font-bold">0</span>
-                              )
                             )}
                           </td>
 
@@ -1532,14 +1422,6 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
                     <tr>
                       <td className="sticky bottom-0 right-0 z-30 bg-[#b8cce4] dark:bg-slate-800 px-1 sm:px-1.5 py-0.5 sm:py-1 border border-slate-900 dark:border-slate-600 text-right font-black text-[10px] sm:text-xs md:text-sm shadow-sm min-w-[90px] sm:min-w-[120px]">
                         {isAr ? 'الإجمالي' : 'Total'}
-                      </td>
-                      <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-0.5 sm:px-1.5 py-0.5 sm:py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-amber-950 dark:text-amber-200 text-[10px] sm:text-xs md:text-sm whitespace-nowrap">
-                        {filteredContracts
-                          .reduce((sum, c) => {
-                            const acc = calculateAccumulatedInstallment(c, endDate || undefined);
-                            return sum + (acc.accumulated > 0 ? acc.accumulated : 0);
-                          }, 0)
-                          .toLocaleString('en-US')}
                       </td>
                       <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-0.5 sm:px-1.5 py-0.5 sm:py-1 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-slate-900 dark:text-slate-100 text-[10px] sm:text-xs md:text-sm whitespace-nowrap">
                         {filteredContracts

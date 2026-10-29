@@ -699,35 +699,6 @@ export async function mirrorLocalSnapshotToIndexedDb(immediate = false): Promise
 }
 
 /**
- * Persists current sales rep to IndexedDB so the Service Worker can access it when the app is closed
- */
-export async function saveCurrentRepToIndexedDb(rep: any): Promise<void> {
-  if (typeof indexedDB === 'undefined') return;
-  try {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const req = indexedDB.open('alkarrar_sync_db', 2);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    if (db.objectStoreNames.contains('pending_actions')) {
-      const tx = db.transaction('pending_actions', 'readwrite');
-      const store = tx.objectStore('pending_actions');
-      store.put({
-        id: '__meta_current_rep__',
-        type: '__META_CONFIG__',
-        payload: rep || null,
-        status: 'synced',
-        timestamp: Date.now(),
-      });
-      await new Promise((r) => {
-        tx.oncomplete = r;
-        tx.onerror = r;
-      });
-    }
-  } catch (e) {}
-}
-
-/**
  * Loads snapshot from IndexedDB into localStorage safely without overwriting pending local modifications
  */
 export async function loadSnapshotFromIndexedDbIfAvailable(): Promise<boolean> {
@@ -1790,174 +1761,22 @@ function scheduleUnifiedDataSync(delayMs = 50) {
   }, delayMs);
 }
 
-export const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000; // 5 days in ms
-export const LAST_5DAY_PRUNE_POLL_KEY = 'alkarrar_last_5day_prune_poll';
-
-/**
- * Prunes payments older than 1 year (365 days) from local cache (localStorage/IndexedDB) ONLY.
- * Kept strictly intact on PostgreSQL database and server files.
- * Pending offline payments are protected and never discarded.
- */
-export function prunePaymentsOlderThanOneYearFromLocalCache(): {
-  prunedCount: number;
-  remainingCount: number;
-  cutoffDate: string;
-} {
-  try {
-    const rawPayments = getLocalCache<any>('payments');
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    const cutoffDate = oneYearAgo.toISOString().split('T')[0];
-
-    if (!Array.isArray(rawPayments) || rawPayments.length === 0) {
-      return { prunedCount: 0, remainingCount: 0, cutoffDate };
-    }
-
-    // Pending offline payments must NEVER be pruned
-    const pendingIds = new Set<string>();
-    try {
-      const qRaw = localStorage.getItem('sami_pending_queue') || '[]';
-      const q = JSON.parse(qRaw);
-      if (Array.isArray(q)) {
-        for (const item of q) {
-          if (item?.payload?.id) pendingIds.add(String(item.payload.id));
-        }
-      }
-    } catch (e) {}
-
-    const kept: any[] = [];
-    let prunedCount = 0;
-
-    for (const p of rawPayments) {
-      if (!p || !p.id) continue;
-      if (pendingIds.has(String(p.id))) {
-        kept.push(p);
-        continue;
-      }
-      const pDate = p.paymentDate || (p.createdAt ? String(p.createdAt).split('T')[0] : '');
-      if (pDate && pDate < cutoffDate) {
-        prunedCount++;
-      } else {
-        kept.push(p);
-      }
-    }
-
-    if (prunedCount > 0) {
-      setLocalCache('payments', kept);
-      mirrorLocalSnapshotToIndexedDb(true).catch(() => {});
-      console.log(`[5-Day Pruning] Pruned ${prunedCount} payments older than 1 year from local cache. Kept ${kept.length} payments.`);
-    }
-
-    return { prunedCount, remainingCount: kept.length, cutoffDate };
-  } catch (err) {
-    console.warn('Error in prunePaymentsOlderThanOneYearFromLocalCache:', err);
-    return { prunedCount: 0, remainingCount: 0, cutoffDate: '' };
-  }
-}
-
-/**
- * Runs the 5-day cycle for automatic cleanup of payments older than 1 year and periodic polling.
- * If force=true or if 5 days have elapsed since last check, runs pruning & background reconcile.
- */
-export async function run5DayPruneAndPollingInspection(force = false): Promise<{
-  executed: boolean;
-  prunedCount: number;
-  remainingCount: number;
-  lastRun: number;
-  nextRun: number;
-}> {
-  try {
-    const lastRun = Number(localStorage.getItem(LAST_5DAY_PRUNE_POLL_KEY) || 0);
-    const now = Date.now();
-    const shouldRun = force || !lastRun || now - lastRun >= FIVE_DAYS_MS;
-
-    if (!shouldRun) {
-      return {
-        executed: false,
-        prunedCount: 0,
-        remainingCount: getLocalCache('payments').length,
-        lastRun,
-        nextRun: lastRun + FIVE_DAYS_MS,
-      };
-    }
-
-    const pruneRes = prunePaymentsOlderThanOneYearFromLocalCache();
-    localStorage.setItem(LAST_5DAY_PRUNE_POLL_KEY, String(now));
-
-    // Run clean reconciliation check
-    if (typeof navigator !== 'undefined' && navigator.onLine) {
-      await reconcileAllLocalWithDatabase({ force: false }).catch(() => {});
-    }
-
-    return {
-      executed: true,
-      prunedCount: pruneRes.prunedCount,
-      remainingCount: pruneRes.remainingCount,
-      lastRun: now,
-      nextRun: now + FIVE_DAYS_MS,
-    };
-  } catch (err) {
-    console.warn('run5DayPruneAndPollingInspection error:', err);
-    return {
-      executed: false,
-      prunedCount: 0,
-      remainingCount: 0,
-      lastRun: 0,
-      nextRun: 0,
-    };
-  }
-}
-
-export function get5DayPruneAndPollStatus() {
-  const lastRun = Number(localStorage.getItem(LAST_5DAY_PRUNE_POLL_KEY) || 0);
-  const now = Date.now();
-  const nextRun = lastRun ? lastRun + FIVE_DAYS_MS : now;
-  const isDue = !lastRun || now >= nextRun;
-  const daysRemaining = Math.max(0, Math.ceil((nextRun - now) / (24 * 60 * 60 * 1000)));
-
-  return {
-    lastRun,
-    nextRun,
-    isDue,
-    daysRemaining: isDue ? 0 : daysRemaining,
-    cycleDays: 5,
-  };
-}
-
 function startUnifiedPollingLoop() {
   if (unifiedPollingTimer) return;
-  // Background version poller runs smoothly every 60s
-  // Skips execution if user is editing in inputs or has modal open
+  // Lightweight background version poller runs every 15s to keep UI 100% fluid & responsive
   unifiedPollingTimer = setInterval(() => {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
     if (typeof document !== 'undefined' && document.hidden) return;
-    
-    // Check if user is typing
     if (typeof document !== 'undefined' && document.activeElement) {
       const tag = (document.activeElement.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || document.activeElement.hasAttribute('contenteditable')) {
         return;
       }
     }
-
-    // Skip disruptive background polling if user has an interactive modal open (e.g. Payments History, Statements)
-    if (typeof document !== 'undefined') {
-      const hasOpenModal = Boolean(
-        document.querySelector('[role="dialog"]') ||
-        document.querySelector('.fixed.inset-0.z-50')
-      );
-      if (hasOpenModal) {
-        return;
-      }
-    }
-
-    // Check 5-day automatic prune & polling interval
-    run5DayPruneAndPollingInspection(false).catch(() => {});
-
     if (activeSubscriberCount > 0) {
       reconcileAllLocalWithDatabase().catch(() => {});
     }
-  }, 60000);
+  }, 15000);
 }
 
 function stopUnifiedPollingLoop() {
@@ -3094,20 +2913,15 @@ export const deleteEmployeeFromFirestore = deleteEmployeeFromDatabase;
 
 export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any, arg6?: any) => {
   let tx: any = {};
-  if (typeof arg1 === 'object' && (arg1?.employeeId || arg1?.employee_id)) {
-    tx = { ...arg1 };
-    tx.id = tx.id || `emptx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-  } else if (typeof arg1 === 'object' && arg1?.id && typeof arg2 === 'string') {
+  if (typeof arg1 === 'object' && arg1?.id && typeof arg2 === 'string') {
     tx = {
       id: `emptx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       employeeId: arg1.id,
-      employeeName: arg1.name || arg1.repName || arg5 || '',
       fundId: arg2,
       type: arg3,
       amount: Number(arg4) || 0,
-      repName: arg5 || arg1.name || arg1.repName || '',
+      repName: arg5 || '',
       notes: arg6 || '',
-      note: arg6 || '',
       createdAt: new Date().toISOString(),
     };
   } else if (arg1) {
@@ -3116,10 +2930,7 @@ export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3
   } else {
     return;
   }
-
-  // Update local cache optimistically
   updateLocalCacheItem('employee_transactions', tx);
-
   const qPromise = addToPendingQueue('CREATE_EMPLOYEE_TRANSACTION', tx);
   saveToPostgres('employee-transactions', 'POST', tx, qPromise);
 };
@@ -3127,10 +2938,8 @@ export const processEmployeeDebtTransaction = async (arg1: any, arg2?: any, arg3
 export const deleteEmployeeDebtTransaction = async (id: string | any, ..._rest: any[]) => {
   const docId = typeof id === 'string' ? id : id?.id;
   if (!docId) return;
-
   markRecordAsDeleted(docId, 'employee_transactions');
   removeLocalCacheItem('employee_transactions', docId);
-
   const qPromise = addToPendingQueue('DELETE_EMPLOYEE_TRANSACTION', { id: docId });
   saveToPostgres(`employee-transactions/${docId}`, 'DELETE', undefined, qPromise);
 };

@@ -335,17 +335,14 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
     };
   });
 
-  // For supervisors, show all representatives who have access to the lists even if 0 collections. For admin, hide reps with 0 collections unless own box.
+  // Only display boxes that have collections in the selected period (or if it's the rep's own box)
   const activeRepStats = repStats.filter((rs) => {
+    // 1. If not admin/supervisor (regular rep), always show his box even if 0, or if he has collections
     if (!isSupervisorOrAdmin) {
       return true;
     }
 
-    // Supervisor sees all representatives associated with their allowed lists (even if 0 collections)
-    if (currentRep?.role === 'supervisor') {
-      return true;
-    }
-
+    // 2. For admin/supervisor, hide reps who have 0 collections in this period unless it's their own user box
     if (rs.repPayments.length === 0) {
       return Boolean(currentRep && rs.rep.id === currentRep.id);
     }
