@@ -8,7 +8,6 @@ import {
   INITIAL_INVENTORY,
   INITIAL_EMPLOYEES,
   INITIAL_CONTRACTS,
-  INITIAL_PAYMENTS,
 } from '../data/initialContracts';
 import { AppointmentRecord } from '../types';
 
@@ -258,10 +257,10 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
     const pendingDeleteIds = new Set<string>();
     const pendingCreateIds = new Set<string>();
     for (const act of pendingActions) {
-      if (act.type?.startsWith('DELETE_') || act.type?.endsWith('_DELETE')) {
+      if (act.type?.startsWith('DELETE_')) {
         const docId = typeof act.payload === 'string' ? act.payload : act.payload?.id;
         if (docId && docId !== 'rep-1') pendingDeleteIds.add(docId);
-      } else if (act.type?.startsWith('CREATE_') || act.type?.endsWith('_CREATE') || act.type === 'ADD_PAYMENT') {
+      } else if (act.type?.startsWith('CREATE_') || act.type === 'ADD_PAYMENT') {
         const docId = act.payload?.id;
         if (docId) pendingCreateIds.add(docId);
       }
@@ -310,7 +309,24 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
       }
     }
 
-
+    if (tableName === 'reps') {
+      // Ensure rep-1 is ALWAYS present in reps
+      const hasDhia = Array.from(map.values()).some((r: any) => r.id === 'rep-1' || (r.name && r.name.includes('ضياء')));
+      if (!hasDhia) {
+        map.set('rep-1', {
+          id: 'rep-1',
+          name: 'ضياء المحاسب',
+          phone: '07801112233',
+          code: '4444',
+          role: 'admin',
+          canEdit: true,
+          canDelete: true,
+          canMoveCustomer: true,
+          canSell: true,
+          allowedListIds: ['all']
+        });
+      }
+    }
 
     // Apply un-synced pending offline actions on top (new offline additions or edits)
     for (const act of pendingActions) {
@@ -409,11 +425,6 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
         if (type === 'CREATE_PAYMENT_CONFLICT' && payload.id) {
           map.set(payload.id, payload);
         }
-      } else if (tableName === 'appointments' && (type === 'CREATE_APPOINTMENT' || type === 'UPDATE_APPOINTMENT' || type === 'APPOINTMENT_CREATE' || type === 'APPOINTMENT_UPDATE')) {
-        if (payload.id) {
-          const existing = map.get(payload.id) || {};
-          map.set(payload.id, { ...existing, ...payload });
-        }
       }
       // Strictly NO fallback else block: never cross-insert actions into unrelated tables!
     }
@@ -466,15 +477,6 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
           recalculateAllContractsFromPayments(undefined, items, true);
         }, 10);
       } catch (e) {}
-      return items as unknown as T[];
-    }
-
-    if (tableName === 'appointments') {
-      items.sort((a: any, b: any) => {
-        const dateA = new Date(a.appointmentDate || a.appointment_date || a.createdAt || 0).getTime();
-        const dateB = new Date(b.appointmentDate || b.appointment_date || b.createdAt || 0).getTime();
-        return dateA - dateB;
-      });
       return items as unknown as T[];
     }
 
@@ -645,7 +647,6 @@ export async function mirrorLocalSnapshotToIndexedDb(immediate = false): Promise
       const employees = getLocalCache<any>('employees');
       const fundTx = getLocalCache<any>('fund_transactions');
       const empTx = getLocalCache<any>('employee_transactions');
-      const appointments = getLocalCache<any>('appointments');
       const deletedIds = getLocalCache<string>('deleted_record_ids');
 
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -670,7 +671,6 @@ export async function mirrorLocalSnapshotToIndexedDb(immediate = false): Promise
             employees,
             fundTx,
             empTx,
-            appointments,
             deletedIds,
             timestamp: Date.now(),
           },
@@ -768,7 +768,6 @@ export async function loadSnapshotFromIndexedDbIfAvailable(): Promise<boolean> {
       if (Array.isArray(snapshot.employees)) setLocalCache('employees', mergeRemoteWithPendingLocal('employees', snapshot.employees));
       if (Array.isArray(snapshot.fundTx)) setLocalCache('fund_transactions', mergeRemoteWithPendingLocal('fund_transactions', snapshot.fundTx));
       if (Array.isArray(snapshot.empTx)) setLocalCache('employee_transactions', mergeRemoteWithPendingLocal('employee_transactions', snapshot.empTx));
-      if (Array.isArray(snapshot.appointments)) setLocalCache('appointments', mergeRemoteWithPendingLocal('appointments', snapshot.appointments));
 
       notifySubscribersRefresh();
       return true;
@@ -1040,7 +1039,6 @@ function mapRow(tableName: string, r: any): any {
       canMoveCustomer: isDhia ? true : (r.can_move_customer !== false && r.canMoveCustomer !== false),
       canSell: isDhia ? true : (r.can_sell !== false && r.canSell !== false),
       allowedListIds: isDhia ? ['all'] : allowed,
-      avatarUrl: r.avatar_url ?? r.avatarUrl ?? '',
     };
   }
 
@@ -1323,54 +1321,6 @@ export function toDbRow(tableName: string, data: any): any {
     delete row.employeeId;
     delete row.fundId;
     delete row.repName;
-    delete row.createdAt;
-  }
-
-  if (tableName === 'appointments') {
-    if (data.contractId !== undefined || data.contract_id !== undefined) row.contract_id = data.contractId ?? data.contract_id;
-    if (data.customerName !== undefined || data.customer_name !== undefined) row.customer_name = data.customerName ?? data.customer_name;
-    if (data.customerPhone !== undefined || data.customer_phone !== undefined) row.customer_phone = data.customerPhone ?? data.customer_phone;
-    if (data.customerAddress !== undefined || data.customer_address !== undefined) row.customer_address = data.customerAddress ?? data.customer_address;
-    if (data.listId !== undefined || data.list_id !== undefined) row.list_id = data.listId ?? data.list_id;
-    if (data.listName !== undefined || data.list_name !== undefined) row.list_name = data.listName ?? data.list_name;
-    if (data.appointmentType !== undefined || data.appointment_type !== undefined) row.appointment_type = data.appointmentType ?? data.appointment_type;
-    if (data.recurringDay !== undefined || data.recurring_day !== undefined) row.recurring_day = data.recurringDay ?? data.recurring_day;
-    if (data.recurringDayName !== undefined || data.recurring_day_name !== undefined) row.recurring_day_name = data.recurringDayName ?? data.recurring_day_name;
-    if (data.recurringDayOfMonth !== undefined || data.recurring_day_of_month !== undefined) row.recurring_day_of_month = data.recurringDayOfMonth ?? data.recurring_day_of_month;
-    if (data.recurringMonthDayName !== undefined || data.recurring_month_day_name !== undefined) row.recurring_month_day_name = data.recurringMonthDayName ?? data.recurring_month_day_name;
-    if (data.appointmentDate !== undefined || data.appointment_date !== undefined) row.appointment_date = data.appointmentDate ?? data.appointment_date;
-    if (data.appointmentTime !== undefined || data.appointment_time !== undefined) row.appointment_time = data.appointmentTime ?? data.appointment_time;
-    if (data.dueDate !== undefined || data.due_date !== undefined) row.due_date = data.dueDate ?? data.due_date;
-    if (data.dueTime !== undefined || data.due_time !== undefined) row.due_time = data.dueTime ?? data.due_time;
-    if (data.title !== undefined) row.title = data.title;
-    if (data.notes !== undefined || data.note !== undefined) {
-      row.notes = data.notes ?? data.note;
-      row.note = data.note ?? data.notes;
-    }
-    if (data.status !== undefined) row.status = data.status;
-    if (data.createdByName !== undefined || data.created_by_name !== undefined) row.created_by_name = data.createdByName ?? data.created_by_name;
-    if (data.createdByRepName !== undefined || data.createdBy_rep_name !== undefined) row.created_by_rep_name = data.createdByRepName ?? data.createdBy_rep_name;
-    if (data.createdByRepId !== undefined || data.created_by_rep_id !== undefined) row.created_by_rep_id = data.createdByRepId ?? data.created_by_rep_id;
-    row.created_at = data.createdAt || data.created_at || nowIso;
-
-    delete row.contractId;
-    delete row.customerName;
-    delete row.customerPhone;
-    delete row.customerAddress;
-    delete row.listId;
-    delete row.listName;
-    delete row.appointmentType;
-    delete row.recurringDay;
-    delete row.recurringDayName;
-    delete row.recurringDayOfMonth;
-    delete row.recurringMonthDayName;
-    delete row.appointmentDate;
-    delete row.appointmentTime;
-    delete row.dueDate;
-    delete row.dueTime;
-    delete row.createdByName;
-    delete row.createdByRepName;
-    delete row.createdByRepId;
     delete row.createdAt;
   }
 
@@ -2046,12 +1996,7 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
       } else {
         let initialFallback: any[] = [];
         if (tableName === 'reps') initialFallback = DEFAULT_REPS;
-        else if (tableName === 'funds') initialFallback = INITIAL_FUNDS;
-        else if (tableName === 'customer_lists') initialFallback = INITIAL_CUSTOMER_LISTS;
-        else if (tableName === 'contracts') initialFallback = INITIAL_CONTRACTS;
-        else if (tableName === 'payments') initialFallback = INITIAL_PAYMENTS;
-        else if (tableName === 'inventory') initialFallback = INITIAL_INVENTORY;
-        else if (tableName === 'employees') initialFallback = INITIAL_EMPLOYEES;
+
         if (initialFallback.length > 0) {
           setLocalCache(tableName, initialFallback as T[]);
           emitIfChanged(initialFallback as T[]);
@@ -3347,10 +3292,6 @@ export async function forceRefreshAllDataFromPostgres(): Promise<boolean> {
           if (Array.isArray(data.fundTransactions)) setLocalCache('fund_transactions', mergeRemoteWithPendingLocal('fund_transactions', data.fundTransactions));
           if (Array.isArray(data.employeeTransactions)) setLocalCache('employee_transactions', mergeRemoteWithPendingLocal('employee_transactions', data.employeeTransactions));
           if (Array.isArray(data.paymentConflicts)) setLocalCache('payment_conflicts', mergeRemoteWithPendingLocal('payment_conflicts', data.paymentConflicts));
-          if (Array.isArray(data.appointments)) {
-            const mapped = data.appointments.map((r: any) => mapRow('appointments', r));
-            setLocalCache('appointments', mergeRemoteWithPendingLocal('appointments', mapped));
-          }
           mirrorLocalSnapshotToIndexedDb(true);
           notifySubscribersRefresh();
           return true;
@@ -3371,7 +3312,6 @@ export async function forceRefreshAllDataFromPostgres(): Promise<boolean> {
       { table: 'fund_transactions', endpoint: 'fund-transactions' },
       { table: 'employee_transactions', endpoint: 'employee-transactions' },
       { table: 'payment_conflicts', endpoint: 'payment-conflicts' },
-      { table: 'appointments', endpoint: 'appointments' },
     ];
     
     const results = await Promise.allSettled(
@@ -3478,10 +3418,14 @@ export const fetchAppointmentsFromPostgres = async (): Promise<AppointmentRecord
     if (res && res.ok) {
       const serverData = await res.json();
       if (Array.isArray(serverData)) {
-        const mapped = serverData.map((row: any) => mapRow('appointments', row));
-        const merged = mergeRemoteWithPendingLocal('appointments', mapped);
+        const serverMap = new Map(serverData.map((a: any) => [a.id, a]));
+        const merged = [...serverData];
+        local.forEach((loc) => {
+          if (!serverMap.has(loc.id)) {
+            merged.push(loc);
+          }
+        });
         setLocalCache('appointments', merged);
-        mirrorLocalSnapshotToIndexedDb(false);
         return merged;
       }
     }
@@ -3498,37 +3442,60 @@ export const saveAppointmentToPostgres = async (appt: any): Promise<AppointmentR
     createdAt: appt.createdAt || new Date().toISOString(),
   };
 
-  // 1. Save immediately to local cache & mirror to IndexedDB
+  // 1. Save immediately to local cache
   updateLocalCacheItem('appointments', fullAppt);
-  mirrorLocalSnapshotToIndexedDb(false);
-  notifySubscribersRefresh();
 
-  // 2. Queue and push to PostgreSQL
-  const qPromise = addToPendingQueue('APPOINTMENT_CREATE', fullAppt);
-  saveToPostgres('appointments', 'POST', fullAppt, qPromise);
+  // 2. Push to server via fetchWithFallback
+  try {
+    const res = await fetchWithFallback('/api/appointments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fullAppt),
+    }, 8000);
+    if (res && res.ok) {
+      const json = await res.json();
+      if (json?.appointment) {
+        updateLocalCacheItem('appointments', json.appointment);
+        return json.appointment;
+      }
+    }
+  } catch (err) {
+    console.warn('[saveAppointmentToPostgres] Offline/Network error, saved locally:', err);
+    try {
+      addToPendingQueue('APPOINTMENT_CREATE', fullAppt);
+    } catch (e) {}
+  }
   return fullAppt;
 };
 
 export const deleteAppointmentFromPostgres = async (id: string): Promise<void> => {
-  markRecordAsDeleted(id, 'appointments');
   removeLocalCacheItem('appointments', id);
-  mirrorLocalSnapshotToIndexedDb(false);
-  notifySubscribersRefresh();
-
-  const qPromise = addToPendingQueue('APPOINTMENT_DELETE', { id });
-  saveToPostgres(`appointments/${id}`, 'DELETE', { id }, qPromise);
+  try {
+    await fetchWithFallback(`/api/appointments/${id}`, { method: 'DELETE' }, 8000);
+  } catch (err) {
+    console.warn('[deleteAppointmentFromPostgres] Error deleting on server:', err);
+    try {
+      addToPendingQueue('APPOINTMENT_DELETE', { id });
+    } catch (e) {}
+  }
 };
 
 export const updateAppointmentInPostgres = async (id: string, updates: any): Promise<void> => {
   const current = getLocalCache<any>('appointments');
   const target = current.find((a) => a.id === id);
-  const updated = target ? { ...target, ...updates } : { id, ...updates };
-  updateLocalCacheItem('appointments', updated);
-  mirrorLocalSnapshotToIndexedDb(false);
-  notifySubscribersRefresh();
-
-  const qPromise = addToPendingQueue('APPOINTMENT_UPDATE', { id, ...updates });
-  saveToPostgres(`appointments/${id}`, 'PUT', updates, qPromise);
+  if (target) {
+    const updated = { ...target, ...updates };
+    updateLocalCacheItem('appointments', updated);
+  }
+  try {
+    await fetchWithFallback(`/api/appointments/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    }, 8000);
+  } catch (err) {
+    console.warn('[updateAppointmentInPostgres] Error updating on server:', err);
+  }
 };
 
 export const updateCustomerLocation = async (

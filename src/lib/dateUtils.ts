@@ -365,18 +365,6 @@ export function playNotificationSound() {
   }
 }
 
-export function getCurrentLoggedRepFromStorage(): { id?: string; name?: string; role?: string; allowedListIds?: any } | null {
-  try {
-    const savedRep = localStorage.getItem('sami_app_logged_rep');
-    if (!savedRep) return null;
-    const rep = JSON.parse(savedRep);
-    if (!rep || !rep.id || !rep.name) return null;
-    return rep;
-  } catch (e) {
-    return null;
-  }
-}
-
 export async function showBrowserNotification(
   title: string,
   body: string,
@@ -386,26 +374,8 @@ export async function showBrowserNotification(
     tag?: string;
     data?: any;
     vibrate?: number[];
-    requiredListId?: string | null;
   }
 ): Promise<boolean> {
-  // CRITICAL SECURITY: Block all notifications before login!
-  const loggedRep = getCurrentLoggedRepFromStorage();
-  if (!loggedRep) {
-    return false;
-  }
-
-  // Permission check: if notification belongs to a specific list, verify rep access
-  if (options?.requiredListId && loggedRep.role !== 'admin') {
-    const allowed = loggedRep.allowedListIds;
-    if (allowed && !allowed.includes('all')) {
-      const allowedArr = typeof allowed === 'string' ? allowed.split(',') : (Array.isArray(allowed) ? allowed : []);
-      if (!allowedArr.includes(options.requiredListId)) {
-        return false;
-      }
-    }
-  }
-
   try {
     // Play sound once
     playNotificationSound();

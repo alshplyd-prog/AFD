@@ -45,7 +45,7 @@ import {
   AppointmentRecord
 } from './types';
 import { getLocalDateString, playNotificationSound, showBrowserNotification, isAppointmentDueForNotification } from './lib/dateUtils';
-import { initCapacitorPush, requestExternalNotificationPermission } from './lib/capacitorPush';
+import { initCapacitorPush } from './lib/capacitorPush';
 import { INITIAL_CONTRACTS, DEFAULT_REPS, INITIAL_FUNDS, INITIAL_CUSTOMER_LISTS, INITIAL_EMPLOYEES } from './data/initialContracts';
 import { HeaderAndStats } from './components/HeaderAndStats';
 import { ContractCard } from './components/ContractCard';
@@ -161,7 +161,7 @@ import {
   run5DayPruneAndPollingInspection
 } from './lib/postgresClient';
 
-import { universalApiFetch, fetchWithFallback } from './lib/apiConfig';
+import { universalApiFetch } from './lib/apiConfig';
 import { subscribeToQueueChange, getPendingQueue, getPendingQueueSync, flushPendingQueue, scheduleIdleVerification, isUserActivelyTypingOrInputFocused } from './lib/offlineQueue';
 import { hasDuplicateName, deduplicateEntitiesByName, normalizeEntityName } from './lib/nameHelpers';
 import { normalizePin } from './lib/pinUtils';
@@ -576,9 +576,9 @@ export default function App() {
           setSyncError(true);
         }
       } else {
-        // Quick lightweight version verification with universal fallback
+        // Quick lightweight version verification
         try {
-          const res = await fetchWithFallback('/api/sync/version', { method: 'GET', cache: 'no-store' }, 4000).catch(() => null);
+          const res = await fetch('/api/sync/version', { method: 'GET', cache: 'no-store' }).catch(() => null);
           if (res && res.ok) {
             setSyncError(false);
             const data = await res.json().catch(() => null);
@@ -655,10 +655,8 @@ export default function App() {
     }
   }, []);
 
-  // One-time startup sync from PostgreSQL, init push notifications, and enable foreground service when app boots
+  // One-time startup sync from PostgreSQL and enable foreground service when app boots
   useEffect(() => {
-    initCapacitorPush().catch(() => {});
-    requestExternalNotificationPermission().catch(() => {});
     const bootSync = async () => {
       try {
         enableForegroundService().catch(() => {});
@@ -1435,7 +1433,7 @@ export default function App() {
       const allowedSet = new Set(currentRep.allowedListIds);
       return payments.filter((p) => {
         const c = contractsWithLiveBalances.find((con) => con.id === p.contractId);
-        return c?.listId ? allowedSet.has(c.listId) : false;
+        return c?.listId ? allowedSet.has(c.listId) : true;
       });
     }
 
@@ -1483,7 +1481,7 @@ export default function App() {
 
   // Check appointments in real-time and alert ONLY AT THEIR EXACT TIME (وليس عند إضافة الموعد أو قبله)
   useEffect(() => {
-    if (!currentRep || !appointments || appointments.length === 0) return;
+    if (!appointments || appointments.length === 0) return;
 
     const checkDueAppointments = () => {
       const now = new Date();
@@ -2256,8 +2254,8 @@ export default function App() {
 
       if (editingId) {
         const existingContract = contracts.find((c) => c.id === editingId);
-        const isAdminOrSupervisor = currentRep?.role === 'admin' || currentRep?.role === 'supervisor' || !currentRep;
-        const dataToSave = (!isAdminOrSupervisor && existingContract)
+        const isAdmin = currentRep?.role === 'admin';
+        const dataToSave = (!isAdmin && existingContract)
           ? {
               ...existingContract,
               dailyInstallment: finalData.dailyInstallment,
@@ -2267,7 +2265,7 @@ export default function App() {
         setContracts((prev) => prev.map((c) => (c.id === editingId ? { ...c, ...dataToSave } : c)));
         await updateContractInFirestore(editingId, dataToSave);
         showToast(
-          !isAdminOrSupervisor
+          !isAdmin
             ? (isAr ? 'تم تعديل قيمة القسط بنجاح' : 'Installment rate updated successfully')
             : (isAr ? 'تم تعديل بيانات الزبون والعقد بنجاح' : 'Contract updated successfully')
         );
@@ -2824,7 +2822,7 @@ export default function App() {
 
   const handleRecalculateFundBalances = async () => {
     try {
-      const res = await fetchWithFallback('/api/funds/recalculate', { method: 'POST' });
+      const res = await fetch('/api/funds/recalculate', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         if (data.funds && Array.isArray(data.funds)) {
@@ -4033,8 +4031,8 @@ export default function App() {
                     <div className="p-2 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 group-hover:scale-105 transition-transform shadow-2xs">
                       <History className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
-                    <span className="text-[11px] xs:text-xs sm:text-sm font-black bg-rose-200/80 dark:bg-rose-950 text-rose-800 dark:text-rose-200 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap shadow-2xs">
-                      {todayAllCollected.toLocaleString('en-US')} {isAr ? 'د.ع' : 'IQD'}
+                    <span className="text-[11px] xs:text-xs sm:text-sm font-extrabold bg-rose-200/80 dark:bg-rose-950 text-rose-800 dark:text-rose-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                      {payments.length} {isAr ? 'تسديد' : 'Payments'}
                     </span>
                   </div>
                   <div className="space-y-1 my-1">
@@ -4431,7 +4429,6 @@ export default function App() {
         }}
         onSave={handleSaveContract}
         editingContract={editingContract}
-        contracts={contracts}
         inventory={inventory}
         customerLists={customerLists}
         defaultListId={selectedListId !== 'all' ? selectedListId : customerLists[0]?.id}

@@ -348,7 +348,8 @@ export function buildReceiptText(receiptData: ThermalReceiptData): string {
     ? `\n--------------------------------\n⚠️ ${warningText}\n--------------------------------`
     : '';
 
-  return `${receiptData.customerName}                  الزبون${duplicateBlock}
+  return `
+${receiptData.customerName}                  الزبون${duplicateBlock}
 ${receiptData.itemName}   المادة المباعة
 ${receiptData.totalPrice.toLocaleString('en-US')} دع              المبلغ الكلي
 ${receiptData.totalPaid.toLocaleString('en-US')} دع             المبلغ الواصل
@@ -357,7 +358,8 @@ ${receiptData.paidAmount.toLocaleString('en-US')} دع                      ال
 ${receiptData.amountInWords}                  المبلغ كتابة
 ${receiptData.dateStr}                 تاريخ الدفع
 ${receiptData.timeStr}                         الوقت
-====================`.trim();
+====================
+`;
 }
 
 /**
@@ -550,21 +552,6 @@ export function buildReceiptCanvas(receiptData: ThermalReceiptData): HTMLCanvasE
   ctx.font = 'bold 17px monospace';
   ctx.fillText('==================', width / 2, y);
 
-  // Exact 1cm (10mm) safety margin after text ends before paper cut
-  // Standard 58mm roll: 384px width / 58mm = 6.62 px/mm => 10mm (1cm) = 66px
-  const EXACT_1CM_BOTTOM_MARGIN = 66;
-  const exactHeight = Math.ceil(y + EXACT_1CM_BOTTOM_MARGIN);
-  const trimmedCanvas = document.createElement('canvas');
-  trimmedCanvas.width = width;
-  trimmedCanvas.height = exactHeight;
-  const tCtx = trimmedCanvas.getContext('2d');
-  if (tCtx) {
-    tCtx.fillStyle = '#ffffff';
-    tCtx.fillRect(0, 0, width, exactHeight);
-    tCtx.drawImage(canvas, 0, 0, width, exactHeight, 0, 0, width, exactHeight);
-    return trimmedCanvas;
-  }
-
   return canvas;
 }
 
@@ -577,7 +564,7 @@ export function buildReceiptCanvasTable(receiptData: ThermalReceiptData): HTMLCa
   const amountInWordsText = receiptData.amountInWords || (typeof numberToArabicWords === 'function' ? numberToArabicWords(receiptData.paidAmount) : '');
 
   // Dynamic height calculation
-  let estimatedHeight = 105; // header "الكرار للموبايل" + divider + 1cm margin space
+  let estimatedHeight = 65; // header "الكرار للموبايل" + divider
   if (isDuplicate) estimatedHeight += 120;
   estimatedHeight += 130; // Table 1: Customer info (3 rows)
   estimatedHeight += 180; // Table 2: Accounts (4 rows, paid highlighted)
@@ -723,21 +710,6 @@ export function buildReceiptCanvasTable(receiptData: ThermalReceiptData): HTMLCa
   ctx.font = 'bold 15px system-ui, Arial, sans-serif';
   ctx.fillText('شكراً لتعاملكم معنا', width / 2, y);
 
-  // Exact 1cm (10mm) safety margin after text ends before paper cut
-  // Standard 58mm roll: 384px width / 58mm = 6.62 px/mm => 10mm (1cm) = 66px
-  const EXACT_1CM_BOTTOM_MARGIN = 66;
-  const exactHeight = Math.ceil(y + EXACT_1CM_BOTTOM_MARGIN);
-  const trimmedCanvas = document.createElement('canvas');
-  trimmedCanvas.width = width;
-  trimmedCanvas.height = exactHeight;
-  const tCtx = trimmedCanvas.getContext('2d');
-  if (tCtx) {
-    tCtx.fillStyle = '#ffffff';
-    tCtx.fillRect(0, 0, width, exactHeight);
-    tCtx.drawImage(canvas, 0, 0, width, exactHeight, 0, 0, width, exactHeight);
-    return trimmedCanvas;
-  }
-
   return canvas;
 }
 
@@ -794,16 +766,8 @@ export function buildEscPosBitmapBytesFromCanvas(canvas: HTMLCanvasElement): Uin
 
     const rasterHeader = [0x1d, 0x76, 0x30, 0x00, xL, xH, yL, yH];
 
-    // ESC d 3 (0x1B 0x64 0x03): Feed 3 lines (~12mm) to advance exact 1cm canvas margin to physical cutter blade / tear bar slot
-    // Universal cut sequence (GS V 0, GS V 1, GS V 66 0, ESC i, ESC m) guarantees instant cut/separation across all thermal printer models
-    const footer = [
-      0x1b, 0x64, 0x03,       // ESC d 3: feed 3 lines (~12mm) so text clears thermal head to reach cutter / tear bar
-      0x1d, 0x56, 0x00,       // GS V 0: Full cut
-      0x1d, 0x56, 0x01,       // GS V 1: Partial cut
-      0x1d, 0x56, 0x42, 0x00, // GS V 66 0: Feed and cut
-      0x1b, 0x69,             // ESC i: Star/Citizen cut
-      0x1b, 0x6d              // ESC m: Star/Citizen partial cut
-    ];
+    // Feed 1 line & Paper cut (GS V 66 0)
+    const footer = [0x1b, 0x64, 0x01, 0x1d, 0x56, 0x42, 0x00];
 
     const result = new Uint8Array(header.length + rasterHeader.length + imageBytes.length + footer.length);
     result.set(header, 0);
@@ -896,18 +860,11 @@ export function buildEscPosBytes(receiptData: ThermalReceiptData): Uint8Array {
 
   // ESC a 1 - Center align
   parts.push(0x1b, 0x61, 0x01);
-  const footerBytes = encoder.encode('================================\nشكراً لتعاملكم معنا');
+  const footerBytes = encoder.encode('================================\nشكراً لتعاملكم معنا\n');
   parts.push(...Array.from(footerBytes));
 
-  // ESC d 3: Feed 3 lines (~12mm) to advance 1cm margin to cutter blade / tear bar, then execute universal cut commands
-  parts.push(
-    0x1b, 0x64, 0x03,       // ESC d 3: feed 3 lines (~12mm)
-    0x1d, 0x56, 0x00,       // GS V 0: Full cut
-    0x1d, 0x56, 0x01,       // GS V 1: Partial cut
-    0x1d, 0x56, 0x42, 0x00, // GS V 66 0: Feed and cut
-    0x1b, 0x69,             // ESC i
-    0x1b, 0x6d              // ESC m
-  );
+  // Feed 1 line & Paper Cut: GS V 66 0
+  parts.push(0x1b, 0x64, 0x01, 0x1d, 0x56, 0x42, 0x00);
 
   return new Uint8Array(parts);
 }
@@ -1196,22 +1153,6 @@ export function renderInvoiceToImageBase64(invoiceData: any): string {
   ctx.lineTo(canvas.width - 30, y + 10);
   ctx.stroke();
 
-  // Crop canvas height immediately after line
-  const exactHeight = Math.ceil(y + 18);
-  if (exactHeight < canvas.height) {
-    const trimmedCanvas = document.createElement('canvas');
-    trimmedCanvas.width = canvas.width;
-    trimmedCanvas.height = exactHeight;
-    const tCtx = trimmedCanvas.getContext('2d');
-    if (tCtx) {
-      tCtx.fillStyle = '#ffffff';
-      tCtx.fillRect(0, 0, canvas.width, exactHeight);
-      tCtx.drawImage(canvas, 0, 0, canvas.width, exactHeight, 0, 0, canvas.width, exactHeight);
-      const dataUrl = trimmedCanvas.toDataURL('image/png');
-      return dataUrl.split(',')[1] || '';
-    }
-  }
-
   const dataUrl = canvas.toDataURL('image/png');
   return dataUrl.split(',')[1] || '';
 }
@@ -1330,24 +1271,34 @@ export function sendReceiptToRawBTIntent(receiptData: any): boolean {
 </html>`.trim();
 
     const base64Html = encodeHtmlToUtf8Base64(htmlContent);
+
+    // 1. Send Direct HTML/PDF to RawBT
+    try {
+      window.location.href = `rawbt:html;base64,${base64Html}`;
+    } catch (e) {}
+
+    // 2. Android Intent for RawBT package ru.a402d.rawbtprinter (HTML/PDF mode)
     const intentHtmlUrl = `intent:#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};S.base64=${base64Html};S.type=html;end;`;
 
-    try {
-      const link = document.createElement('a');
-      link.href = intentHtmlUrl;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        try { if (document.body.contains(link)) document.body.removeChild(link); } catch (e) {}
-      }, 500);
-      return true;
-    } catch (e) {
+    setTimeout(() => {
       try {
-        window.location.href = intentHtmlUrl;
-        return true;
-      } catch (err) {}
-    }
+        const link = document.createElement('a');
+        link.href = intentHtmlUrl;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          try { if (document.body.contains(link)) document.body.removeChild(link); } catch (e) {}
+        }, 500);
+      } catch (e) {}
+    }, 200);
+
+    // 3. Fallback: Trigger System PDF Print Spooler window
+    setTimeout(() => {
+      try {
+        openThermalPrintWindow(receiptData);
+      } catch (e) {}
+    }, 600);
 
     return true;
   } catch (err) {
@@ -1370,26 +1321,29 @@ export function sendToRawBTHtml(invoiceData: any): boolean {
     const isAndroid = (typeof Platform !== 'undefined' && (Platform.isAndroid || Platform.isAPK)) || /Android/i.test(navigator.userAgent || '') || !!(window as any).isAndroidAPK;
     const targetUrl = isAndroid ? intentUrl : rawbtUrl;
 
-    try {
+    setTimeout(() => {
+      try {
+        window.location.href = targetUrl;
+      } catch (e) {
+        // ignore
+      }
+
       const link = document.createElement('a');
       link.href = targetUrl;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
+
       setTimeout(() => {
         try {
           if (document.body.contains(link)) {
             document.body.removeChild(link);
           }
-        } catch (e) {}
+        } catch (e) {
+          // ignore
+        }
       }, 500);
-      return true;
-    } catch (e) {
-      try {
-        window.location.href = targetUrl;
-        return true;
-      } catch (err) {}
-    }
+    }, 200);
 
     return true;
   } catch (err) {
@@ -1440,9 +1394,9 @@ export function processPrintQueue() {
  * On Web/Desktop, uses silent iframe printing directly.
  */
 export function openUniversalPdfPrintWindow(contentHtml: string, isThermal: boolean = false, title: string = 'وصل تسديد', receiptData?: ThermalReceiptData) {
-  // Silent direct printing via offscreen 58mm iframe with exact height (never displays any modal/preview on screen)
+  // Silent direct printing via offscreen 58mm iframe (never displays any modal/preview on screen)
   try {
-    silentIframePrint(contentHtml, title, receiptData);
+    silentIframePrint(contentHtml, title);
   } catch (err) {
     console.error('Error in openUniversalPdfPrintWindow silent print:', err);
     try {
@@ -1508,25 +1462,22 @@ export function sendReceiptImageToRawBTIntent(receiptData: ThermalReceiptData): 
     const RAWBT_PACKAGE = 'ru.a404m.rawbt';
     
     const intentImageUrl = `intent:#Intent;scheme=rawbt;package=${RAWBT_PACKAGE};S.base64=${base64Image};S.type=image;end;`;
+    const rawbtImageUrl = `rawbt:data:image/png;base64,${base64Image}`;
     
     try {
-      const link = document.createElement('a');
-      link.href = intentImageUrl;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        try {
-          if (document.body.contains(link)) document.body.removeChild(link);
-        } catch (e) {}
-      }, 500);
-      return true;
-    } catch (e) {
+      window.location.href = intentImageUrl;
+    } catch (e) {}
+
+    const link = document.createElement('a');
+    link.href = intentImageUrl;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
       try {
-        window.location.href = intentImageUrl;
-        return true;
-      } catch (err) {}
-    }
+        if (document.body.contains(link)) document.body.removeChild(link);
+      } catch (e) {}
+    }, 500);
 
     return true;
   } catch (err) {
@@ -1537,18 +1488,26 @@ export function sendReceiptImageToRawBTIntent(receiptData: ThermalReceiptData): 
 
 export function formatReceiptAsPlainText(receiptData: ThermalReceiptData): string {
   const amountInWordsText = receiptData.amountInWords || (typeof numberToArabicWords === 'function' ? numberToArabicWords(receiptData.paidAmount) : '');
+  const titlePart = receiptData.shopTitle && receiptData.shopTitle !== 'الكرار للموبايل' ? `${receiptData.shopTitle}\n\n` : '';
   const isDuplicate = receiptData.isDuplicate || Boolean(receiptData.warningNote);
   const warningText = receiptData.warningNote || DEFAULT_DUPLICATE_RECEIPT_WARNING;
   const duplicateWarning = isDuplicate
     ? `\n--------------------------------\n⚠️ ${warningText}\n--------------------------------`
     : '';
-
-  return `اسم الزبون: ${receiptData.customerName || ''}${duplicateWarning}
-الواصل: ${Number(receiptData.totalPaid || 0).toLocaleString('en-US')} د.ع
-المبلغ رقماً: ${Number(receiptData.paidAmount || 0).toLocaleString('en-US')} د.ع
+  
+  return `
+${titlePart}رقم الوصل: ${receiptData.receiptNo || ''}
+الزبون: ${receiptData.customerName || ''}${duplicateWarning}
+المادة المباعة: ${receiptData.itemName || ''}
+المبلغ الكلي: ${Number(receiptData.totalPrice || 0).toLocaleString('en-US')} د.ع
+المبلغ الواصل: ${Number(receiptData.totalPaid || 0).toLocaleString('en-US')} د.ع
+المبلغ المتبقي: ${Number(receiptData.remainingBalance || 0).toLocaleString('en-US')} د.ع
+المبلغ المدفوع: ${Number(receiptData.paidAmount || 0).toLocaleString('en-US')} د.ع
 المبلغ كتابة: ${amountInWordsText || 'صفر دينار'}
-الباقي: ${Number(receiptData.remainingBalance || 0).toLocaleString('en-US')} د.ع
-التاريخ: ${receiptData.dateStr || ''}`.trim() + '\n\n[cut]';
+تاريخ الدفع: ${receiptData.dateStr || ''}
+الوقت: ${receiptData.timeStr || ''}
+================================
+`.trim();
 }
 
 /**
@@ -1556,8 +1515,39 @@ export function formatReceiptAsPlainText(receiptData: ThermalReceiptData): strin
  * bypassing base64 encoding, PDF generation & Android print dialog entirely.
  */
 export function sendToRawBTDirectly(receiptData: ThermalReceiptData) {
-  // Use image intent so RawBT prints exact cropped receipt image and stops paper immediately 1cm after text
-  return sendReceiptImageToRawBTIntent(receiptData);
+  const textReceipt = formatReceiptAsPlainText(receiptData);
+
+  // 0. If in Native Android APK, use Java Native RawBT intent directly for 100% reliability
+  const androidBridge = (window as any).AndroidPrinter || (window as any).AndroidInterface || (window as any).Android;
+  if (androidBridge && typeof androidBridge.printRawBT === 'function') {
+    try {
+      const ok = androidBridge.printRawBT(textReceipt);
+      if (ok) return true;
+    } catch (e) {
+      console.warn('Native Android printRawBT error:', e);
+    }
+  }
+
+  // Pure plain text Android Intent for RawBT (NO base64 / NO encryption)
+  const rawbtIntentUrl = `intent:#Intent;scheme=rawbt;package=ru.a404m.rawbt;S.text=${encodeURIComponent(textReceipt)};end;`;
+
+  try {
+    window.location.href = rawbtIntentUrl;
+  } catch (e) {}
+
+  try {
+    const link = document.createElement('a');
+    link.href = rawbtIntentUrl;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      try {
+        if (document.body.contains(link)) document.body.removeChild(link);
+      } catch (e) {}
+    }, 400);
+  } catch (e) {}
+  return true;
 }
 
 /**
@@ -1593,7 +1583,7 @@ export function openThermalPrintWindow(receiptData: ThermalReceiptData) {
   const isTemplate2 = receiptData.template === 'template_2';
 
   const htmlContent = isTemplate2 ? `
-    <div style="width: 100%; max-width: 54mm; margin: 0 auto; text-align: center; font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: bold; color: #000; background: #fff; padding: 2mm 2.5mm 10mm 2.5mm; box-sizing: border-box;" dir="rtl" lang="ar">
+    <div style="width: 100%; max-width: 54mm; margin: 0 auto; text-align: center; font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: bold; color: #000; background: #fff; padding: 2mm 2.5mm 0 2.5mm; box-sizing: border-box;" dir="rtl" lang="ar">
       <div style="font-size: 21px; font-weight: 900; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 2px solid #000; color: #000;">الكرار للموبايل</div>
       <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 13px; font-weight: bold; margin: 3px 0; color: #000;">
         <tbody>
@@ -1627,7 +1617,7 @@ export function openThermalPrintWindow(receiptData: ThermalReceiptData) {
       <div style="text-align: center; font-size: 12px; font-weight: bold; margin: 4px 0; color: #000;">شكراً لتعاملكم معنا</div>
     </div>
   ` : `
-    <div style="width: 100%; max-width: 54mm; margin: 0 auto; text-align: center; font-family: system-ui, -apple-system, sans-serif; font-size: 15px; font-weight: bold; color: #000; background: #fff; padding: 2mm 3.5mm 10mm 3.5mm; box-sizing: border-box;" dir="rtl" lang="ar">
+    <div style="width: 100%; max-width: 54mm; margin: 0 auto; text-align: center; font-family: system-ui, -apple-system, sans-serif; font-size: 15px; font-weight: bold; color: #000; background: #fff; padding: 2mm 3.5mm 0 3.5mm; box-sizing: border-box;" dir="rtl" lang="ar">
       ${hasCustomTitle ? `<div style="font-size: 22px; font-weight: 900; margin-bottom: 5px; color: #000;">${receiptData.shopTitle}</div>` : ''}
       <table style="width: 100%; border-collapse: collapse; font-size: 15px; font-weight: bold; margin: 2px 0; color: #000;">
         <tbody>
@@ -1706,7 +1696,7 @@ export async function shareReceiptImage(receiptData: ThermalReceiptData) {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'وصل تسديد',
+          title: 'وصل تسديد - الكرار للموبايل',
           text: `وصل تسديد للزبون: ${receiptData.customerName}`,
         });
         return;
@@ -2721,18 +2711,8 @@ export async function scanAndSaveBluetoothPrinter(): Promise<{ success: boolean;
  * Triggers silent background printing using a hidden iframe directly to the system default printer
  * without opening full window popups or preview screens.
  */
-export function silentIframePrint(htmlContent: string, title: string = 'وصل تسديد', receiptData?: ThermalReceiptData) {
+export function silentIframePrint(htmlContent: string, title: string = 'وصل تسديد') {
   try {
-    let exactHeightMm = 95;
-    if (receiptData) {
-      try {
-        const canvas = buildReceiptCanvas(receiptData);
-        if (canvas && canvas.height > 0) {
-          exactHeightMm = Math.max(70, Math.ceil((canvas.height * 58) / 384));
-        }
-      } catch (e) {}
-    }
-
     const frameId = '__silent_print_iframe__';
     const oldFrame = document.getElementById(frameId);
     if (oldFrame && oldFrame.parentNode) {
@@ -2756,12 +2736,10 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
     document.body.appendChild(iframe);
 
     // Also trigger Native Android PrintManager if inside Capacitor Bridge
-    let handledByNative = false;
     const androidBridge = (window as any).AndroidPrinter || (window as any).AndroidInterface || (window as any).Android;
     if (androidBridge && typeof androidBridge.printSystemDocument === 'function') {
       try {
         androidBridge.printSystemDocument(title);
-        handledByNative = true;
       } catch (e) {
         console.warn('androidBridge.printSystemDocument error:', e);
       }
@@ -2777,22 +2755,15 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
   <title>${title}</title>
   <style>
     @page {
-      size: 58mm ${exactHeightMm}mm;
+      size: 58mm auto;
       margin: 0;
     }
     @media print {
       html, body {
         width: 58mm !important;
         max-width: 58mm !important;
-        height: ${exactHeightMm}mm !important;
-        max-height: ${exactHeightMm}mm !important;
         margin: 0 auto !important;
         padding: 0 !important;
-        overflow: hidden !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
         background: #ffffff !important;
         color: #000000 !important;
         -webkit-print-color-adjust: exact !important;
@@ -2808,7 +2779,7 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
     }
     body {
       margin: 0 auto;
-      padding: 1mm 2mm 10mm 2mm; /* 10mm (1cm) safety margin after text ends */
+      padding: 1mm 2mm;
       width: 58mm;
       max-width: 58mm;
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', Tahoma, sans-serif;
@@ -2821,45 +2792,26 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
   </style>
 </head>
 <body>
-  <div id="receipt-print-wrapper" style="width: 58mm; max-width: 58mm; margin: 0 auto; padding: 0 1mm 10mm 1mm; box-sizing: border-box;">
+  <div style="width: 58mm; max-width: 58mm; margin: 0 auto; padding: 1mm;">
     ${htmlContent}
   </div>
 </body>
 </html>`);
       doc.close();
 
-      if (!handledByNative) {
-        setTimeout(() => {
-          try {
-            // Dynamically measure actual rendered DOM height to lock @page size before printing
-            if (iframe.contentWindow?.document?.body) {
-              const b = iframe.contentWindow.document.body;
-              const wrapper = iframe.contentWindow.document.getElementById('receipt-print-wrapper') || b;
-              const renderedPx = Math.max(wrapper.scrollHeight, wrapper.offsetHeight, b.scrollHeight, b.offsetHeight);
-              if (renderedPx > 50) {
-                const measuredMm = Math.ceil(renderedPx * 0.2646) + 3;
-                const finalMm = receiptData ? Math.max(measuredMm, exactHeightMm) : measuredMm;
-                const dynamicStyle = iframe.contentWindow.document.createElement('style');
-                dynamicStyle.innerHTML = `
-                  @page { size: 58mm ${finalMm}mm !important; margin: 0 !important; }
-                  html, body { height: ${finalMm}mm !important; max-height: ${finalMm}mm !important; overflow: hidden !important; }
-                `;
-                iframe.contentWindow.document.head.appendChild(dynamicStyle);
-              }
-            }
-
-            if (iframe.contentWindow) {
-              iframe.contentWindow.focus();
-              iframe.contentWindow.print();
-            } else {
-              window.print();
-            }
-          } catch (printErr) {
-            console.warn('iframe print exception, falling back to window.print():', printErr);
-            try { window.print(); } catch (e) {}
+      setTimeout(() => {
+        try {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } else {
+            window.print();
           }
-        }, 300);
-      }
+        } catch (printErr) {
+          console.warn('iframe print exception, falling back to window.print():', printErr);
+          try { window.print(); } catch (e) {}
+        }
+      }, 300);
       return true;
     }
   } catch (err) {

@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2, FileSpreadsheet, Share2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
-import { shareCustomerPaymentsPdf, shareGeneralPaymentsPdf } from '../lib/pdfShareHelper';
+import { X, Receipt, Printer, Edit2, Trash2, Calendar, Filter, Search, FolderKanban, CheckSquare, Square, Zap, Lock, ShieldCheck, ChevronDown, DownloadCloud, Loader2 } from 'lucide-react';
 import { PaymentRecord, Language, SalesRepresentative, InstallmentContract, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
-import { fetchWithFallback } from '../lib/apiConfig';
 import { DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
-import { formatPaymentDateTime, formatPaymentTime, getLocalDateString, getPaymentFormattedDateAndTime } from '../lib/dateUtils';
+import { formatPaymentDateTime, formatPaymentTime, getLocalDateString } from '../lib/dateUtils';
 import { normalizeEntityName } from '../lib/nameHelpers';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 
@@ -53,65 +50,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
 
   const [serverPayments, setServerPayments] = useState<PaymentRecord[] | null>(null);
   const [isFetchingFromServer, setIsFetchingFromServer] = useState<boolean>(false);
-
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
-    setToastMessage({ type, text });
-    setTimeout(() => {
-      setToastMessage((prev) => (prev?.text === text ? null : prev));
-    }, 4000);
-  };
-
-  const handleSharePdf = async () => {
-    if (isExportingPdf || filtered.length === 0) return;
-    setIsExportingPdf(true);
-    try {
-      let result;
-      if (customerFilterId) {
-        const targetContract =
-          activeContract ||
-          contracts.find(
-            (c) =>
-              c.id === customerFilterId ||
-              (filtered[0]?.customerName && normalizeEntityName(c.customerName) === normalizeEntityName(filtered[0].customerName))
-          ) ||
-          null;
-
-        result = await shareCustomerPaymentsPdf({
-          contract: targetContract,
-          payments: filtered,
-          lang,
-        });
-      } else {
-        const selectedListName = filterListId === 'all'
-          ? (isAr ? 'جميع القوائم' : 'All Lists')
-          : (customerLists.find((l) => l.id === filterListId)?.name || '');
-
-        result = await shareGeneralPaymentsPdf({
-          payments: filtered,
-          startDate,
-          endDate,
-          listName: selectedListName,
-          lang,
-        });
-      }
-
-      if (result && result.success) {
-        if (result.method !== 'user_cancelled') {
-          showToast(isAr ? 'تم تجهيز ومشاركة ملف PDF بنجاح' : 'PDF generated and shared successfully', 'success');
-        }
-      } else if (result?.error) {
-        showToast(isAr ? 'تعذر مشاركة الملف' : 'Failed to share PDF', 'error');
-      }
-    } catch (err) {
-      console.error('Export PDF failed:', err);
-      showToast(isAr ? 'حدث خطأ أثناء تصدير ملف PDF' : 'Error exporting PDF', 'error');
-    } finally {
-      setIsExportingPdf(false);
-    }
-  };
 
   // Initialize dates and filter ONLY when modal freshly opens or customerFilterId changes
   useEffect(() => {
@@ -161,7 +99,7 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
   const handleFetchAllFromServer = async () => {
     setIsFetchingFromServer(true);
     try {
-      const res = await fetchWithFallback('/api/payments');
+      const res = await fetch('/api/payments');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -409,16 +347,6 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleSharePdf}
-              disabled={isExportingPdf || filtered.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-xs transition-all cursor-pointer disabled:opacity-50"
-              title={isAr ? 'مشاركة سجل التسديدات كملف PDF' : 'Share Payments as PDF'}
-            >
-              <Share2 className={`w-3.5 h-3.5 ${isExportingPdf ? 'animate-spin' : ''}`} />
-              <span>{isExportingPdf ? (isAr ? 'جاري التحضير...' : 'Generating...') : (isAr ? 'مشاركة PDF' : 'Share PDF')}</span>
-            </button>
-            <button
-              type="button"
               onClick={onClose}
               className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
@@ -438,7 +366,7 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
                   : `Payments for: ${activeContract?.customerName || payments[0]?.customerName || customerFilterId || ''}`}
               </span>
             </div>
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-3">
               {activeContract && (
                 <span className="text-xs font-bold text-teal-800 dark:text-teal-200 bg-white/60 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5 flex-wrap">
                   <span>{isAr ? 'الواصل: ' : 'Paid: '}</span>

@@ -78,62 +78,28 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     });
   }, [contracts, selectedListId, startDate, endDate, searchQuery, currentRep]);
 
-  // Helper to get device count for a contract
-  const getDeviceCount = (c: InstallmentContract): number => {
-    const rawName = c.itemName || '';
-    // 1. Try parsing count from string like "(عدد 2)" or "عدد 2" or "(عدد: 2)" or "(2)"
-    const countMatch = rawName.match(/(?:عدد|\(عدد\)|عدد:|\(عدد:)\s*(\d+)/i) || rawName.match(/\((\d+)\)/);
-    if (countMatch && countMatch[1]) {
-      const parsed = parseInt(countMatch[1], 10);
-      if (parsed > 0) return parsed;
-    }
-    // 2. Fall back to c.itemQuantity if > 0
-    if (c.itemQuantity && Number(c.itemQuantity) > 0) {
-      return Number(c.itemQuantity);
-    }
-    return 1;
-  };
-
-  // Helper to get total purchase price for a contract (unit purchase price * number of devices)
+  // Helper to get purchase price for a contract
   const getPurchasePrice = (c: InstallmentContract): number => {
-    const devCount = getDeviceCount(c);
-    let unitPurchasePrice = c.purchasePrice || 0;
-
-    // If purchase price is 0, try fetching from inventory
-    if (unitPurchasePrice === 0 && c.itemId) {
+    if (c.purchasePrice !== undefined && c.purchasePrice > 0) {
+      return c.purchasePrice;
+    }
+    if (c.itemId) {
       const found = inventory.find((i) => i.id === c.itemId);
       if (found && found.purchasePrice && found.purchasePrice > 0) {
-        unitPurchasePrice = found.purchasePrice;
+        const qty = c.itemQuantity || 1;
+        return found.purchasePrice * qty;
       }
     }
-
-    // Fallback if purchase price still 0: infer unit price from item name price code if available
-    if (unitPurchasePrice === 0) {
-      const nameLower = (c.itemName || '').toLowerCase();
-      if (nameLower.includes('215')) {
-        unitPurchasePrice = 150000;
-      } else if (nameLower.includes('175')) {
-        unitPurchasePrice = 125000;
-      } else if (nameLower.includes('170')) {
-        unitPurchasePrice = 120000;
-      }
-    }
-
-    return unitPurchasePrice * devCount;
+    return 0;
   };
 
   // Helper to format Item Name & Quantity in the same cell
   const formatItemAndQty = (c: InstallmentContract): string => {
     const rawName = c.itemName || (isAr ? 'مادة غير محددة' : 'Unspecified Item');
-    const devCount = getDeviceCount(c);
-
-    // If item name already explicitly specifies "(عدد X)" or "عدد X", show as is
-    if (rawName.includes('عدد')) {
-      return rawName;
+    if (c.itemQuantity && c.itemQuantity > 1 && !rawName.includes('عدد')) {
+      return `${rawName} (العدد: ${c.itemQuantity})`;
     }
-
-    // Always explicitly show quantity tag (e.g. "جهزه 215 (عدد 1)") even when count is 1
-    return `${rawName} (عدد ${devCount})`;
+    return rawName;
   };
 
   // Calculate Totals for Footer Row
@@ -141,16 +107,14 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     let totalSelling = 0;
     let totalPurchase = 0;
     let totalDailyInst = 0;
-    let totalQty = 0;
 
     filteredSales.forEach((c) => {
       totalSelling += c.totalPrice || 0;
       totalPurchase += getPurchasePrice(c);
       totalDailyInst += c.dailyInstallment || 0;
-      totalQty += getDeviceCount(c);
     });
 
-    const totalProfit = totalSelling - totalPurchase;
+    const totalProfit = Math.max(0, totalSelling - totalPurchase);
 
     return {
       count: filteredSales.length,
@@ -158,7 +122,6 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
       totalPurchase,
       totalDailyInst,
       totalProfit,
-      totalQty,
     };
   }, [filteredSales, inventory]);
 
@@ -173,21 +136,21 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 font-sans dir-rtl select-none">
       {/* Responsive Filter Bar: Adapts to all devices - Expands on large screens, contracts outer padding on small screens */}
       <div className="p-2 sm:p-3 md:p-3.5 bg-slate-100 dark:bg-slate-800/95 border-b border-slate-300 dark:border-slate-700 shrink-0 space-y-2">
-        {/* Top Controls Row: List Selector & Dates Strictly in Single Row */}
-        <div className="grid grid-cols-3 gap-1 sm:gap-2 w-full items-center">
+        {/* Top Controls Row */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full">
           {/* Customer List Selector */}
-          <div className="relative w-full min-w-0">
+          <div className="relative flex-1 min-w-[140px] xs:min-w-[160px] sm:min-w-[180px] max-w-full sm:max-w-xs">
             <button
               type="button"
               onClick={() => setIsListDropdownOpen((prev) => !prev)}
-              className="flex items-center justify-between gap-1 bg-white dark:bg-slate-700 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-650 w-full text-[10px] sm:text-xs font-black text-slate-800 dark:text-slate-100 cursor-pointer min-w-0"
+              className="flex items-center justify-between gap-1.5 bg-white dark:bg-slate-700 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-650 w-full text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 cursor-pointer"
               title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
             >
-              <div className="flex items-center gap-1 min-w-0 truncate">
-                <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span className="truncate">{selectedListLabel}</span>
               </div>
-              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
 
             {isListDropdownOpen && (
@@ -243,15 +206,15 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
             )}
           </div>
 
-          {/* From Date Picker (Compact) */}
-          <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-700 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 shadow-2xs w-full min-w-0">
-            <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-              <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="text-[9px] sm:text-[11px] font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+          {/* From Date Picker */}
+          <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-700 px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs flex-1 min-w-[125px] xs:min-w-[140px] sm:min-w-[155px]">
+            <div className="flex items-center gap-1 min-w-0 shrink-0 pointer-events-none">
+              <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
                 {isAr ? 'من:' : 'From:'}
               </span>
             </div>
-            <span className="font-mono font-bold text-[8.5px] xs:text-[9.5px] sm:text-[11px] text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+            <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
               {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
             </span>
             <input
@@ -263,15 +226,15 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
             />
           </div>
 
-          {/* To Date Picker (Compact) */}
-          <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-700 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 shadow-2xs w-full min-w-0">
-            <div className="flex items-center gap-0.5 min-w-0 shrink-0 pointer-events-none">
-              <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="text-[9px] sm:text-[11px] font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+          {/* To Date Picker */}
+          <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-700 px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs flex-1 min-w-[125px] xs:min-w-[140px] sm:min-w-[155px]">
+            <div className="flex items-center gap-1 min-w-0 shrink-0 pointer-events-none">
+              <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
                 {isAr ? 'إلى:' : 'To:'}
               </span>
             </div>
-            <span className="font-mono font-bold text-[8.5px] xs:text-[9.5px] sm:text-[11px] text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+            <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
               {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
             </span>
             <input
@@ -454,11 +417,8 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
           {filteredSales.length > 0 && (
             <tfoot className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 font-black text-slate-900 dark:text-slate-100 border-t-2 border-slate-900 dark:border-slate-500 shadow-md">
               <tr>
-                <td colSpan={3} className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
+                <td colSpan={4} className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
                   {isAr ? 'الإجمالي للفترة المحددة' : 'Period Totals'}
-                </td>
-                <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-center font-black text-xs sm:text-sm">
-                  {isAr ? `العدد: ${totals.totalQty}` : `Qty: ${totals.totalQty}`}
                 </td>
                 <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2 py-2 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-amber-900 dark:text-amber-200 text-xs sm:text-sm whitespace-nowrap">
                   {totals.totalDailyInst.toLocaleString('en-US')}

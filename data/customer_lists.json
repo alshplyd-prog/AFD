@@ -9,6 +9,15 @@
     "createdAt": "2026-09-21T10:40:55.564Z"
   },
   {
+    "id": "fund-2",
+    "name": "ماهر 2",
+    "fundId": "fund-2",
+    "description": "",
+    "orderIndex": 1,
+    "receiptTemplate": "template_1",
+    "createdAt": "2026-09-19T19:42:41.747Z"
+  },
+  {
     "id": "list-4",
     "name": "القائمة الاولى",
     "fundId": "fund_1787350349137_204v6",
@@ -46,7 +55,7 @@
   },
   {
     "id": "list-1",
-    "name": "كربلاء الثانية",
+    "name": "كربلاء الأولى",
     "fundId": "fund_1787412701870_5rh61",
     "description": "سجل زبائن الكرخ والمنصور واليرموك",
     "orderIndex": 6,
@@ -79,17 +88,5 @@
     "orderIndex": 9,
     "receiptTemplate": "template_1",
     "createdAt": "2026-10-10T07:53:18.751Z"
-  }
-  ,
-  {
-    "id": "list_1789987255564_y9e1d_restored",
-    "name": "ماهر 2",
-    "fundId": "fund-2",
-    "description": "",
-    "orderIndex": 10,
-    "receiptTemplate": "template_1",
-    "createdAt": "2026-10-28T10:40:55.564Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_1"
   }
 ]

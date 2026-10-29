@@ -8,7 +8,6 @@ import { numberToArabicWords } from '../lib/tafqeet';
 import { getPaymentFormattedDateAndTime } from '../lib/dateUtils';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { normalizeEntityName } from '../lib/nameHelpers';
-import { exportToExcelFile, ExcelSheetData } from '../lib/excelExportHelper';
 
 interface RepsPaymentsSummaryBoxProps {
   currentRep: SalesRepresentative | null;
@@ -59,84 +58,6 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
   // Single Customer Payment Receipt Modal state
   const [activePaymentReceipt, setActivePaymentReceipt] = useState<ReceiptData | null>(null);
   const [isPaymentReceiptModalOpen, setIsPaymentReceiptModalOpen] = useState<boolean>(false);
-
-  const [isExportingExcel, setIsExportingExcel] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
-    setToastMessage({ type, text });
-    setTimeout(() => {
-      setToastMessage((prev) => (prev?.text === text ? null : prev));
-    }, 4000);
-  };
-
-  const handleExportExcel = async () => {
-    if (isExportingExcel) return;
-    setIsExportingExcel(true);
-    try {
-      const headers = [
-        isAr ? 'اسم المندوب' : 'Representative',
-        isAr ? 'عدد التسديدات' : 'Payments Count',
-        isAr ? 'المبلغ المحصل (د.ع)' : 'Total Collected (IQD)',
-        isAr ? 'إجمالي الديون المتبقية (د.ع)' : 'Total Remaining Debt (IQD)',
-      ];
-
-      const rows = activeRepStats.map((rs) => [
-        rs.rep.name || (isAr ? 'مندوب' : 'Rep'),
-        rs.paymentsCount,
-        rs.totalCollected,
-        rs.totalDebt,
-      ]);
-
-      const paymentHeaders = [
-        isAr ? 'التاريخ والوقت' : 'Date & Time',
-        isAr ? 'اسم الزبون' : 'Customer',
-        isAr ? 'المبلغ (د.ع)' : 'Amount (IQD)',
-        isAr ? 'المندوب' : 'Rep',
-        isAr ? 'ملاحظات' : 'Notes',
-      ];
-
-      const paymentRows = visiblePayments.map((p) => {
-        const { dateStr, timeStr, cleanNote } = getPaymentFormattedDateAndTime(p, isAr);
-        return [
-          `${dateStr} ${timeStr}`,
-          p.customerName || '',
-          Number(p.amountPaid ?? p.amount ?? 0),
-          p.repName || '',
-          cleanNote || '',
-        ];
-      });
-
-      const sheets: ExcelSheetData[] = [
-        {
-          sheetName: isAr ? 'ملخص تسديدات المندوبين' : 'Reps Summary',
-          headers,
-          rows,
-        },
-        {
-          sheetName: isAr ? 'تفاصيل الحركات' : 'Payments Detail',
-          headers: paymentHeaders,
-          rows: paymentRows,
-        },
-      ];
-
-      const result = await exportToExcelFile({
-        filename: `تسديدات_المندوبين_${startDate || 'بداية'}_إلى_${endDate || 'اليوم'}`,
-        sheets,
-        title: isAr ? 'تقرير تسديدات المندوبين' : 'Reps Payments Report',
-        text: isAr ? 'ملف تسديدات المندوبين وحركات التحصيل (Excel)' : 'Reps payments and collections report (Excel)',
-      });
-
-      if (result && result.success) {
-        showToast(isAr ? 'تم تصدير وحفظ تقرير Excel بنجاح' : 'Excel report exported successfully', 'success');
-      }
-    } catch (err) {
-      console.error('Export Excel failed:', err);
-      showToast(isAr ? 'حدث خطأ أثناء تصدير ملف Excel' : 'Error exporting Excel file', 'error');
-    } finally {
-      setIsExportingExcel(false);
-    }
-  };
 
   // Mobile Back Button / popstate handling for rep details modal
   useEffect(() => {
@@ -311,12 +232,7 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
 
   // Filter contracts based on visible lists and boxListId
   const visibleContracts = contracts.filter((c) => {
-    if (!currentRep || currentRep.role === 'admin' || (!currentRep.allowedListIds || currentRep.allowedListIds.includes('all'))) {
-      if (boxListId && boxListId !== 'all' && c.listId !== boxListId) return false;
-      return true;
-    }
-    const allowedSet = new Set(currentRep.allowedListIds);
-    if (!c.listId || !allowedSet.has(c.listId)) return false;
+    if (c.listId && !visibleListIds.has(c.listId)) return false;
     if (boxListId && boxListId !== 'all' && c.listId !== boxListId) return false;
     return true;
   });
@@ -325,13 +241,6 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
 
   // Filter payments by visible contracts AND date range
   const visiblePayments = payments.filter((p) => {
-    if (!currentRep || currentRep.role === 'admin' || (!currentRep.allowedListIds || currentRep.allowedListIds.includes('all'))) {
-      // allow
-    } else {
-      const allowedSet = new Set(currentRep.allowedListIds);
-      const c = contracts.find((con) => con.id === p.contractId);
-      if (!c || !c.listId || !allowedSet.has(c.listId)) return false;
-    }
     if (p.contractId && !visibleContractIds.has(p.contractId)) return false;
 
     // Date range filter
@@ -455,34 +364,18 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
 
   const content = (
     <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-2 sm:p-3.5 md:p-4 shadow-2xl dir-rtl space-y-2 sm:space-y-3 h-[95vh] max-h-[95vh] flex flex-col overflow-hidden w-full max-w-full lg:max-w-7xl xl:max-w-[1600px] 2xl:max-w-[1800px] mx-auto">
-      {toastMessage && (
-        <div
-          className={`px-3 py-1.5 text-xs font-bold flex items-center justify-between gap-2 transition-all print:hidden shrink-0 rounded-xl ${
-            toastMessage.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
-          }`}
-        >
-          <div className="flex items-center gap-1.5">
-            {toastMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-            <span>{toastMessage.text}</span>
-          </div>
-          <button type="button" onClick={() => setToastMessage(null)} className="p-0.5 hover:bg-white/20 rounded cursor-pointer">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
       {/* Date Range Selection Bar - Responsive across mobile and desktop */}
       <div className="bg-slate-50 dark:bg-slate-900/70 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2 shrink-0">
-        {/* Same Row: From Date & To Date Facing Each Other (half size) + Close Button */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="grid grid-cols-2 gap-1.5 flex-1 max-w-sm sm:max-w-md items-center">
-            {/* From Date - Reduced by half */}
-            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 shadow-2xs min-w-0">
-              <span className="text-[9px] sm:text-[10.5px] font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        {/* Same Row: From Date & To Date Facing Each Other + Close Button */}
+        <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 flex-1 items-center">
+            {/* From Date */}
+            <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs min-w-0">
+              <span className="text-xs sm:text-sm font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 {isAr ? 'من:' : 'From:'}
               </span>
-              <span className="font-mono font-bold text-[8.5px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              <span className="font-mono font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
                 {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
@@ -494,13 +387,13 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
               />
             </div>
 
-            {/* To Date - Reduced by half */}
-            <div className="relative flex items-center justify-between gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 shadow-2xs min-w-0">
-              <span className="text-[9px] sm:text-[10.5px] font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+            {/* To Date */}
+            <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs min-w-0">
+              <span className="text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
+                <span className="w-2 h-2 rounded-full bg-teal-500"></span>
                 {isAr ? 'إلى:' : 'To:'}
               </span>
-              <span className="font-mono font-bold text-[8.5px] sm:text-[10.5px] text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+              <span className="font-mono font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
                 {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
               </span>
               <input
@@ -517,10 +410,10 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
+              className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
               title={isAr ? 'إغلاق' : 'Close'}
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>

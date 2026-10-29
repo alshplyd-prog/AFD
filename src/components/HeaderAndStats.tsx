@@ -151,90 +151,6 @@ const RepAvatarDisplay: React.FC<{ name: string; avatarUrl?: string; role?: stri
   );
 };
 
-interface ProtectedHeaderSearchInputProps {
-  value: string;
-  onSearchChange: (val: string) => void;
-  placeholder: string;
-}
-
-const ProtectedHeaderSearchInput: React.FC<ProtectedHeaderSearchInputProps> = React.memo(({
-  value,
-  onSearchChange,
-  placeholder,
-}) => {
-  const [text, setText] = useState(value);
-  const isComposingRef = useRef(false);
-  const isFocusedRef = useRef(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (!isFocusedRef.current && !isComposingRef.current && value !== text) {
-      setText(value);
-    }
-  }, [value]);
-
-  const scheduleSearch = (val: string) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      onSearchChange(val);
-    }, 120);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setText(val);
-    if (!isComposingRef.current) {
-      scheduleSearch(val);
-    }
-  };
-
-  const handleClear = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setText('');
-    onSearchChange('');
-  };
-
-  return (
-    <div className="relative w-full">
-      <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center">
-        <Search className="w-3.5 h-3.5" />
-      </div>
-      <input
-        type="text"
-        value={text}
-        onChange={handleChange}
-        onFocus={() => {
-          isFocusedRef.current = true;
-        }}
-        onBlur={() => {
-          isFocusedRef.current = false;
-          onSearchChange(text);
-        }}
-        onCompositionStart={() => {
-          isComposingRef.current = true;
-        }}
-        onCompositionEnd={(e) => {
-          isComposingRef.current = false;
-          const val = e.currentTarget.value;
-          setText(val);
-          scheduleSearch(val);
-        }}
-        placeholder={placeholder}
-        className="w-full pr-8 pl-8 py-2 rounded-xl border border-slate-300/80 dark:border-slate-700/80 bg-white/60 dark:bg-slate-900/60 hover:bg-white/80 dark:hover:bg-slate-900/80 backdrop-blur-md text-slate-900 dark:text-slate-100 text-xs font-bold focus:outline-none focus:border-teal-500 text-center sm:text-right shadow-xs transition-all"
-      />
-      {text && (
-        <button
-          type="button"
-          onClick={handleClear}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer flex items-center justify-center"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-      )}
-    </div>
-  );
-});
-
 export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
   currentRep,
   reps = [],
@@ -283,6 +199,7 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isListDropdownOpen, setIsListDropdownOpen] = useState(false);
   const listDropdownRef = useRef<HTMLDivElement>(null);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -458,6 +375,9 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
     }
   };
 
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
   const [readNotifIds, setReadNotifIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -501,15 +421,10 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
     }
   };
 
-  const isAdmin = Boolean(currentRep && currentRep.role === 'admin');
-  const isSupervisorOrAdmin = Boolean(currentRep && (currentRep.role === 'admin' || currentRep.role === 'supervisor'));
+  const isAdmin = !currentRep || currentRep.role === 'admin';
+  const isSupervisorOrAdmin = !currentRep || currentRep.role === 'admin' || currentRep.role === 'supervisor';
 
   const notifications: AppNotificationItem[] = useMemo(() => {
-    // CRITICAL SECURITY: Prevent all notifications before login!
-    if (!currentRep) {
-      return [];
-    }
-
     const listMap = new Map(customerLists.map((l) => [l.id, l.name]));
     const items: AppNotificationItem[] = [];
 
@@ -522,9 +437,9 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
         cleanCreator === 'المسؤول' ||
         cleanCreator === 'مدير النظام';
 
-      if (currentRep.role === 'admin') {
+      if (!currentRep || currentRep.role === 'admin') {
         if (isAdminCreator) return true;
-        if (cleanCreator === currentRep.name.trim().toLowerCase()) return true;
+        if (currentRep && cleanCreator === currentRep.name.trim().toLowerCase()) return true;
         return false;
       }
 
@@ -536,8 +451,8 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
 
     // Strict list permission checker: non-admin reps can ONLY see items belonging to lists they have access to
     const isRepAllowedList = (listId?: string | null): boolean => {
-      if (!currentRep) return false;
-      if (currentRep.role === 'admin') return true;
+      if (isSupervisorOrAdmin) return true;
+      if (!currentRep) return true;
       if (currentRep.allowedListIds && currentRep.allowedListIds.includes('all')) return true;
       if (!listId) return false;
       if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;
@@ -915,7 +830,7 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
                   className="shrink-0 px-2.5 xs:px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-[11px] xs:text-xs sm:text-sm font-black flex items-center justify-center gap-1 xs:gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
                   title={isAr ? 'فتح كشف الحسابات' : 'Open Statement'}
                 >
-                  <FolderKanban className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-amber-300 dark:text-amber-300" />
+                  <FolderKanban className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                   <span>{isAr ? 'كشف الحساب' : 'Statement'}</span>
                 </button>
               )}
@@ -1365,12 +1280,35 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
               </div>
             )}
 
-            {/* Bottom Row: Protected Search Input */}
-            <ProtectedHeaderSearchInput
-              value={searchQuery}
-              onSearchChange={onSearchChange}
-              placeholder={isAr ? 'البحث عن زبون أو رقم هاتف...' : 'Search customer or phone...'}
-            />
+            {/* Bottom Row: Search Input */}
+            <div className="relative">
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none flex items-center justify-center">
+                <Search className="w-3.5 h-3.5" />
+              </div>
+              <input
+                type="text"
+                value={localSearch}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setLocalSearch(val);
+                  onSearchChange(val);
+                }}
+                placeholder={isAr ? 'البحث عن زبون أو رقم هاتف...' : 'Search customer or phone...'}
+                className="w-full pr-8 pl-8 py-2 rounded-xl border border-slate-300/80 dark:border-slate-700/80 bg-white/60 dark:bg-slate-900/60 hover:bg-white/80 dark:hover:bg-slate-900/80 backdrop-blur-md text-slate-900 dark:text-slate-100 text-xs font-bold focus:outline-none focus:border-teal-500 text-center sm:text-right shadow-xs transition-all"
+              />
+              {localSearch && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalSearch('');
+                    onSearchChange('');
+                  }}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

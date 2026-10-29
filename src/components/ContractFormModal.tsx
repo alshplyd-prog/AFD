@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, User, Phone, MapPin, Tag, Calendar, FileText, Package, ExternalLink, Plus, Minus, FolderKanban, Lock, LocateFixed, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Phone, MapPin, Tag, Calendar, FileText, Package, ExternalLink, Plus, Minus, FolderKanban, Lock, LocateFixed } from 'lucide-react';
 import { InstallmentContract, InventoryItem, Language, CustomerList, SalesRepresentative } from '../types';
 import { InventoryModal } from './InventoryModal';
 import { getLocalDateString } from '../lib/dateUtils';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
-import { normalizeArabicText } from '../lib/searchUtils';
 
 interface ContractFormModalProps {
   isOpen: boolean;
@@ -15,7 +14,6 @@ interface ContractFormModalProps {
     quantityDeducted?: number
   ) => void;
   editingContract?: InstallmentContract | null;
-  contracts?: InstallmentContract[];
   inventory: InventoryItem[];
   customerLists?: CustomerList[];
   defaultListId?: string;
@@ -34,7 +32,6 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
   onClose,
   onSave,
   editingContract,
-  contracts = [],
   inventory,
   customerLists = [],
   defaultListId,
@@ -46,36 +43,10 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
   onDeleteInventoryItem,
 }) => {
   const currentKey = editingContract
-    ? (editingContract.id ? `edit_${editingContract.id}` : 'editing_new_contract')
+    ? (editingContract.id ? `edit_${editingContract.id}` : `new_sale_${editingContract.customerName || 'custom'}`)
     : '__NEW_BLANK_CONTRACT__';
 
   const [customerName, setCustomerName] = useState('');
-  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
-
-  // Auto-suggestion list of existing customers matching full name
-  const matchedCustomerSuggestions = useMemo(() => {
-    if (!contracts || contracts.length === 0 || !customerName || customerName.trim().length === 0) return [];
-    const q = normalizeArabicText(customerName);
-    if (!q) return [];
-
-    const uniqueMap = new Map<string, { name: string; phone: string; address: string; listId?: string }>();
-    for (const c of contracts) {
-      if (c && c.customerName) {
-        const norm = normalizeArabicText(c.customerName);
-        if (norm.includes(q)) {
-          if (!uniqueMap.has(c.customerName)) {
-            uniqueMap.set(c.customerName, {
-              name: c.customerName,
-              phone: c.customerPhone || '',
-              address: c.customerAddress || '',
-              listId: c.listId,
-            });
-          }
-        }
-      }
-    }
-    return Array.from(uniqueMap.values()).slice(0, 6);
-  }, [contracts, customerName]);
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [latitude, setLatitude] = useState<number | null | undefined>(undefined);
@@ -93,9 +64,9 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
 
   const [isInventoryPickerOpen, setIsInventoryPickerOpen] = useState(false);
 
-  const isAdminOrSupervisor = currentRep?.role === 'admin' || currentRep?.role === 'supervisor' || !currentRep;
+  const isAdmin = currentRep?.role === 'admin';
   const isEditingExistingContract = Boolean(editingContract && editingContract.id);
-  const isNonAdminEdit = !isAdminOrSupervisor && isEditingExistingContract;
+  const isNonAdminEdit = !isAdmin && isEditingExistingContract;
 
   const currentEditingKeyRef = React.useRef<string | null>(null);
   const isInitializedForCurrentKeyRef = React.useRef(false);
@@ -152,7 +123,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
       setItemName(editingContract.itemName || '');
       setTotalPrice(editingContract.totalPrice ? editingContract.totalPrice.toString() : '');
       setDailyInstallment(editingContract.dailyInstallment ? editingContract.dailyInstallment.toString() : '');
-      setStartDate((isAdminOrSupervisor || !editingContract.id) ? (editingContract.startDate || getLocalDateString()) : (editingContract.startDate || getLocalDateString()));
+      setStartDate((isAdmin || !editingContract.id) ? (editingContract.startDate || getLocalDateString()) : (editingContract.startDate || getLocalDateString()));
       setRepName(editingContract.repName || currentRep?.name || 'مندوب');
     } else {
       setCustomerName('');
@@ -279,10 +250,10 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
     const cleanName = customerName.trim();
     if (!cleanName) {
       errs.customerName = isAr ? 'اسم الزبون مطلوب' : 'Customer name is required';
-    } else if (cleanName.length < 3) {
+    } else if (cleanName.length < 9) {
       errs.customerName = isAr
-        ? 'يرجى إدخال اسم الزبون بشكل صحيح (الاسم الكامل)'
-        : 'Please enter a valid full customer name';
+        ? 'اسم الزبون يجب ألا يقل عن 9 أحرف (مثال: الاسم الثلاثي)'
+        : 'Customer name must be at least 9 characters (e.g. full three-part name)';
     }
     
     const cleanPhone = customerPhone.replace(/\D/g, '');
@@ -421,9 +392,6 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
       }
     }
 
-    const selectedItem = inventory.find(i => i.id === selectedItemId);
-    const itemPurchasePrice = selectedItem?.purchasePrice || 0;
-
     clearDraft();
     onSave(
       {
@@ -435,15 +403,13 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
         locationAddress: resolvedLocationAddress || '',
         itemId: selectedItemId || '',
         itemName: effectiveItemName || (isAr ? 'مادة مبيعات' : 'Sales Item'),
-        itemQuantity: itemQuantity,
-        purchasePrice: itemPurchasePrice,
         listId: effectiveListId,
         listName: matchedList ? matchedList.name : '',
         totalPrice: numericTotal,
         advancePayment: 0,
         remainingBalance: calculatedRemaining,
         dailyInstallment: Number(dailyInstallment),
-        startDate: isAdminOrSupervisor ? startDate : (editingContract?.startDate || getLocalDateString()),
+        startDate: isAdmin ? startDate : (editingContract?.startDate || getLocalDateString()),
         notes: '',
         repName: repName.trim() || currentRep?.name || 'مندوب',
         status: calculatedRemaining === 0 ? 'completed' : (editingContract?.status || 'active'),
@@ -480,134 +446,87 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body - with sticky footer and scrollable content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="p-3.5 sm:p-4 overflow-y-auto flex-1 space-y-2.5 text-xs">
-            {/* Row 1: Customer Name & Phone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
-                  <span>{isAr ? 'اسم الزبون الكامل *' : 'Customer Full Name *'}</span>
-                  {isNonAdminEdit ? (
-                    <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5 shrink-0" />
-                      <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      {isAr ? '(الاسم الثلاثي أو الرباعي)' : '(Full name)'}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <User className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 z-10" />
-                  <input
-                    type="text"
-                    value={customerName}
-                    disabled={isNonAdminEdit}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    onChange={(e) => {
-                      setCustomerName(e.target.value);
-                      setShowNameSuggestions(true);
-                    }}
-                    onFocus={() => setShowNameSuggestions(true)}
-                    onBlur={() => {
-                      setTimeout(() => setShowNameSuggestions(false), 220);
-                    }}
-                    placeholder={isAr ? 'أدخل الاسم الثلاثي الكامل للزبون...' : 'e.g. Ahmed Jasim Mohammed'}
-                    className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
-                      isNonAdminEdit
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
-                        : 'bg-slate-50 dark:bg-slate-900/50'
-                    }`}
-                  />
-
-                  {showNameSuggestions && matchedCustomerSuggestions.length > 0 && !isNonAdminEdit && (
-                    <div className="absolute top-full right-0 left-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60 max-h-48 overflow-y-auto">
-                      <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-900/80 text-[10px] font-black text-slate-500 dark:text-slate-400 flex justify-between items-center">
-                        <span>{isAr ? 'زبائن مسجلون سابقاً (اضغط لاختيار الاسم الثلاثي):' : 'Existing Customers:'}</span>
-                        <span className="text-[9px] text-teal-600 dark:text-teal-400 font-bold">{matchedCustomerSuggestions.length}</span>
-                      </div>
-                      {matchedCustomerSuggestions.map((cust, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onMouseDown={() => {
-                            setCustomerName(cust.name);
-                            if (cust.phone && !customerPhone) setCustomerPhone(cust.phone);
-                            if (cust.address && !customerAddress) setCustomerAddress(cust.address);
-                            if (cust.listId && !selectedListId) setSelectedListId(cust.listId);
-                            setShowNameSuggestions(false);
-                          }}
-                          className="w-full text-right px-3 py-2 hover:bg-teal-50 dark:hover:bg-teal-950/60 flex items-center justify-between gap-2 cursor-pointer transition-colors"
-                        >
-                          <div className="min-w-0">
-                            <span className="font-black text-slate-900 dark:text-slate-100 text-xs block break-words">
-                              {cust.name}
-                            </span>
-                            {cust.address && (
-                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block truncate">
-                                {cust.address}
-                              </span>
-                            )}
-                          </div>
-                          {cust.phone && (
-                            <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded dir-ltr shrink-0">
-                              {cust.phone}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {errors.customerName && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerName}</p>}
+        {/* Form Body - Compact layout to fit on screen */}
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 overflow-y-auto space-y-2.5 text-xs">
+          {/* Row 1: Customer Name & Phone */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
+                <span>{isAr ? 'اسم الزبون الكامل *' : 'Customer Full Name *'}</span>
+                {isNonAdminEdit ? (
+                  <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5 shrink-0" />
+                    <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {isAr ? '(9 أحرف كحد أدنى)' : '(min 9 chars)'}
+                  </span>
+                )}
+              </label>
+              <div className="relative">
+                <User className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={customerName}
+                  disabled={isNonAdminEdit}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder={isAr ? 'مثال: أحمد جاسم محمد' : 'e.g. Ahmed Jasim Mohammed'}
+                  className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
+                    isNonAdminEdit
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
+                      : 'bg-slate-50 dark:bg-slate-900/50'
+                  }`}
+                />
               </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
-                  <span>{isAr ? 'رقم الهاتف *' : 'Phone Number *'}</span>
-                  {isNonAdminEdit ? (
-                    <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5 shrink-0" />
-                      <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      {isAr ? '(11 رقم 078/077/075)' : '(11 digits)'}
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={11}
-                    value={customerPhone}
-                    disabled={isNonAdminEdit}
-                    autoComplete="tel"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    onChange={(e) => {
-                      const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
-                      const onlyNums = converted.replace(/\D/g, '');
-                      setCustomerPhone(onlyNums);
-                    }}
-                    placeholder="07801234567"
-                    className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 dir-ltr text-left font-mono ${
-                      isNonAdminEdit
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
-                        : 'bg-slate-50 dark:bg-slate-900/50'
-                    }`}
-                  />
-                </div>
-                {errors.customerPhone && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerPhone}</p>}
-              </div>
+              {errors.customerName && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerName}</p>}
             </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
+                <span>{isAr ? 'رقم الهاتف *' : 'Phone Number *'}</span>
+                {isNonAdminEdit ? (
+                  <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5 shrink-0" />
+                    <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {isAr ? '(11 رقم 078/077/075)' : '(11 digits)'}
+                  </span>
+                )}
+              </label>
+              <div className="relative">
+                <Phone className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  pattern="[0-9]*"
+                  maxLength={11}
+                  value={customerPhone}
+                  disabled={isNonAdminEdit}
+                  autoComplete="tel"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  onChange={(e) => {
+                    const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+                    const onlyNums = converted.replace(/\D/g, '');
+                    setCustomerPhone(onlyNums);
+                  }}
+                  placeholder="07801234567"
+                  className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 dir-ltr ${
+                    isNonAdminEdit
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
+                      : 'bg-slate-50 dark:bg-slate-900/50'
+                  }`}
+                />
+              </div>
+              {errors.customerPhone && <p className="text-rose-500 text-[10px] mt-0.5">{errors.customerPhone}</p>}
+            </div>
+          </div>
 
           {/* Row: Customer Address & GPS Location */}
           <div className="bg-slate-50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-2">
@@ -625,8 +544,6 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
                 type="text"
                 value={customerAddress}
                 autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
                 onChange={(e) => setCustomerAddress(e.target.value)}
                 placeholder={isAr ? 'مثال: بغداد - الكرادة - قرب جامع الخضيري' : 'e.g. Baghdad, Karrada'}
                 className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/20 bg-white dark:bg-slate-900"
@@ -636,7 +553,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
             {/* GPS Location Button and Badge */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-1.5">
-                {(isAdminOrSupervisor || !editingContract?.id || !editingContract?.latitude || Number(editingContract?.latitude) === 0) && (
+                {(isAdmin || !editingContract?.id || !editingContract?.latitude || Number(editingContract?.latitude) === 0) && (
                   <button
                     type="button"
                     onClick={handleGetGpsLocation}
@@ -671,7 +588,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               {latitude != null && longitude != null && !isNaN(Number(latitude)) && !isNaN(Number(longitude)) && Number(latitude) !== 0 ? (
                 <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-2 py-1 rounded-lg text-[10px] text-emerald-800 dark:text-emerald-300 font-bold">
                   <span>📍 {Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)}</span>
-                  {isAdminOrSupervisor ? (
+                  {isAdmin ? (
                     <button
                       type="button"
                       onClick={handleClearLocation}
@@ -830,7 +747,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
             <div>
               <label className="block font-bold text-slate-800 dark:text-slate-200 mb-0.5 text-[11px] flex items-center justify-between">
                 <span>{isAr ? 'السعر الكلي (د.ع) *' : 'Total Price *'}</span>
-                {!isAdminOrSupervisor && Boolean(editingContract) && (
+                {!isAdmin && Boolean(editingContract) && (
                   <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
                     <Lock className="w-2.5 h-2.5 shrink-0" />
                     <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
@@ -840,12 +757,12 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               <input
                 type="number"
                 value={totalPrice}
-                disabled={!isAdminOrSupervisor && Boolean(editingContract)}
+                disabled={!isAdmin && Boolean(editingContract)}
                 onChange={handleTotalPriceChange}
                 onBlur={handleTotalPriceBlur}
                 placeholder="1500000"
                 className={`w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dir-ltr text-xs ${
-                  !isAdminOrSupervisor && Boolean(editingContract)
+                  !isAdmin && Boolean(editingContract)
                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
                     : 'bg-white dark:bg-slate-900'
                 }`}
@@ -889,7 +806,7 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
           <div>
             <label className="block font-bold text-slate-700 dark:text-slate-300 mb-0.5 text-[11px] flex items-center justify-between">
               <span>{isAr ? 'تاريخ بداية البيع' : 'Start Date'}</span>
-              {!isAdminOrSupervisor && (
+              {!isAdmin && (
                 <span className="text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-1.5 py-0.5 rounded flex items-center gap-1">
                   <Lock className="w-2.5 h-2.5 shrink-0" />
                   <span>{isAr ? 'المدير فقط' : 'Admin only'}</span>
@@ -901,10 +818,10 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
               <input
                 type="date"
                 value={startDate}
-                disabled={!isAdminOrSupervisor}
+                disabled={!isAdmin}
                 onChange={(e) => setStartDate(e.target.value)}
                 className={`w-full pr-8 pl-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                  !isAdminOrSupervisor
+                  !isAdmin
                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed opacity-80'
                     : 'bg-slate-50 dark:bg-slate-900/50'
                 }`}
@@ -919,37 +836,23 @@ export const ContractFormModal: React.FC<ContractFormModalProps> = ({
             </div>
           )}
 
-          </div>
-
-          {/* Sticky Modal Footer - ALWAYS VISIBLE */}
-          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/95 dark:bg-slate-850 shrink-0 shadow-lg z-10">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
-              {numericTotal > 0 && (
-                <span>
-                  {isAr ? 'الإجمالي: ' : 'Total: '}
-                  <span className="font-black text-slate-900 dark:text-slate-100 dir-ltr text-xs sm:text-sm font-mono">
-                    {numericTotal.toLocaleString('en-US')} د.ع
-                  </span>
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-3.5 sm:px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-              >
-                {isAr ? 'إلغاء' : 'Cancel'}
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs sm:text-sm font-black shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                {editingContract && editingContract.id
-                  ? (isAr ? 'حفظ التعديلات' : 'Save Changes')
-                  : (isAr ? 'حفظ' : 'Save')}
-              </button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              {isAr ? 'إلغاء' : 'Cancel'}
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+            >
+              {editingContract && editingContract.id
+                ? (isAr ? 'حفظ التعديلات' : 'Save Changes')
+                : (isAr ? 'حفظ' : 'Save')}
+            </button>
           </div>
         </form>
       </div>
