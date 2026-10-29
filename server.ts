@@ -347,15 +347,12 @@ async function recalculateAllFundBalancesInPg() {
     for (const p of filePayments) {
       if (!p || (Number(p.amountPaid ?? p.amount) <= 0)) continue;
       const ftId = `ft_pay_${p.id}`;
-      let pFundId = p.fundId || p.fund_id;
-      if (!pFundId) {
-        const contract = (fileDb.get<any>("contracts") || []).find((c: any) => c.id === p.contractId);
-        const targetList = lists.find((l: any) => l.id === contract?.listId || l.name === contract?.listName);
-        pFundId = targetList?.fundId || targetList?.fund_id || defaultFundId;
-        if (pFundId) {
-          p.fundId = pFundId;
-          paymentsChanged = true;
-        }
+      let pFundId = await resolveFundIdForPayment(p.fundId || p.fund_id, p.contractId || p.sale_id, p.customerName || p.customer_name);
+      if (!pFundId) pFundId = defaultFundId;
+      if (pFundId && (p.fundId !== pFundId || p.fund_id !== pFundId)) {
+        p.fundId = pFundId;
+        p.fund_id = pFundId;
+        paymentsChanged = true;
       }
       if (pFundId) {
         const existingTxIdx = updatedTxs.findIndex((tx: any) => tx.id === ftId);

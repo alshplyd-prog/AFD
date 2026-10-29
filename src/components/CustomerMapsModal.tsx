@@ -269,8 +269,8 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
     if (!currentRep) return true;
     if (currentRep.role === 'admin' || currentRep.role === 'supervisor') return true;
     if (currentRep.allowedListIds && currentRep.allowedListIds.includes('all')) return true;
-    if (!listId) return false;
-    if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;
+    if (!listId) return true;
+    if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return true;
     return currentRep.allowedListIds.includes(listId);
   };
 
@@ -436,10 +436,9 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
     smoothedHeadingRef.current = smoothed;
     lastHeadingUpdateRef.current = now;
 
-    if (mapRotationWrapperRef.current) {
-      mapRotationWrapperRef.current.style.transform = `translate(-50%, -50%) rotate(${-smoothed}deg)`;
-      mapRotationWrapperRef.current.style.setProperty('--counter-rotate', `${smoothed}deg`);
-      mapRotationWrapperRef.current.style.setProperty('--user-arrow-rot', `${smoothed}deg`);
+    if (mapContainerRef.current) {
+      mapContainerRef.current.style.setProperty('--user-arrow-rot', `${smoothed}deg`);
+      mapContainerRef.current.style.setProperty('--counter-rotate', `${smoothed}deg`);
     }
 
     if (headingBadgeRef.current) {
@@ -505,6 +504,16 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
           }
         }
 
+        // Safe SVG fallback for default Leaflet icons in Capacitor / WebView
+        try {
+          delete (L.Icon.Default.prototype as any)._getIconUrl;
+          L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41"><path d="M12.5 0C5.596 0 0 5.596 0 12.5c0 9.375 12.5 28.5 12.5 28.5S25 21.875 25 12.5C25 5.596 19.404 0 12.5 0z" fill="%232563eb"/><circle cx="12.5" cy="12.5" r="5" fill="%23ffffff"/></svg>',
+            iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41"><path d="M12.5 0C5.596 0 0 5.596 0 12.5c0 9.375 12.5 28.5 12.5 28.5S25 21.875 25 12.5C25 5.596 19.404 0 12.5 0z" fill="%232563eb"/><circle cx="12.5" cy="12.5" r="5" fill="%23ffffff"/></svg>',
+            shadowUrl: '',
+          });
+        } catch (e) {}
+
         const map = L.map(mapContainerRef.current, {
           center: [initLat, initLng],
           zoom: initZoom,
@@ -516,7 +525,7 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
           'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
           {
             maxZoom: 19,
-            keepBuffer: 12,
+            keepBuffer: 6,
             updateWhenIdle: false,
             updateWhenZooming: false,
             attribution: '&copy; OpenStreetMap contributors',
@@ -548,6 +557,18 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
 
     initMap();
 
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+      try {
+        resizeObserver = new ResizeObserver(() => {
+          if (!isDisposed && isMapValid(mapInstanceRef.current)) {
+            try { mapInstanceRef.current.invalidateSize(); } catch (e) {}
+          }
+        });
+        resizeObserver.observe(mapContainerRef.current);
+      } catch (e) {}
+    }
+
     timer1 = setTimeout(() => {
       if (!isDisposed && isMapValid(mapInstanceRef.current)) {
         try { mapInstanceRef.current.invalidateSize(); } catch (e) {}
@@ -571,6 +592,9 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
+      if (resizeObserver) {
+        try { resizeObserver.disconnect(); } catch (e) {}
+      }
 
       if (watchPositionIdRef.current !== null && typeof navigator !== 'undefined') {
         navigator.geolocation.clearWatch(watchPositionIdRef.current);
@@ -1135,26 +1159,15 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
               }
             `}</style>
 
-            {/* Map Wrapper: Permanent centered rotation with GPS travel direction */}
+            {/* Map Container: Full-viewport hardware-accelerated surface */}
             <div
-              ref={mapRotationWrapperRef}
-              className="absolute"
+              ref={mapContainerRef}
+              className="absolute inset-0 w-full h-full z-0"
               style={{
-                top: '50%',
-                left: '50%',
-                width: '240vmax',
-                height: '240vmax',
-                transform: 'translate(-50%, -50%) rotate(0deg)',
-                transformOrigin: '50% 50%',
-                willChange: 'transform',
-                backfaceVisibility: 'hidden',
-                transition: 'transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1)',
                 '--counter-rotate': '0deg',
                 '--user-arrow-rot': '0deg',
               } as React.CSSProperties}
-            >
-              <div ref={mapContainerRef} className="w-full h-full z-0" />
-            </div>
+            />
 
             {/* GPS Direction / Movement Badge in Top-Right */}
             <div

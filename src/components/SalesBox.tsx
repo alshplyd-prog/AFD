@@ -79,69 +79,61 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
   }, [contracts, selectedListId, startDate, endDate, searchQuery, currentRep]);
 
   // Helper to get device count for a contract
-  // User rule: "if mentioned only devices for example 170 or 175 or 215... consider it 1 device and in count also count it 1"
   const getDeviceCount = (c: InstallmentContract): number => {
-    const name = (c.itemName || '').toLowerCase();
-    // Check if name contains the magic numbers
-    const isSpecial = name.includes('170') || name.includes('175') || name.includes('215');
-    if (isSpecial) {
-      return 1;
+    const rawName = c.itemName || '';
+    // 1. Try parsing count from string like "(عدد 2)" or "عدد 2" or "(عدد: 2)" or "(2)"
+    const countMatch = rawName.match(/(?:عدد|\(عدد\)|عدد:|\(عدد:)\s*(\d+)/i) || rawName.match(/\((\d+)\)/);
+    if (countMatch && countMatch[1]) {
+      const parsed = parseInt(countMatch[1], 10);
+      if (parsed > 0) return parsed;
     }
-    return Number(c.itemQuantity) || 1;
+    // 2. Fall back to c.itemQuantity if > 0
+    if (c.itemQuantity && Number(c.itemQuantity) > 0) {
+      return Number(c.itemQuantity);
+    }
+    return 1;
   };
 
-  // Helper to get purchase price for a contract
-  // User rule: "Purchase price field in sales box multiply it by number of devices"
-  // Also: "this first sale automatically make its count 1 and purchase price like selling price automatically multiply it by the count"
+  // Helper to get total purchase price for a contract (unit purchase price * number of devices)
   const getPurchasePrice = (c: InstallmentContract): number => {
     const devCount = getDeviceCount(c);
-    let basePurchasePrice = c.purchasePrice || 0;
+    let unitPurchasePrice = c.purchasePrice || 0;
 
-    // If purchase price is 0, try fetching from inventory or default to selling price for special items
-    if (basePurchasePrice === 0) {
-      if (c.itemId) {
-        const found = inventory.find((i) => i.id === c.itemId);
-        if (found && found.purchasePrice && found.purchasePrice > 0) {
-          basePurchasePrice = found.purchasePrice;
-        }
-      }
-      
-      // If still 0 and it's a special item (like selling price automatically)
-      const name = (c.itemName || '').toLowerCase();
-      const isSpecial = name.includes('170') || name.includes('175') || name.includes('215');
-      if (basePurchasePrice === 0 && isSpecial) {
-        // Use total price divided by actual quantity as unit purchase price, 
-        // but since we count it as 1 device, we'll effectively use totalPrice as the purchase cost
-        // if the user says "like selling price".
-        // Actually, if it's "اجهزه 175 (عدد 2)" and selling is 350,000. 
-        // If purchase is 0, we'll use 350,000 as total purchase if we want profit to be 0.
-        basePurchasePrice = c.totalPrice; 
-        return basePurchasePrice; // Already the total for 1 device
+    // If purchase price is 0, try fetching from inventory
+    if (unitPurchasePrice === 0 && c.itemId) {
+      const found = inventory.find((i) => i.id === c.itemId);
+      if (found && found.purchasePrice && found.purchasePrice > 0) {
+        unitPurchasePrice = found.purchasePrice;
       }
     }
 
-    return basePurchasePrice * devCount;
+    // Fallback if purchase price still 0: infer unit price from item name price code if available
+    if (unitPurchasePrice === 0) {
+      const nameLower = (c.itemName || '').toLowerCase();
+      if (nameLower.includes('215')) {
+        unitPurchasePrice = 150000;
+      } else if (nameLower.includes('175')) {
+        unitPurchasePrice = 125000;
+      } else if (nameLower.includes('170')) {
+        unitPurchasePrice = 120000;
+      }
+    }
+
+    return unitPurchasePrice * devCount;
   };
 
   // Helper to format Item Name & Quantity in the same cell
   const formatItemAndQty = (c: InstallmentContract): string => {
     const rawName = c.itemName || (isAr ? 'مادة غير محددة' : 'Unspecified Item');
-    const displayQty = Number(c.itemQuantity) || 1;
-    
-    // Check if it's a special item for naming
-    const nameLower = rawName.toLowerCase();
-    const isSpecial = nameLower.includes('170') || nameLower.includes('175') || nameLower.includes('215');
-    
-    if (isSpecial) {
-      // Just return the raw name (which usually includes the count like "عدد 2")
-      // but the logical count remains 1 device.
+    const devCount = getDeviceCount(c);
+
+    // If item name already explicitly specifies "(عدد X)" or "عدد X", show as is
+    if (rawName.includes('عدد')) {
       return rawName;
     }
 
-    if (displayQty > 1 && !rawName.includes('عدد')) {
-      return `${rawName} (العدد: ${displayQty})`;
-    }
-    return rawName;
+    // Always explicitly show quantity tag (e.g. "جهزه 215 (عدد 1)") even when count is 1
+    return `${rawName} (عدد ${devCount})`;
   };
 
   // Calculate Totals for Footer Row

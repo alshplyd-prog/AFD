@@ -438,25 +438,7 @@ export async function directPrintRepReceipt(
 }
 
 export function sendRepReceiptToRawBTDirectly(receipt: RepReceiptData) {
-  const textReceipt = formatRepReceiptAsPlainText(receipt);
-  const rawbtIntentUrl = `intent:#Intent;scheme=rawbt;package=ru.a404m.rawbt;S.text=${encodeURIComponent(textReceipt)};end;`;
-
-  try {
-    window.location.href = rawbtIntentUrl;
-  } catch (e) {}
-
-  try {
-    const link = document.createElement('a');
-    link.href = rawbtIntentUrl;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      try {
-        if (document.body.contains(link)) document.body.removeChild(link);
-      } catch (e) {}
-    }, 400);
-  } catch (e) {}
+  openRepReceiptThermalPrintWindow(receipt);
 }
 
 export function downloadRepReceiptPdf(receipt: RepReceiptData) {

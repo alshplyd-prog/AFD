@@ -10,7 +10,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T07:00:51.560Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 2525000
   },
   {
     "id": "pay_64760920-e3ed-4aaf-b0a8-ee51a8b4c00c",
@@ -23,7 +24,36 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-17T06:49:00.662Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 775000
+  },
+  {
+    "id": "pay_718c2f41-527a-45c6-9e36-62a589d75b8f",
+    "contractId": "contract_1792149137851_6g649",
+    "customerName": "علي كريم عبد عون",
+    "amountPaid": 15000,
+    "paymentDate": "2026-10-29",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-29T07:30:50.370Z",
+    "isEdited": false,
+    "amount": 15000
+  },
+  {
+    "id": "pay_efc1c537-6a00-4c0e-a3f3-6cd432bf0ad0",
+    "contractId": "contract_1792159601227_37k70",
+    "customerName": "حسين عبد حسن",
+    "amountPaid": 12000,
+    "paymentDate": "2026-10-29",
+    "repName": "هيثم",
+    "note": "",
+    "fundId": "fund_1791618782897_u79cy",
+    "updatedAt": null,
+    "createdAt": "2026-10-29T06:46:20.578Z",
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_d2406d42-304c-4919-bc63-3617eafab39e",
@@ -36,7 +66,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T19:20:41.497Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_0b9858ce-e597-4e73-8bab-d5194c23bf19",
@@ -49,7 +80,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T19:20:22.858Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_9066a47c-1445-4aab-848f-021f90c08fef",
@@ -62,7 +94,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T19:20:06.816Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_8ac661aa-21da-4506-9e6f-c10ea7caab19",
@@ -75,7 +108,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T19:19:51.430Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_8f84ab3c-4754-42c1-9899-44dbff299cef",
@@ -88,7 +122,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T19:18:53.809Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_5aa1dd67-517a-4741-9b97-17a17da9a526",
@@ -101,7 +136,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T19:17:45.721Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 3000
   },
   {
     "id": "pay_d982b88f-a211-4c07-af31-25999ad7f27a",
@@ -112,11 +148,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9847992,
-    "longitude": 44.9375899,
     "updatedAt": null,
     "createdAt": "2026-10-28T17:18:35.888Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_8079c0c5-a3dc-40d6-ae91-40bd1e598aba",
@@ -127,11 +162,10 @@
     "repName": "ماهر",
     "note": "",
     "fundId": "fund-4",
-    "latitude": 31.9847992,
-    "longitude": 44.9375899,
     "updatedAt": null,
     "createdAt": "2026-10-28T17:18:18.292Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 30000
   },
   {
     "id": "pay_22a47bf4-e22d-4a5a-bf74-905b3011d1d9",
@@ -144,7 +178,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T16:46:31.495Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_9f6d2836-6f97-4a80-a853-b891a48ba4e2",
@@ -157,7 +192,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T16:06:20.989Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_a91c04d6-c8fc-4098-86dd-0f23ee952dc1",
@@ -170,7 +206,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:57:32.009Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_2a0abce7-e27e-470c-802f-0b8933bf6267",
@@ -183,7 +220,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:43:33.373Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_c0919fd8-d838-4be1-a1dc-46579dd036e6",
@@ -196,7 +234,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:36:11.767Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_481e388c-de71-436d-91fe-50ae391d2725",
@@ -209,7 +248,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:22:23.151Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_d9c40474-e49d-412a-87bc-c779aa6308e8",
@@ -222,7 +262,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:16:46.765Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 50000
   },
   {
     "id": "pay_9a842554-ee29-4e92-a5f8-5c1b1fc53368",
@@ -235,7 +276,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:16:38.411Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_fcc7d74e-aa0b-4b82-9908-829e0bcd0f4c",
@@ -248,7 +290,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:12:41.645Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_d76963eb-147a-4b43-9263-3e44ccd7e12b",
@@ -261,7 +304,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:07:31.716Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 3000
   },
   {
     "id": "pay_0da60c2d-afa4-41eb-95cf-885d34a99b79",
@@ -274,7 +318,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:07:10.641Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_366dfa02-61b5-44c3-a80a-c5cec9b5bfd3",
@@ -287,7 +332,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:02:43.219Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_2eb59ef0-ae0e-45c3-b314-3b278507f467",
@@ -300,7 +346,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:01:37.119Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_b17c6b0a-25f2-4b09-820c-e9aa7e9178b7",
@@ -313,7 +360,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:01:21.442Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_27ca3a91-6fb4-4874-bb21-d88322c9dd54",
@@ -326,7 +374,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:01:11.548Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_9d304914-2c8a-45a4-b5c0-2c851aee6aa3",
@@ -339,7 +388,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:00:54.364Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_65d33947-3b27-42f5-9f5d-941e9f4ffb46",
@@ -352,7 +402,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T15:00:50.025Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_5271a375-f44a-4ab1-a454-7c64f15c9850",
@@ -365,7 +416,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:57:51.003Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 7000
   },
   {
     "id": "pay_3300dc8e-4043-47d3-be32-802c0201a748",
@@ -378,7 +430,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:52:48.242Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_8c5aea29-b5b0-487a-9d60-f76edf6c2a35",
@@ -391,7 +444,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:49:27.225Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_dc5b8379-3bfc-495a-9fed-e5f8e632198a",
@@ -404,7 +458,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:49:09.064Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_cfcc8bfc-be1a-4831-b567-44e23f1a4008",
@@ -417,7 +472,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:48:50.387Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 60000
   },
   {
     "id": "pay_4b4061dc-005f-44b8-863f-f69173c7f25a",
@@ -430,7 +486,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:33:21.875Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_0a738d02-18a2-4abf-bde8-f8ee610bf150",
@@ -443,7 +500,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:32:20.352Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_964a6d2e-2941-4d2a-9e07-e7a8957e031c",
@@ -456,7 +514,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-28T14:15:19.136Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 8000
   },
   {
     "id": "pay_9a98c2c4-5f95-4bcb-a800-b91e93fe0df2",
@@ -469,7 +528,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-28T13:46:35.695Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_2b0facc9-0b71-45fc-84cb-0117957122a5",
@@ -482,7 +542,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-28T08:03:35.812Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_167cafa3-5a04-49a7-a300-8ac8f62a9e57",
@@ -495,7 +556,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-28T07:54:56.122Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_2c03b975-c929-4375-9792-d2c73590ba2f",
@@ -508,7 +570,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-28T06:49:21.604Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_8d5979e0-4484-4a9b-9480-6fd7da8f9671",
@@ -521,7 +584,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:56:39.210Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 3000
   },
   {
     "id": "pay_e3f1c12b-fbe8-426c-90a8-52249c16cc61",
@@ -534,7 +598,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:55:35.646Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_2969cc47-0f99-4d66-8625-1010b04642a3",
@@ -547,7 +612,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:55:21.569Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_c850dd8a-7bb3-44fa-ad51-125b1415d157",
@@ -560,7 +626,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:54:59.295Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_1d25903f-2405-4f0f-8afe-9d3873e8f000",
@@ -573,7 +640,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:54:53.527Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_4684e975-4b16-434f-b035-585511eb677e",
@@ -586,7 +654,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:51:55.851Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_c8179ecf-904c-4574-b8de-9645d64cd000",
@@ -599,7 +668,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:51:38.386Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_6353acb1-78f8-4712-b09e-56c868253d59",
@@ -612,7 +682,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T17:50:46.803Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_a84ec502-73b1-43f1-bf5d-b4f16ac57f4c",
@@ -625,7 +696,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T16:39:23.663Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 35000
   },
   {
     "id": "pay_e00f6c4f-f91e-4752-8806-a9508ff34d44",
@@ -638,7 +710,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T16:16:44.374Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_2dd242c8-b799-41c8-b646-95ad3d83b54a",
@@ -651,7 +724,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T16:00:46.545Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_7a644c8f-17e5-4e9b-ba43-558b80b967b6",
@@ -664,7 +738,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:45:11.563Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 30000
   },
   {
     "id": "pay_5b8db915-792d-4c33-b2a8-f16f7233bcaf",
@@ -677,7 +752,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:43:44.072Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_00af814a-6ed8-49ca-af03-98b09fb47487",
@@ -690,7 +766,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:13:33.172Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_9267c96f-a3f0-438b-9378-7e707f56373c",
@@ -703,7 +780,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:11:57.395Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 50000
   },
   {
     "id": "pay_53bd87a4-208b-4d32-af0e-e51e70705d21",
@@ -716,7 +794,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:11:47.079Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_e353d240-8510-4c8b-a8b3-29e9220b4c5d",
@@ -729,7 +808,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:08:13.991Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_21cfc0cd-1ca3-4edf-a298-9ac363eb3c82",
@@ -742,7 +822,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:03:12.489Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_76e5a356-0605-4e73-b91f-f825e390774f",
@@ -755,7 +836,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T15:02:35.237Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 3000
   },
   {
     "id": "pay_a1bab83f-50a9-4b83-8203-6bf5c3bcf3a4",
@@ -768,7 +850,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:58:30.935Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_cb91b074-4195-465a-a8d5-8d9da289d3b8",
@@ -781,7 +864,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:53:30.272Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_f99c82bc-24c1-4944-bdba-d453967283e6",
@@ -794,7 +878,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:53:10.430Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_e533f991-46b0-4265-8f8e-19e73e052c60",
@@ -807,7 +892,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:52:56.102Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_d40f8b69-f7db-4469-b8ac-e56caa86208a",
@@ -820,7 +906,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:52:38.355Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_b9694500-38b0-4fb6-9ce8-b4e8942104c0",
@@ -833,7 +920,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:52:27.470Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_6fdbb966-86c7-419b-8c59-c3eeb662483b",
@@ -846,7 +934,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:50:19.284Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 2000
   },
   {
     "id": "pay_ddda7b41-b9c5-4f79-9968-386d84743ee4",
@@ -859,7 +948,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:50:08.395Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_3ab66ee6-8e06-4570-96fd-5012f0bdefb3",
@@ -872,7 +962,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:47:27.069Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_d3bc4e60-8901-4631-867d-7f689a0cd4b5",
@@ -885,7 +976,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:39:36.538Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_2da83efc-b26e-442d-ad0c-d2e376ae073f",
@@ -898,7 +990,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-27T14:36:26.679Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_93224e8b-5c87-4791-94f1-360255b135fd",
@@ -911,7 +1004,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-27T13:54:10.777Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_f068d676-3b42-47ad-a0cd-d8f7c7efaac0",
@@ -924,7 +1018,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-27T07:54:31.849Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_2cb51b3f-7fd3-4c4e-b83a-8ba985cd5e72",
@@ -937,7 +1032,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-27T07:47:00.777Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_000e3cf5-1180-46d6-96e4-5fce73dc186d",
@@ -950,7 +1046,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-27T06:57:59.038Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_9ff081e7-ec4f-4348-9888-a86fe7cb2ba1",
@@ -963,7 +1060,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-27T06:53:33.443Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 4000
   },
   {
     "id": "pay_a21b45a9-feff-4be5-a39d-63de3190f0af",
@@ -976,7 +1074,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-27T06:53:24.361Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_2f7ce21d-31ab-408f-9f9e-4e7ecc6f7628",
@@ -1002,7 +1101,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T18:33:07.519Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_6b8ae982-5f48-48e3-a80d-391bf12eac11",
@@ -1015,7 +1115,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T18:32:55.458Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_8b7ab92c-df28-4406-90f5-61f2dce831fd",
@@ -1028,7 +1129,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T18:32:40.599Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_26f272f9-fa84-41c0-addd-b03b9cf0a9d9",
@@ -1054,7 +1156,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T18:03:06.563Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_858e22f1-74ea-4e53-86b4-2ca7b8fe1247",
@@ -1067,7 +1170,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T18:02:50.394Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 50000
   },
   {
     "id": "pay_10716712-7288-4c89-90e7-107e47d479a6",
@@ -1119,7 +1223,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T17:22:42.489Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_50dd0b6d-6119-4b7f-9f73-38a1be241830",
@@ -1147,7 +1252,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T16:17:06.867Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_b8c15456-dd56-425b-b297-7a0f8bb27b6e",
@@ -1160,7 +1266,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T16:08:47.665Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_6abca059-2a0e-4a20-a8bc-2a644cad4a19",
@@ -1173,7 +1280,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T16:03:12.382Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_d1f1308c-5337-42ad-8efb-6c9963a5b8f0",
@@ -1186,7 +1294,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T15:37:28.451Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 6000
   },
   {
     "id": "pay_423b2981-717d-49e4-8e2c-fe089c86341a",
@@ -1212,7 +1321,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T15:32:14.224Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_0ca64be9-05fe-42ec-9dfe-37d19102d337",
@@ -1238,7 +1348,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T15:27:07.922Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 25000
   },
   {
     "id": "pay_e364c4d5-9d88-4178-b630-0f964013027c",
@@ -1251,7 +1362,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T15:26:52.834Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_ed17f117-3360-4360-948e-f463f0f10598",
@@ -1264,7 +1376,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T15:26:17.552Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 20000
   },
   {
     "id": "pay_f4e87c8a-d2e0-4055-a6e8-b8551f7d882a",
@@ -1277,7 +1390,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T15:12:21.052Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 7000
   },
   {
     "id": "pay_56806c06-a7ef-4837-8bad-5478f5d234e5",
@@ -1316,7 +1430,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T15:03:41.497Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_05d7aab6-9003-453f-9de9-c7ffd17f7568",
@@ -1355,7 +1470,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T14:32:51.266Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_7e590bfa-c2da-4d5d-8ed1-af4e2be1d116",
@@ -1368,7 +1484,8 @@
     "fundId": "fund-4",
     "updatedAt": null,
     "createdAt": "2026-10-26T14:09:37.677Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 15000
   },
   {
     "id": "pay_ca10a1a0-bd84-4d56-94ee-f3a74b9e8d54",
@@ -1381,7 +1498,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-26T14:05:36.805Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 5000
   },
   {
     "id": "pay_9b5e3faf-72de-4d96-873a-68447b8ac320",
@@ -1394,7 +1512,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-26T13:27:58.749Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 150000
   },
   {
     "id": "pay_c123b038-e5a2-48d2-8842-f77686d676f4",
@@ -1407,7 +1526,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-26T07:55:01.501Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 14000
   },
   {
     "id": "pay_d7eb8205-2122-4bde-912f-9e9de9376f9c",
@@ -1420,7 +1540,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-26T07:43:06.045Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 10000
   },
   {
     "id": "pay_5a1bc806-69b1-40f5-986d-1e25bbcd105d",
@@ -1433,7 +1554,8 @@
     "fundId": "fund_1791618782897_u79cy",
     "updatedAt": null,
     "createdAt": "2026-10-26T06:55:12.571Z",
-    "isEdited": false
+    "isEdited": false,
+    "amount": 12000
   },
   {
     "id": "pay_0ad61ce7-54b2-458e-a07e-ccc7e6fc0ddd",

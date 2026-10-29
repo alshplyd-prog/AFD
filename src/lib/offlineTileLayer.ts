@@ -32,10 +32,11 @@ export class OfflineTileLayer extends L.TileLayer {
     const tile = document.createElement('img');
     tile.setAttribute('role', 'presentation');
     tile.alt = '';
-    tile.crossOrigin = 'anonymous';
 
     const url = this.getTileUrl(coords);
+    const fallbackCartoUrl = `https://basemaps.cartocdn.com/rastertiles/voyager/${coords.z}/${coords.x}/${coords.y}.png`;
     let isDone = false;
+    let createdBlobUrl: string | null = null;
 
     const safeDone = (err?: any) => {
       if (isDone) return;
@@ -47,10 +48,19 @@ export class OfflineTileLayer extends L.TileLayer {
 
     L.DomEvent.on(tile, 'load', () => safeDone());
     L.DomEvent.on(tile, 'error', () => {
-      if (tile.src !== OFFLINE_TILE_SVG) {
-        tile.src = OFFLINE_TILE_SVG;
+      if (createdBlobUrl) {
+        try { URL.revokeObjectURL(createdBlobUrl); } catch (e) {}
+        createdBlobUrl = null;
       }
-      safeDone();
+      // If primary tile failed, try CartoDB Voyager CDN before falling back to SVG
+      if (tile.src !== fallbackCartoUrl && tile.src !== OFFLINE_TILE_SVG) {
+        tile.src = fallbackCartoUrl;
+      } else if (tile.src !== OFFLINE_TILE_SVG) {
+        tile.src = OFFLINE_TILE_SVG;
+        safeDone();
+      } else {
+        safeDone();
+      }
     });
 
     // Fast local memory / cache check
@@ -65,20 +75,18 @@ export class OfflineTileLayer extends L.TileLayer {
           const cachedResponse = await cache.match(url);
           if (cachedResponse && cachedResponse.ok) {
             const blob = await cachedResponse.blob();
-            tile.src = URL.createObjectURL(blob);
+            createdBlobUrl = URL.createObjectURL(blob);
+            tile.src = createdBlobUrl;
             return;
           }
         } catch (e) {}
 
-        // If not cached, assign src to url and cache in background
+        // If not cached, assign src to url and attempt background caching safely
         tile.src = url;
-        fetch(url, { mode: 'cors' })
-          .then(async (res) => {
-            if (res.ok) {
-              cache.put(url, res.clone()).catch(() => {});
-            }
-          })
-          .catch(() => {});
+        try {
+          fetch(url, { mode: 'no-cors' })
+            .catch(() => {});
+        } catch (e) {}
       }).catch(() => {
         tile.src = url;
       });
