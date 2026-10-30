@@ -54,7 +54,7 @@ export const ReceiptPrintTemplate: React.FC<ReceiptPrintTemplateProps> = ({ rece
               width: 58mm !important;
               max-width: 58mm !important;
               margin: 0 auto !important;
-              padding: 1mm 2mm !important;
+              padding: 1mm 2mm 10mm 2mm !important; /* 10mm = 1cm after text ends */
               box-sizing: border-box !important;
               display: block !important;
               text-align: right !important;
@@ -166,7 +166,7 @@ export const ReceiptPrintTemplate: React.FC<ReceiptPrintTemplateProps> = ({ rece
             width: 58mm !important;
             max-width: 58mm !important;
             margin: 0 auto !important;
-            padding: 1mm 2mm !important;
+            padding: 1mm 2mm 10mm 2mm !important; /* 10mm = 1cm after text ends */
             box-sizing: border-box !important;
             display: block !important;
             text-align: right !important;

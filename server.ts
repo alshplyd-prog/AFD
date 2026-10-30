@@ -21,8 +21,8 @@ export function bumpSyncVersion() {
     }
   } catch (e) {}
 }
-import { INITIAL_CONTRACTS } from "./src/data/initialContracts.ts";
 import fs from "fs";
+import webpush from "web-push";
 
 function mapContractRow(r: any) {
   const totalPrice = Number(r.total_price ?? r.totalPrice) || 0;
@@ -115,12 +115,13 @@ function mapRepRow(r: any) {
   }
   if (!Array.isArray(allowed)) allowed = ['all'];
   const isDhia = Boolean(r.name && (r.name.includes('ضياء') || r.id === 'rep-1'));
+  const storedRole = r.role ?? r.role_name;
   return {
     id: r.id,
     name: r.name ?? '',
     phone: r.phone ?? '',
     code: r.code ?? '',
-    role: isDhia ? 'admin' : (r.role ?? 'rep'),
+    role: storedRole ? storedRole : (isDhia ? 'admin' : 'rep'),
     canEdit: isDhia ? true : (r.can_edit !== false && r.canEdit !== false),
     canDelete: isDhia ? true : Boolean(r.can_delete ?? r.canDelete),
     canMoveCustomer: isDhia ? true : (r.can_move_customer !== false && r.canMoveCustomer !== false),
@@ -197,18 +198,27 @@ async function recalculateAllFundBalancesInPg() {
     const defaultFundId = funds.length > 0 ? funds[0].id : null;
 
     if (isPgConfigured()) {
-      // 1. Resolve and link all payments missing fund_id in PostgreSQL
+      // 1. Resolve and link payments missing or with invalid fund_id in PostgreSQL
       await executePg(`
         UPDATE payments p
         SET fund_id = COALESCE(
-          NULLIF(p.fund_id, ''),
           (
             SELECT cl.fund_id 
             FROM sales s 
-            JOIN customer_lists cl ON (s.list_id = cl.id OR s.list_name = cl.name) 
-            WHERE s.id = p.contract_id AND cl.fund_id IS NOT NULL AND cl.fund_id != ''
+            JOIN customer_lists cl ON (s.list_id = cl.id OR LOWER(TRIM(s.list_name)) = LOWER(TRIM(cl.name))) 
+            WHERE (s.id = p.contract_id OR (s.customer_name IS NOT NULL AND p.customer_name IS NOT NULL AND LOWER(TRIM(s.customer_name)) = LOWER(TRIM(p.customer_name))))
+              AND cl.fund_id IS NOT NULL AND cl.fund_id != ''
             LIMIT 1
           ),
+          (
+            SELECT cl.fund_id
+            FROM sales s
+            JOIN customer_lists cl ON (s.list_id = cl.id OR (s.list_name IS NOT NULL AND cl.name IS NOT NULL AND LOWER(TRIM(s.list_name)) = LOWER(TRIM(cl.name))))
+            WHERE s.id = p.contract_id
+              AND cl.fund_id IS NOT NULL AND cl.fund_id != ''
+            LIMIT 1
+          ),
+          NULLIF(p.fund_id, ''),
           (
             SELECT id 
             FROM cash_funds 
@@ -217,7 +227,7 @@ async function recalculateAllFundBalancesInPg() {
             LIMIT 1
           )
         )
-        WHERE (p.fund_id IS NULL OR p.fund_id = '')
+        WHERE (p.fund_id IS NULL OR p.fund_id = '' OR p.fund_id NOT IN (SELECT id FROM cash_funds WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = cash_funds.id)))
           AND NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = p.id)
       `).catch(() => {});
 
@@ -255,6 +265,47 @@ async function recalculateAllFundBalancesInPg() {
             rep_name = EXCLUDED.rep_name
       `).catch(() => {});
 
+      // 3.5 Clean duplicate or orphan employee debt transactions in fund_transactions
+      await executePg(`
+        DELETE FROM fund_transactions
+        WHERE id LIKE 'ft_emp_tx_%'
+           OR (
+             id LIKE 'ft_emp_%' 
+             AND SUBSTRING(id FROM 8) NOT IN (
+               SELECT id FROM employee_transactions
+               WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = employee_transactions.id)
+             )
+           )
+      `).catch(() => {});
+
+      // Ensure all active employee transactions have a corresponding fund_transactions record
+      await executePg(`
+        INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+        SELECT 
+          'ft_emp_' || et.id,
+          et.fund_id,
+          CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') THEN 'employee_loan' ELSE 'employee_repay' END,
+          COALESCE(et.amount, 0),
+          CASE WHEN et.type IN ('loan', 'debt', 'سلفة', 'دين') 
+            THEN 'دين / سلفة للموظف (' || COALESCE(e.name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+            ELSE 'راجع دين / تسديد من الموظف (' || COALESCE(e.name, et.rep_name, 'الموظف') || ')' || CASE WHEN et.notes IS NOT NULL AND et.notes != '' THEN ' - ' || et.notes ELSE '' END
+          END,
+          COALESCE(et.rep_name, 'الإدارة'),
+          COALESCE(et.created_at, NOW()::text)
+        FROM employee_transactions et
+        LEFT JOIN employees e ON e.id = et.employee_id
+        WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = et.id)
+          AND COALESCE(et.amount, 0) > 0
+          AND et.fund_id IS NOT NULL 
+          AND et.fund_id != ''
+        ON CONFLICT (id) DO UPDATE 
+        SET amount = EXCLUDED.amount, 
+            fund_id = EXCLUDED.fund_id,
+            type = EXCLUDED.type,
+            note = EXCLUDED.note,
+            rep_name = EXCLUDED.rep_name
+      `).catch(() => {});
+
       // 4. Compute accurate fund balances based on all fund transactions
       const dbFunds = await executePg("SELECT id FROM cash_funds WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = cash_funds.id)").catch(() => []);
       for (const f of dbFunds) {
@@ -262,9 +313,9 @@ async function recalculateAllFundBalancesInPg() {
         const txRes = await executePg(`
           SELECT COALESCE(SUM(
             CASE 
-              WHEN type IN ('deposit', 'installment', 'transfer_in') AND fund_id = $1 THEN amount
+              WHEN type IN ('deposit', 'installment', 'transfer_in', 'employee_repay') AND fund_id = $1 THEN amount
               WHEN type = 'transfer' AND target_fund_id = $1 THEN amount
-              WHEN type IN ('withdraw', 'transfer_out', 'transfer', 'expense') AND fund_id = $1 THEN -amount
+              WHEN type IN ('withdraw', 'transfer_out', 'transfer', 'expense', 'employee_loan') AND fund_id = $1 THEN -amount
               ELSE 0 
             END
           ), 0) as total
@@ -280,13 +331,22 @@ async function recalculateAllFundBalancesInPg() {
     // Also update fileDb funds & transactions
     const filePayments = fileDb.get<any>("payments") || [];
     const fileFundTxs = fileDb.get<any>("fund_transactions") || [];
+    const fileEmpTxs = fileDb.get<any>("employee_transactions") || [];
     const activePaymentIds = new Set(filePayments.filter((p: any) => Number(p.amountPaid ?? p.amount) > 0).map((p: any) => String(p.id)));
+    const activeEmpTxIds = new Set(fileEmpTxs.map((t: any) => String(t.id)));
 
-    // Clean orphan installment transactions
+    // Clean orphan installment & duplicate employee debt transactions
     let updatedTxs = fileFundTxs.filter((tx: any) => {
       if (tx && tx.id && String(tx.id).startsWith("ft_pay_")) {
         const pId = String(tx.id).replace("ft_pay_", "");
         return activePaymentIds.has(pId);
+      }
+      if (tx && tx.id && String(tx.id).startsWith("ft_emp_tx_")) {
+        return false;
+      }
+      if (tx && tx.id && String(tx.id).startsWith("ft_emp_")) {
+        const empTxId = String(tx.id).replace("ft_emp_", "");
+        return activeEmpTxIds.has(empTxId);
       }
       return true;
     });
@@ -296,15 +356,12 @@ async function recalculateAllFundBalancesInPg() {
     for (const p of filePayments) {
       if (!p || (Number(p.amountPaid ?? p.amount) <= 0)) continue;
       const ftId = `ft_pay_${p.id}`;
-      let pFundId = p.fundId || p.fund_id;
-      if (!pFundId) {
-        const contract = (fileDb.get<any>("contracts") || []).find((c: any) => c.id === p.contractId);
-        const targetList = lists.find((l: any) => l.id === contract?.listId || l.name === contract?.listName);
-        pFundId = targetList?.fundId || targetList?.fund_id || defaultFundId;
-        if (pFundId) {
-          p.fundId = pFundId;
-          paymentsChanged = true;
-        }
+      let pFundId = await resolveFundIdForPayment(p.fundId || p.fund_id, p.contractId || p.sale_id, p.customerName || p.customer_name);
+      if (!pFundId) pFundId = defaultFundId;
+      if (pFundId && (p.fundId !== pFundId || p.fund_id !== pFundId)) {
+        p.fundId = pFundId;
+        p.fund_id = pFundId;
+        paymentsChanged = true;
       }
       if (pFundId) {
         const existingTxIdx = updatedTxs.findIndex((tx: any) => tx.id === ftId);
@@ -330,6 +387,36 @@ async function recalculateAllFundBalancesInPg() {
       }
     }
 
+    // Ensure 1:1 synchronization for active employee debt transactions
+    for (const et of fileEmpTxs) {
+      if (!et || Number(et.amount) <= 0 || !et.fundId) continue;
+      const ftId = `ft_emp_${et.id}`;
+      const isLoan = et.type === 'loan' || et.type === 'debt' || et.type === 'سلفة' || et.type === 'دين';
+      const existingTxIdx = updatedTxs.findIndex((tx: any) => tx.id === ftId);
+      const amount = Number(et.amount) || 0;
+      const empName = et.employeeName || et.repName || 'الموظف';
+      const ftObj = {
+        id: ftId,
+        fundId: et.fundId,
+        type: isLoan ? 'employee_loan' : 'employee_repay',
+        amount,
+        note: isLoan
+          ? `دين / سلفة للموظف (${empName})${et.notes ? ` - ${et.notes}` : ''}`
+          : `راجع دين / تسديد من الموظف (${empName})${et.notes ? ` - ${et.notes}` : ''}`,
+        repName: et.repName || 'الإدارة',
+        createdAt: et.createdAt || new Date().toISOString()
+      };
+      if (existingTxIdx >= 0) {
+        if (updatedTxs[existingTxIdx].amount !== amount || updatedTxs[existingTxIdx].fundId !== et.fundId) {
+          updatedTxs[existingTxIdx] = { ...updatedTxs[existingTxIdx], ...ftObj };
+          txsChanged = true;
+        }
+      } else {
+        updatedTxs.push(ftObj);
+        txsChanged = true;
+      }
+    }
+
     if (paymentsChanged) {
       fileDb.setAll("payments", filePayments);
     }
@@ -345,9 +432,9 @@ async function recalculateAllFundBalancesInPg() {
         const total = fundTxs.reduce((sum: number, tx: any) => {
           const amt = Number(tx.amount) || 0;
           if (tx.fundId === fund.id) {
-            if (tx.type === 'deposit' || tx.type === 'installment' || tx.type === 'transfer_in') {
+            if (tx.type === 'deposit' || tx.type === 'installment' || tx.type === 'transfer_in' || tx.type === 'employee_repay') {
               return sum + amt;
-            } else if (tx.type === 'withdraw' || tx.type === 'transfer_out' || tx.type === 'transfer' || tx.type === 'expense') {
+            } else if (tx.type === 'withdraw' || tx.type === 'transfer_out' || tx.type === 'transfer' || tx.type === 'expense' || tx.type === 'employee_loan') {
               return sum - amt;
             }
           } else if (tx.targetFundId === fund.id && tx.type === 'transfer') {
@@ -697,6 +784,280 @@ function mapConflictRow(r: any) {
   };
 }
 
+// ==========================================
+// Web Push Notifications System (Closed App / Background)
+// ==========================================
+let vapidKeys = {
+  publicKey: process.env.VAPID_PUBLIC_KEY || '',
+  privateKey: process.env.VAPID_PRIVATE_KEY || '',
+};
+
+const VAPID_KEY_FILE = path.join(process.cwd(), 'data', 'vapid_keys.json');
+const PUSH_SUBS_FILE = path.join(process.cwd(), 'data', 'push_subscriptions.json');
+
+async function initVapidKeys() {
+  try {
+    if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+      if (fs.existsSync(VAPID_KEY_FILE)) {
+        try {
+          const content = JSON.parse(fs.readFileSync(VAPID_KEY_FILE, 'utf8'));
+          if (content.publicKey && content.privateKey) {
+            vapidKeys = content;
+          }
+        } catch (e) {}
+      }
+    }
+    if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+      if (isPgConfigured()) {
+        try {
+          await executePg("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+          const rows = await executePg("SELECT value FROM system_settings WHERE key = 'vapid_keys'");
+          if (rows.length > 0 && rows[0].value) {
+            const parsed = JSON.parse(rows[0].value);
+            if (parsed.publicKey && parsed.privateKey) {
+              vapidKeys = parsed;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+    if (!vapidKeys.publicKey || !vapidKeys.privateKey) {
+      const generated = webpush.generateVAPIDKeys();
+      vapidKeys = generated;
+      try {
+        if (!fs.existsSync(path.dirname(VAPID_KEY_FILE))) {
+          fs.mkdirSync(path.dirname(VAPID_KEY_FILE), { recursive: true });
+        }
+        fs.writeFileSync(VAPID_KEY_FILE, JSON.stringify(vapidKeys, null, 2));
+      } catch (e) {}
+      if (isPgConfigured()) {
+        try {
+          await executePg(
+            `INSERT INTO system_settings (key, value) VALUES ('vapid_keys', $1) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+            [JSON.stringify(vapidKeys)]
+          );
+        } catch (e) {}
+      }
+    }
+    if (vapidKeys.publicKey && vapidKeys.privateKey) {
+      webpush.setVapidDetails('mailto:support@alkarrar.com', vapidKeys.publicKey, vapidKeys.privateKey);
+      console.log('[WebPush] VAPID initialized. Public key length:', vapidKeys.publicKey.length);
+    }
+  } catch (err) {
+    console.warn('[WebPush] VAPID initialization notice:', err);
+  }
+}
+
+interface PushSubscriptionRecord {
+  id: string;
+  endpoint: string;
+  subscription: any;
+  repId?: string;
+  repName?: string;
+  role?: string;
+  allowedListIds?: string[];
+  updatedAt: number;
+}
+
+let pushSubsCache: Map<string, PushSubscriptionRecord> = new Map();
+
+function loadPushSubsFromFile(): Map<string, PushSubscriptionRecord> {
+  const map = new Map<string, PushSubscriptionRecord>();
+  try {
+    if (fs.existsSync(PUSH_SUBS_FILE)) {
+      const arr = JSON.parse(fs.readFileSync(PUSH_SUBS_FILE, 'utf8'));
+      if (Array.isArray(arr)) {
+        arr.forEach((item) => {
+          if (item && item.endpoint) map.set(item.endpoint, item);
+        });
+      }
+    }
+  } catch (e) {}
+  return map;
+}
+
+function savePushSubsToFile(map: Map<string, PushSubscriptionRecord>) {
+  try {
+    if (!fs.existsSync(path.dirname(PUSH_SUBS_FILE))) {
+      fs.mkdirSync(path.dirname(PUSH_SUBS_FILE), { recursive: true });
+    }
+    fs.writeFileSync(PUSH_SUBS_FILE, JSON.stringify(Array.from(map.values()), null, 2));
+  } catch (e) {}
+}
+
+async function initPushSubscriptionsTable() {
+  pushSubsCache = loadPushSubsFromFile();
+  if (isPgConfigured()) {
+    try {
+      await executePg(`
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          endpoint TEXT PRIMARY KEY,
+          subscription_json TEXT NOT NULL,
+          rep_id TEXT,
+          rep_name TEXT,
+          role TEXT,
+          allowed_list_ids TEXT,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+      const rows = await executePg("SELECT * FROM push_subscriptions");
+      if (Array.isArray(rows)) {
+        rows.forEach((r: any) => {
+          try {
+            const subJson = JSON.parse(r.subscription_json);
+            let allowed: string[] = [];
+            try { allowed = r.allowed_list_ids ? JSON.parse(r.allowed_list_ids) : []; } catch (e) {
+              allowed = r.allowed_list_ids ? String(r.allowed_list_ids).split(',') : [];
+            }
+            pushSubsCache.set(r.endpoint, {
+              id: r.endpoint,
+              endpoint: r.endpoint,
+              subscription: subJson,
+              repId: r.rep_id,
+              repName: r.rep_name,
+              role: r.role,
+              allowedListIds: allowed,
+              updatedAt: new Date(r.updated_at || Date.now()).getTime(),
+            });
+          } catch (e) {}
+        });
+        savePushSubsToFile(pushSubsCache);
+      }
+    } catch (e) {
+      console.warn('[WebPush] PostgreSQL subscriptions table notice:', e);
+    }
+  }
+}
+
+async function savePushSubscription(record: PushSubscriptionRecord) {
+  pushSubsCache.set(record.endpoint, record);
+  savePushSubsToFile(pushSubsCache);
+  if (isPgConfigured()) {
+    try {
+      await executePg(
+        `INSERT INTO push_subscriptions (endpoint, subscription_json, rep_id, rep_name, role, allowed_list_ids, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         ON CONFLICT (endpoint) DO UPDATE SET 
+           subscription_json = EXCLUDED.subscription_json,
+           rep_id = EXCLUDED.rep_id,
+           rep_name = EXCLUDED.rep_name,
+           role = EXCLUDED.role,
+           allowed_list_ids = EXCLUDED.allowed_list_ids,
+           updated_at = NOW()`,
+        [
+          record.endpoint,
+          JSON.stringify(record.subscription),
+          record.repId || null,
+          record.repName || null,
+          record.role || null,
+          JSON.stringify(record.allowedListIds || []),
+        ]
+      ).catch(() => {});
+    } catch (e) {}
+  }
+}
+
+async function removePushSubscription(endpoint: string) {
+  pushSubsCache.delete(endpoint);
+  savePushSubsToFile(pushSubsCache);
+  if (isPgConfigured()) {
+    try {
+      await executePg("DELETE FROM push_subscriptions WHERE endpoint = $1", [endpoint]).catch(() => {});
+    } catch (e) {}
+  }
+}
+
+export async function broadcastPushNotification(options: {
+  title: string;
+  body: string;
+  tag?: string;
+  type: 'sale' | 'appointment' | 'conflict' | 'debt' | 'repay';
+  listId?: string | null;
+  targetRepId?: string | null;
+  targetRepName?: string | null;
+  data?: any;
+}) {
+  const { title, body, tag, type, listId, targetRepId, targetRepName, data } = options;
+  if (!vapidKeys.publicKey || !vapidKeys.privateKey) return;
+  const subs = Array.from(pushSubsCache.values());
+  if (subs.length === 0) return;
+
+  const payloadString = JSON.stringify({
+    title,
+    body,
+    tag: tag || `push_${Date.now()}`,
+    icon: '/pwa-192x192.png',
+    badge: '/favicon.png',
+    data: data || {},
+  });
+
+  const promises = subs.map(async (sub) => {
+    // 1. Sales: Anyone who has access to the customer list
+    if (type === 'sale') {
+      const hasAccess =
+        !sub.role ||
+        sub.role === 'admin' ||
+        (sub.repName && sub.repName.includes('ضياء')) ||
+        sub.repId === 'rep-1' ||
+        (sub.allowedListIds &&
+          (sub.allowedListIds.includes('all') || (listId && sub.allowedListIds.includes(listId))));
+      if (!hasAccess) return;
+    }
+    // 2. Appointments: Anyone who has access to the list
+    else if (type === 'appointment') {
+      const hasAccess =
+        !sub.role ||
+        sub.role === 'admin' ||
+        (sub.repName && sub.repName.includes('ضياء')) ||
+        sub.repId === 'rep-1' ||
+        (sub.allowedListIds &&
+          (sub.allowedListIds.includes('all') || (listId && sub.allowedListIds.includes(listId))));
+      if (!hasAccess) return;
+    }
+    // 3. Payment Conflicts: Admin/supervisor, or assigned rep, or list access
+    else if (type === 'conflict') {
+      const isSupervisorOrAdmin = !sub.role || sub.role === 'admin' || sub.role === 'supervisor';
+      const isAssigned = Boolean(targetRepName && sub.repName && targetRepName.trim().toLowerCase() === sub.repName.trim().toLowerCase());
+      const hasList = Boolean(
+        sub.allowedListIds &&
+        (sub.allowedListIds.includes('all') || (listId && sub.allowedListIds.includes(listId)))
+      );
+      if (!isSupervisorOrAdmin && !isAssigned && !hasList) return;
+    }
+    // 4. Debts and Return of Debt: For Admin/Supervisor or the representative who owns the debt/repayment
+    else if (type === 'debt' || type === 'repay') {
+      const isSupervisorOrAdmin = !sub.role || sub.role === 'admin' || sub.role === 'supervisor';
+      const normTarget = (targetRepName || '').trim().toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const normSub = (sub.repName || '').trim().toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const isOwner = Boolean(
+        isSupervisorOrAdmin ||
+        (normTarget && normSub && (normTarget === normSub || normSub.includes(normTarget) || normTarget.includes(normSub))) ||
+        (targetRepId && sub.repId && (
+          targetRepId === sub.repId ||
+          targetRepId === `rep-emp-${sub.repId}` ||
+          targetRepId === `rep_${sub.repId}` ||
+          sub.repId === `rep-emp-${targetRepId}` ||
+          sub.repId === `rep_${targetRepId}`
+        ))
+      );
+      if (!isOwner) return;
+    }
+
+    try {
+      await webpush.sendNotification(sub.subscription, payloadString, {
+        TTL: 86400,
+        urgency: 'high',
+      });
+    } catch (err: any) {
+      if (err?.statusCode === 404 || err?.statusCode === 410) {
+        await removePushSubscription(sub.endpoint);
+      }
+    }
+  });
+
+  await Promise.allSettled(promises);
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -719,6 +1080,7 @@ async function startServer() {
           ALTER TABLE cash_funds ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
           ALTER TABLE customer_lists ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
           ALTER TABLE customer_lists ADD COLUMN IF NOT EXISTS receipt_template TEXT DEFAULT 'template_1';
+          ALTER TABLE employee_transactions ADD COLUMN IF NOT EXISTS employee_name TEXT;
 
           WITH numbered_funds AS (
             SELECT id, ROW_NUMBER() OVER (ORDER BY COALESCE(order_index, 0) ASC, created_at ASC, id ASC) - 1 as new_idx
@@ -741,6 +1103,8 @@ async function startServer() {
       }
       await cleanupDuplicateEntities().catch((e) => console.warn("Deduplication cleanup notice:", e));
       await recalculateAllFundBalancesInPg().catch((e) => console.warn("Recalculate balances notice:", e));
+      await initVapidKeys().catch((e) => console.warn("Vapid init notice:", e));
+      await initPushSubscriptionsTable().catch((e) => console.warn("Push subs table notice:", e));
       return;
     })
     .catch((err) => console.warn("Background DB initialization notice:", err));
@@ -885,7 +1249,62 @@ async function startServer() {
   app.post("/api/admin/init-db", async (req, res) => {
     try {
       await initializeDatabaseSchema();
+      await initVapidKeys();
+      await initPushSubscriptionsTable();
       res.json({ success: true, message: 'Database schema and tables initialized successfully' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Web Push Notification Routes (Closed-App Background Notifications) ---
+  app.get("/api/push-vapid-public-key", (req, res) => {
+    res.json({ success: true, publicKey: vapidKeys.publicKey });
+  });
+
+  app.post("/api/push-subscribe", async (req, res) => {
+    try {
+      const { subscription, repId, repName, role, allowedListIds } = req.body || {};
+      if (!subscription || !subscription.endpoint) {
+        return res.status(400).json({ error: 'Invalid subscription' });
+      }
+      await savePushSubscription({
+        id: subscription.endpoint,
+        endpoint: subscription.endpoint,
+        subscription,
+        repId: repId || undefined,
+        repName: repName || undefined,
+        role: role || undefined,
+        allowedListIds: Array.isArray(allowedListIds) ? allowedListIds : [],
+        updatedAt: Date.now(),
+      });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/push-unsubscribe", async (req, res) => {
+    try {
+      const { endpoint } = req.body || {};
+      if (endpoint) {
+        await removePushSubscription(endpoint);
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/push-test", async (req, res) => {
+    try {
+      await broadcastPushNotification({
+        title: '🔔 إشعار تجريبي خارجي',
+        body: 'تم استلام الإشعار الخارجي بنجاح حتى عندما يكون التطبيق مغلقاً تماماً!',
+        tag: `test_${Date.now()}`,
+        type: 'sale',
+      });
+      res.json({ success: true, message: 'Test notification sent to all active subscriptions' });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -1072,6 +1491,21 @@ async function startServer() {
             list_name = (SELECT name FROM customer_lists ORDER BY order_index ASC, created_at ASC LIMIT 1)
         WHERE (list_id IS NULL OR list_id = '' OR list_id = 'unknown')
           AND EXISTS (SELECT 1 FROM customer_lists);
+
+        -- Synchronize GPS locations between sales and customers if missing on one side
+        UPDATE customers c
+        SET latitude = s.latitude, longitude = s.longitude, location_address = COALESCE(c.location_address, s.location_address)
+        FROM sales s
+        WHERE (c.id = s.customer_id OR c.name = s.customer_name)
+          AND (c.latitude IS NULL OR c.latitude = 0)
+          AND s.latitude IS NOT NULL AND s.latitude != 0;
+
+        UPDATE sales s
+        SET latitude = c.latitude, longitude = c.longitude, location_address = COALESCE(s.location_address, c.location_address)
+        FROM customers c
+        WHERE (c.id = s.customer_id OR c.name = s.customer_name)
+          AND (s.latitude IS NULL OR s.latitude = 0)
+          AND c.latitude IS NOT NULL AND c.latitude != 0;
       `).catch(() => {});
     } catch (e) {
       console.warn("syncCustomersTableInPg error:", e);
@@ -1353,6 +1787,15 @@ async function startServer() {
       console.log(`[POST /api/contracts] Inserted ${id} into PostgreSQL successfully.`);
 
       bumpSyncVersion();
+      const priceFmt = Number(saved.totalPrice || 0).toLocaleString('en-US');
+      const instFmt = Number(saved.dailyInstallment || 0).toLocaleString('en-US');
+      broadcastPushNotification({
+        title: '🛍️ إشعار مبيع جديد',
+        body: `"${saved.customerName}" - القسط: ${instFmt} د.ع - بقيمة (${priceFmt} د.ع) - ${saved.itemName || 'مادة'} (${saved.repName || 'المندوب'})`,
+        tag: `sale_${saved.id}`,
+        type: 'sale',
+        listId: saved.listId,
+      }).catch(() => {});
       res.json({ success: true, contract: saved });
     } catch (err: any) {
       console.error(`[POST /api/contracts] Error:`, err);
@@ -1703,6 +2146,208 @@ async function startServer() {
       }
       const filePayments = (fileDb.get("payments") || []).map(mapPaymentRow).filter((p: any) => (p.amountPaid ?? p.amount ?? 0) > 0);
       res.json(filePayments);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/receipt/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      let payment: any = null;
+      let contract: any = null;
+
+      if (isPgConfigured()) {
+        try {
+          const pRows = await executePg(`
+            SELECT p.*, COALESCE(NULLIF(p.customer_name, ''), c.customer_name, s.customer_name, '') AS resolved_customer_name
+            FROM payments p
+            LEFT JOIN contracts c ON p.contract_id = c.id
+            LEFT JOIN sales s ON p.contract_id = s.id
+            WHERE p.id = $1 OR TRIM(p.id) = TRIM($1)
+            LIMIT 1
+          `, [id]);
+          if (pRows && pRows.length > 0) {
+            payment = mapPaymentRow(pRows[0]);
+          }
+
+          if (payment?.contractId) {
+            let cRows = await executePg(`SELECT * FROM sales WHERE id = $1 LIMIT 1`, [payment.contractId]).catch(() => []);
+            if (!cRows || cRows.length === 0) {
+              cRows = await executePg(`SELECT * FROM contracts WHERE id = $1 LIMIT 1`, [payment.contractId]).catch(() => []);
+            }
+            if (cRows && cRows.length > 0) {
+              contract = mapContractRow(cRows[0]);
+            }
+          }
+        } catch (e) {
+          console.warn('Error fetching receipt from PG:', e);
+        }
+      }
+
+      if (!payment) {
+        const filePayments = fileDb.get<any>("payments") || [];
+        const found = filePayments.find((p: any) => p.id === id || String(p.id).trim() === String(id).trim());
+        if (found) payment = mapPaymentRow(found);
+      }
+
+      if (!payment) {
+        return res.status(404).json({ error: "Receipt not found" });
+      }
+
+      if (!contract && payment.contractId) {
+        const fileContracts = fileDb.get<any>("contracts") || [];
+        const foundC = fileContracts.find((c: any) => c.id === payment.contractId);
+        if (foundC) contract = mapContractRow(foundC);
+      }
+
+      const amt = Number(payment.amountPaid || payment.amount || 0);
+      const totalPrice = Number(contract?.totalPrice || 0);
+      let totalPaid = Number(contract?.totalPaid || amt);
+      let remainingBalance = Number(contract?.remainingBalance || 0);
+
+      if (isPgConfigured() && payment?.contractId) {
+        try {
+          const sumRows = await executePg(`
+            SELECT COALESCE(SUM(amount), 0) AS cumulative_paid
+            FROM payments
+            WHERE contract_id = $1 AND (created_at <= $2 OR id = $3)
+          `, [payment.contractId, payment.createdAt || new Date().toISOString(), payment.id]);
+          if (sumRows && sumRows.length > 0 && sumRows[0].cumulative_paid != null) {
+            totalPaid = Number(sumRows[0].cumulative_paid);
+            const netFinanced = Math.max(0, totalPrice - Number(contract?.advancePayment || 0));
+            remainingBalance = Math.max(0, netFinanced - totalPaid);
+          }
+        } catch (sumErr) {}
+      }
+
+      let resolvedTemplate = contract?.receiptTemplate;
+      if (!resolvedTemplate) {
+        const listId = contract?.listId;
+        const listName = contract?.listName;
+        if (listId || listName) {
+          const fileLists = fileDb.get<any>("customer_lists") || [];
+          const targetList = fileLists.find((l: any) => l.id === listId || l.name === listName);
+          if (targetList?.receiptTemplate || targetList?.receipt_template) {
+            resolvedTemplate = targetList.receiptTemplate || targetList.receipt_template;
+          }
+        }
+      }
+      if (!resolvedTemplate && isPgConfigured() && (contract?.listId || contract?.listName)) {
+        try {
+          const lRows = await executePg(
+            `SELECT receipt_template FROM customer_lists WHERE id = $1 OR name = $2 LIMIT 1`,
+            [contract?.listId || '', contract?.listName || '']
+          ).catch(() => []);
+          if (lRows && lRows.length > 0 && lRows[0].receipt_template) {
+            resolvedTemplate = lRows[0].receipt_template;
+          }
+        } catch (e) {}
+      }
+
+      res.json({
+        id: payment.id,
+        customerName: payment.customerName || contract?.customerName || 'زبون',
+        customerPhone: contract?.customerPhone || '',
+        itemName: contract?.itemName || 'قسط',
+        totalPrice,
+        totalPaid,
+        remainingBalance,
+        paidAmount: amt,
+        paymentDate: payment.paymentDate,
+        paymentTime: payment.paymentTime || '',
+        timeStr: payment.paymentTime || '',
+        repName: payment.repName || '',
+        note: payment.note || '',
+        template: resolvedTemplate || 'template_1',
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/statement/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      let contract: any = null;
+      let payments: any[] = [];
+
+      if (isPgConfigured()) {
+        try {
+          let cRows = await executePg(`SELECT * FROM sales WHERE id = $1 LIMIT 1`, [id]).catch(() => []);
+          if (!cRows || cRows.length === 0) {
+            cRows = await executePg(`SELECT * FROM contracts WHERE id = $1 LIMIT 1`, [id]).catch(() => []);
+          }
+          if (cRows && cRows.length > 0) {
+            contract = mapContractRow(cRows[0]);
+          } else {
+            let cRowsByName = await executePg(`SELECT * FROM sales WHERE customer_name = $1 LIMIT 1`, [id]).catch(() => []);
+            if (!cRowsByName || cRowsByName.length === 0) {
+              cRowsByName = await executePg(`SELECT * FROM contracts WHERE customer_name = $1 LIMIT 1`, [id]).catch(() => []);
+            }
+            if (cRowsByName && cRowsByName.length > 0) {
+              contract = mapContractRow(cRowsByName[0]);
+            }
+          }
+
+          const targetContractId = contract?.id || id;
+          const pRows = await executePg(`
+            SELECT * FROM payments 
+            WHERE contract_id = $1 OR contract_id = $2
+            ORDER BY payment_date ASC, created_at ASC
+          `, [id, targetContractId]);
+          if (pRows && Array.isArray(pRows)) {
+            payments = pRows.map(mapPaymentRow);
+          }
+        } catch (e) {
+          console.warn('Error fetching statement from PG:', e);
+        }
+      }
+
+      if (!contract) {
+        const fileContracts = fileDb.get<any>("contracts") || [];
+        const foundC = fileContracts.find((c: any) => c.id === id || c.customerName === id);
+        if (foundC) contract = mapContractRow(foundC);
+      }
+
+      if (payments.length === 0) {
+        const filePayments = fileDb.get<any>("payments") || [];
+        const targetId = contract?.id || id;
+        payments = filePayments
+          .filter((p: any) => p.contractId === id || p.contractId === targetId || p.contract_id === id || p.contract_id === targetId)
+          .map(mapPaymentRow);
+      }
+
+      if (!contract && payments.length === 0) {
+        return res.status(404).json({ error: "Customer statement not found" });
+      }
+
+      const totalPrice = Number(contract?.totalPrice || 0);
+      const advancePayment = Number(contract?.advancePayment || 0);
+      const netDue = Math.max(0, totalPrice - advancePayment);
+      const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amountPaid || p.amount || 0) || 0), 0);
+      const remainingBalance = Math.max(0, (netDue > 0 ? netDue : (contract?.remainingBalance != null ? Number(contract.remainingBalance) : 0)) - totalPaid);
+      const isFinished = remainingBalance <= 0;
+
+      res.json({
+        contract: contract || {
+          id,
+          customerName: payments[0]?.customerName || 'زبون',
+          customerPhone: (payments[0] as any)?.customerPhone || '',
+          itemName: 'قسط',
+          totalPrice,
+          advancePayment,
+          totalPaid,
+          remainingBalance,
+          status: isFinished ? 'completed' : 'active',
+        },
+        payments,
+        totalPrice,
+        advancePayment,
+        totalPaid,
+        remainingBalance,
+        isFinished,
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -2709,8 +3354,31 @@ async function startServer() {
 
       fileDb.update("reps", id, updates);
       await executePg(
-        `UPDATE reps SET name = COALESCE($1, name), phone = COALESCE($2, phone), code = COALESCE($3, code), role = COALESCE($4, role), can_edit = COALESCE($5, can_edit), can_delete = COALESCE($6, can_delete), can_move_customer = COALESCE($7, can_move_customer), can_sell = COALESCE($8, can_sell), allowed_list_ids = COALESCE($9, allowed_list_ids), avatar_url = COALESCE($10, avatar_url) WHERE id = $11`,
-        [updates.name, updates.phone, updates.code, updates.role, updates.canEdit, updates.canDelete, updates.canMoveCustomer, updates.canSell, updates.allowedListIds ? JSON.stringify(updates.allowedListIds) : null, updates.avatarUrl ?? updates.avatar_url ?? null, id]
+        `UPDATE reps SET 
+           name = COALESCE(NULLIF($1, ''), name), 
+           phone = COALESCE(NULLIF($2, ''), phone), 
+           code = COALESCE(NULLIF($3, ''), code), 
+           role = COALESCE(NULLIF($4, ''), role), 
+           can_edit = COALESCE($5, can_edit), 
+           can_delete = COALESCE($6, can_delete), 
+           can_move_customer = COALESCE($7, can_move_customer), 
+           can_sell = COALESCE($8, can_sell), 
+           allowed_list_ids = COALESCE($9, allowed_list_ids), 
+           avatar_url = COALESCE(NULLIF($10, ''), avatar_url) 
+         WHERE id = $11`,
+        [
+          updates.name ? String(updates.name).trim() : null,
+          updates.phone ? String(updates.phone).trim() : null,
+          updates.code ? String(updates.code).trim() : null,
+          updates.role ? String(updates.role).trim() : null,
+          updates.canEdit !== undefined ? Boolean(updates.canEdit) : null,
+          updates.canDelete !== undefined ? Boolean(updates.canDelete) : null,
+          updates.canMoveCustomer !== undefined ? Boolean(updates.canMoveCustomer) : null,
+          updates.canSell !== undefined ? Boolean(updates.canSell) : null,
+          updates.allowedListIds ? (Array.isArray(updates.allowedListIds) ? JSON.stringify(updates.allowedListIds) : String(updates.allowedListIds)) : null,
+          updates.avatarUrl ?? updates.avatar_url ?? null,
+          id
+        ]
       );
       bumpSyncVersion();
       res.json({ success: true });
@@ -3252,21 +3920,69 @@ async function startServer() {
       const saved = fileDb.upsert("employee_transactions", {
         id,
         employeeId: et.employeeId || '',
+        employeeName: et.employeeName || et.repName || '',
         fundId: et.fundId || '',
-        type: et.type || 'debt',
+        type: et.type || 'loan',
         amount: Number(et.amount) || 0,
-        notes: et.notes || '',
-        repName: et.repName || '',
+        notes: et.notes || et.note || '',
+        note: et.notes || et.note || '',
+        repName: et.repName || et.employeeName || '',
         createdAt: et.createdAt || new Date().toISOString()
       });
 
       await executePg(
-        `INSERT INTO employee_transactions (id, employee_id, fund_id, type, amount, notes, rep_name, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
-        [id, saved.employeeId, saved.fundId, saved.type, saved.amount, saved.notes, saved.repName, saved.createdAt]
+        `INSERT INTO employee_transactions (id, employee_id, fund_id, type, amount, notes, note, rep_name, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         ON CONFLICT (id) DO UPDATE SET
+           amount = EXCLUDED.amount, type = EXCLUDED.type, notes = EXCLUDED.notes, fund_id = EXCLUDED.fund_id`,
+        [id, saved.employeeId, saved.fundId, saved.type, saved.amount, saved.notes, saved.notes, saved.repName, saved.createdAt]
       );
 
+      const isLoan = saved.type === 'loan' || (saved.type as string) === 'debt' || (saved.type as string) === 'سلفة' || (saved.type as string) === 'دين';
+      const amount = Number(saved.amount) || 0;
+      const empName = et.employeeName || saved.repName || 'الموظف';
+      const ftId = `ft_emp_${id}`;
+      const ftType = isLoan ? 'employee_loan' : 'employee_repay';
+      const ftNote = isLoan
+        ? `دين / سلفة للموظف (${empName})${saved.notes ? ` - ${saved.notes}` : ''}`
+        : `راجع دين / تسديد من الموظف (${empName})${saved.notes ? ` - ${saved.notes}` : ''}`;
+
+      if (saved.fundId && amount > 0) {
+        if (isPgConfigured()) {
+          await executePg(
+            `INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)
+             ON CONFLICT (id) DO UPDATE SET amount = EXCLUDED.amount, note = EXCLUDED.note, type = EXCLUDED.type`,
+            [ftId, saved.fundId, ftType, amount, ftNote, saved.repName || 'الإدارة', saved.createdAt]
+          ).catch(() => {});
+        }
+        fileDb.upsert("fund_transactions", {
+          id: ftId,
+          fundId: saved.fundId,
+          type: ftType,
+          amount,
+          note: ftNote,
+          repName: saved.repName || 'الإدارة',
+          createdAt: saved.createdAt
+        });
+
+        // Adjust fund balance: if loan -> decreases (-amount), if repay -> increases (+amount)
+        await adjustFundBalance(saved.fundId, isLoan ? -amount : +amount);
+      }
+
       bumpSyncVersion();
+      const amtFmt = amount.toLocaleString('en-US');
+      broadcastPushNotification({
+        title: isLoan ? '💸 إشعار دين جديد' : '💵 إشعار راجع دين',
+        body: isLoan
+          ? `تم تسجيل دين بمبلغ (${amtFmt} د.ع) على "${empName}"${saved.notes ? ` (${saved.notes})` : ''} بواسطة ${saved.repName || 'الإدارة'}`
+          : `تم تسجيل راجع دين بمبلغ (${amtFmt} د.ع) من "${empName}"${saved.notes ? ` (${saved.notes})` : ''} بواسطة ${saved.repName || 'الإدارة'}`,
+        tag: `emp_${isLoan ? 'debt' : 'repay'}_${saved.id}`,
+        type: isLoan ? 'debt' : 'repay',
+        targetRepId: saved.employeeId,
+        targetRepName: empName,
+      }).catch(() => {});
+
       res.json({ success: true, transaction: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3277,11 +3993,48 @@ async function startServer() {
     try {
       const { id } = req.params;
       const updates = req.body;
+      let existing = (fileDb.get<any>("employee_transactions") || []).find((x: any) => x.id === id);
+      if (!existing && isPgConfigured()) {
+        const rows = await executePg("SELECT * FROM employee_transactions WHERE id = $1 LIMIT 1", [id]).catch(() => []);
+        if (rows && rows.length > 0) {
+          existing = {
+            id: rows[0].id,
+            fundId: rows[0].fund_id,
+            amount: Number(rows[0].amount) || 0,
+            type: rows[0].type,
+            notes: rows[0].notes || rows[0].note,
+            repName: rows[0].rep_name
+          };
+        }
+      }
+
+      const oldAmount = Number(existing?.amount) || 0;
+      const newAmount = Number(updates.amount !== undefined ? updates.amount : oldAmount);
+      const diff = newAmount - oldAmount;
+      const isLoan = (existing?.type || updates.type) === 'loan' || (existing?.type || updates.type) === 'debt';
+      const fundId = updates.fundId || existing?.fundId;
+
       fileDb.update("employee_transactions", id, updates);
       await executePg(
         `UPDATE employee_transactions SET amount = COALESCE($1, amount), notes = COALESCE($2, notes) WHERE id = $3`,
-        [updates.amount, updates.notes, id]
+        [updates.amount, updates.notes || updates.note, id]
       );
+
+      // Adjust fund balance by diff
+      if (fundId && diff !== 0) {
+        await adjustFundBalance(fundId, isLoan ? -diff : +diff);
+      }
+
+      // Update linked fund transaction
+      const ftId = `ft_emp_${id}`;
+      const ftNote = isLoan
+        ? `دين / سلفة للموظف (${updates.employeeName || existing?.employeeName || 'الموظف'})${updates.notes ? ` - ${updates.notes}` : ''}`
+        : `راجع دين / تسديد من الموظف (${updates.employeeName || existing?.employeeName || 'الموظف'})${updates.notes ? ` - ${updates.notes}` : ''}`;
+      fileDb.update<any>("fund_transactions", ftId, { amount: newAmount, note: ftNote } as any);
+      if (isPgConfigured()) {
+        await executePg(`UPDATE fund_transactions SET amount = $1, note = $2 WHERE id = $3`, [newAmount, ftNote, ftId]).catch(() => {});
+      }
+
       bumpSyncVersion();
       res.json({ success: true });
     } catch (err: any) {
@@ -3310,6 +4063,39 @@ async function startServer() {
   app.delete("/api/employee-transactions/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      let existing = (fileDb.get<any>("employee_transactions") || []).find((x: any) => x.id === id);
+      if (!existing && isPgConfigured()) {
+        const rows = await executePg("SELECT * FROM employee_transactions WHERE id = $1 LIMIT 1", [id]).catch(() => []);
+        if (rows && rows.length > 0) {
+          existing = {
+            id: rows[0].id,
+            fundId: rows[0].fund_id,
+            amount: Number(rows[0].amount) || 0,
+            type: rows[0].type,
+            notes: rows[0].notes || rows[0].note,
+            repName: rows[0].rep_name,
+            createdAt: rows[0].created_at
+          };
+        }
+      }
+
+      if (existing && existing.amount && existing.fundId) {
+        const isLoan = existing.type === 'loan' || (existing.type as string) === 'debt' || (existing.type as string) === 'سلفة' || (existing.type as string) === 'دين';
+        const amount = Number(existing.amount) || 0;
+        // On deletion of loan: fund balance increases (+amount). On deletion of repay: fund balance decreases (-amount).
+        await adjustFundBalance(existing.fundId, isLoan ? +amount : -amount);
+      }
+
+      // Delete linked fund transactions
+      const ftId = `ft_emp_${id}`;
+      const ftIdAlt = `ft_emptx_${id}`;
+      fileDb.delete("fund_transactions", ftId);
+      fileDb.delete("fund_transactions", ftIdAlt);
+      if (isPgConfigured()) {
+        await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'fund_transactions'), ($2, 'fund_transactions') ON CONFLICT (record_id) DO NOTHING`, [ftId, ftIdAlt]).catch(() => {});
+        await executePg(`DELETE FROM fund_transactions WHERE id = $1 OR id = $2`, [ftId, ftIdAlt]).catch(() => {});
+      }
+
       fileDb.delete("employee_transactions", id);
       await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'employee_transactions') ON CONFLICT (record_id) DO NOTHING`, [id]).catch(() => {});
       await executePg(`DELETE FROM employee_transactions WHERE id = $1`, [id]).catch(() => {});
@@ -3377,6 +4163,33 @@ async function startServer() {
       });
 
       bumpSyncVersion();
+      if (saved.status === 'resolved') {
+        let listId = null;
+        if (saved.contractId && isPgConfigured()) {
+          try {
+            const rows = await executePg("SELECT list_id FROM sales WHERE id = $1", [saved.contractId]);
+            if (rows.length > 0) listId = rows[0].list_id;
+          } catch (e) {}
+        }
+        const excessFmt = Number(saved.excessAmount || 0).toLocaleString('en-US');
+        const acceptedFmt = Number(saved.acceptedAmount || 0).toLocaleString('en-US');
+        broadcastPushNotification({
+          title: '🔔 إشعار تسوية تصفير الحساب',
+          body: `تمت تسوية وتصفير حساب الزبون "${saved.customerName}". الواصل يطابق سعر البيع (${acceptedFmt} د.ع). المبلغ الفائض في حوزة المندوب "${saved.repName || 'المندوب'}": ${excessFmt} د.ع`,
+          tag: `settle_${saved.id}`,
+          type: 'conflict',
+          listId,
+          targetRepName: saved.repName,
+        }).catch(() => {});
+      } else {
+        broadcastPushNotification({
+          title: 'تنبيه تعارض الدفعات',
+          body: `دفعة معلقة للزبون "${saved.customerName}" تتجاوز المتبقي مضافة بواسطة المندوب ${saved.repName || 'المندوب'}`,
+          tag: `conflict_${saved.id}`,
+          type: 'conflict',
+          targetRepName: saved.repName,
+        }).catch(() => {});
+      }
       res.json({ success: true, conflict: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3410,6 +4223,30 @@ async function startServer() {
         console.warn("Postgres update payment_conflict warning:", err?.message || err);
       });
       bumpSyncVersion();
+
+      if (updates.status === 'resolved') {
+        const existing = (fileDb.get("payment_conflicts") || []).find((c: any) => c.id === id);
+        if (existing) {
+          let listId = null;
+          if (existing.contractId && isPgConfigured()) {
+            try {
+              const rows = await executePg("SELECT list_id FROM sales WHERE id = $1", [existing.contractId]);
+              if (rows.length > 0) listId = rows[0].list_id;
+            } catch (e) {}
+          }
+          const excessFmt = Number(existing.excessAmount || updates.excessAmount || 0).toLocaleString('en-US');
+          const acceptedFmt = Number(existing.acceptedAmount || updates.acceptedAmount || 0).toLocaleString('en-US');
+          broadcastPushNotification({
+            title: '🔔 إشعار تسوية تصفير الحساب',
+            body: `تمت تسوية وتصفير حساب الزبون "${existing.customerName}". الواصل يطابق سعر البيع (${acceptedFmt} د.ع). المبلغ الفائض في حوزة المندوب "${existing.repName || 'المندوب'}": ${excessFmt} د.ع`,
+            tag: `settle_${existing.id}`,
+            type: 'conflict',
+            listId,
+            targetRepName: existing.repName,
+          }).catch(() => {});
+        }
+      }
+
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3533,6 +4370,13 @@ async function startServer() {
       }
 
       bumpSyncVersion();
+      broadcastPushNotification({
+        title: '📅 إشعار موعد جديد',
+        body: `"${saved.customerName}" - بتاريخ ${saved.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`,
+        tag: `new_appt_${saved.id}`,
+        type: 'appointment',
+        listId: saved.listId,
+      }).catch(() => {});
       res.json({ success: true, appointment: saved });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -3788,6 +4632,7 @@ async function startServer() {
           customersStatsRes,
           fundTxStatsRes,
           customerListsStatsRes,
+          locationsStatsRes,
         ] = await Promise.all([
           // 1. العقود والمبيعات (sales مع fallback إلى contracts)
           executePg(`
@@ -3937,6 +4782,28 @@ async function startServer() {
             WHERE list_id IS NOT NULL AND TRIM(list_id) != ''
               AND NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = sales.id)
           `).catch(() => [{}])),
+
+          // 10. المواقع الجغرافية المثبتة (GPS) للزبائن والمندوبين
+          executePg(`
+            SELECT 
+              COUNT(CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN 1 END)::int AS total_locations,
+              COUNT(DISTINCT CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN TRIM(customer_name) END)::int AS unique_customers_with_locations,
+              (SELECT COUNT(*)::int FROM rep_locations WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0) AS rep_locations_count
+            FROM sales
+            WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = sales.id AND (dr.table_name = 'sales' OR dr.table_name = 'contracts'))
+          `).catch(async () => {
+            return executePg(`
+              SELECT 
+                COUNT(CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN 1 END)::int AS total_locations,
+                COUNT(DISTINCT CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL AND latitude != 0 AND longitude != 0 THEN TRIM(customer_name) END)::int AS unique_customers_with_locations,
+                0::int AS rep_locations_count
+              FROM contracts
+              WHERE NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = contracts.id)
+            `).catch((err) => {
+              queryErrors["locations"] = err.message;
+              return [{}];
+            });
+          }),
         ]);
 
         const salesStats = salesStatsRes[0] || {};
@@ -3948,6 +4815,7 @@ async function startServer() {
         const customersStats = customersStatsRes[0] || {};
         const fundTxStats = fundTxStatsRes[0] || {};
         const customerListsStats = customerListsStatsRes[0] || {};
+        const locationsStats = locationsStatsRes[0] || {};
 
         return res.json({
           success: true,
@@ -3993,6 +4861,11 @@ async function startServer() {
           },
           lists: {
             count: customerListsStats.total_lists || 0,
+          },
+          locations: {
+            total: locationsStats.total_locations || 0,
+            customerLocations: locationsStats.unique_customers_with_locations || locationsStats.total_locations || 0,
+            repLocations: locationsStats.rep_locations_count || 0,
           },
           diagnostics: {
             hasErrors: Object.keys(queryErrors).length > 0,
@@ -4064,6 +4937,11 @@ async function startServer() {
         reps: {
           total: allReps.length,
           active: allReps.filter((r: any) => r.status === 'active').length,
+        },
+        locations: {
+          total: allContracts.filter((c: any) => c && c.latitude != null && c.longitude != null && !isNaN(Number(c.latitude)) && Number(c.latitude) !== 0).length,
+          customerLocations: allContracts.filter((c: any) => c && c.latitude != null && c.longitude != null && !isNaN(Number(c.latitude)) && Number(c.latitude) !== 0).length,
+          repLocations: (fileDb.get("rep_locations") || []).length,
         },
       });
     } catch (err: any) {
@@ -4624,7 +5502,7 @@ async function startServer() {
                 repName,
                 saved.phone || '',
                 saved.code || '0000',
-                saved.role || 'rep',
+                saved.role || existing?.role || '',
                 saved.canEdit !== false,
                 saved.canDelete !== false,
                 saved.canMoveCustomer !== false,
@@ -4994,11 +5872,14 @@ async function startServer() {
           const notes = payload.notes || payload.note || '';
           const txDate = payload.date || payload.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0];
           const createdAt = payload.createdAt || payload.created_at || new Date().toISOString();
+          const empName = payload.employeeName || payload.employee_name || repName || 'الموظف';
+          const isLoan = type === 'loan' || (type as string) === 'debt' || (type as string) === 'سلفة' || (type as string) === 'دين';
 
           const saved = fileDb.upsert("employee_transactions", {
             ...payload,
             id,
             employeeId: empId,
+            employeeName: empName,
             fundId,
             repName,
             type,
@@ -5010,12 +5891,61 @@ async function startServer() {
           });
 
           await executePg(
-            `INSERT INTO employee_transactions (id, employee_id, rep_name, type, amount, notes, note, date, created_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            `INSERT INTO employee_transactions (id, employee_id, fund_id, rep_name, type, amount, notes, note, date, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
              ON CONFLICT (id) DO UPDATE SET
-               amount = EXCLUDED.amount, type = EXCLUDED.type, notes = EXCLUDED.notes`,
-            [id, empId, repName, type, amount, notes, notes, txDate, createdAt]
+               amount = EXCLUDED.amount, type = EXCLUDED.type, notes = EXCLUDED.notes, fund_id = EXCLUDED.fund_id`,
+            [id, empId, fundId, repName, type, amount, notes, notes, txDate, createdAt]
           ).catch((err) => console.warn("Error inserting employee_tx in PG sync:", err));
+
+          // Manage linked fund transaction
+          const ftId = `ft_emp_${id}`;
+          const ftType = isLoan ? 'employee_loan' : 'employee_repay';
+          const ftNote = isLoan
+            ? `دين / سلفة للموظف (${empName})${notes ? ` - ${notes}` : ''}`
+            : `راجع دين / تسديد من الموظف (${empName})${notes ? ` - ${notes}` : ''}`;
+
+          let ftAlreadyExists = (fileDb.get<any>("fund_transactions") || []).some((x: any) => x.id === ftId);
+          if (fundId && amount > 0) {
+            if (isPgConfigured()) {
+              const res = await executePg(
+                `INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7)
+                 ON CONFLICT (id) DO UPDATE SET amount = EXCLUDED.amount, note = EXCLUDED.note, type = EXCLUDED.type
+                 RETURNING id`,
+                [ftId, fundId, ftType, amount, ftNote, repName || 'الإدارة', createdAt]
+              ).catch(() => []);
+              if (!res || res.length === 0) ftAlreadyExists = true;
+            }
+            fileDb.upsert("fund_transactions", {
+              id: ftId,
+              fundId,
+              type: ftType,
+              amount,
+              note: ftNote,
+              repName: repName || 'الإدارة',
+              createdAt
+            });
+
+            if (!skipBalanceRecalc && !ftAlreadyExists) {
+              await adjustFundBalance(fundId, isLoan ? -amount : +amount);
+            }
+          }
+
+          if (!ftAlreadyExists) {
+            const amtFmt = amount.toLocaleString('en-US');
+            broadcastPushNotification({
+              title: isLoan ? '💸 إشعار دين جديد' : '💵 إشعار راجع دين',
+              body: isLoan
+                ? `تم تسجيل دين بمبلغ (${amtFmt} د.ع) على "${empName}"${notes ? ` (${notes})` : ''} بواسطة ${payload.recordedBy || repName || 'الإدارة'}`
+                : `تم تسجيل راجع دين بمبلغ (${amtFmt} د.ع) من "${empName}"${notes ? ` (${notes})` : ''} بواسطة ${payload.recordedBy || repName || 'الإدارة'}`,
+              tag: `emp_${isLoan ? 'debt' : 'repay'}_${id}`,
+              type: isLoan ? 'debt' : 'repay',
+              targetRepId: empId,
+              targetRepName: empName,
+            }).catch(() => {});
+          }
+
           return true;
         }
 
@@ -5023,6 +5953,35 @@ async function startServer() {
         case 'DELETE_EMPLOYEE_TRANSACTION': {
           const id = typeof payload === 'string' ? payload : payload?.id;
           if (!id) return true;
+
+          let existing = (fileDb.get<any>("employee_transactions") || []).find((x: any) => x.id === id);
+          if (!existing && isPgConfigured()) {
+            const rows = await executePg("SELECT * FROM employee_transactions WHERE id = $1 LIMIT 1", [id]).catch(() => []);
+            if (rows && rows.length > 0) {
+              existing = {
+                id: rows[0].id,
+                fundId: rows[0].fund_id,
+                amount: Number(rows[0].amount) || 0,
+                type: rows[0].type
+              };
+            }
+          }
+
+          if (existing && existing.amount && existing.fundId && !skipBalanceRecalc) {
+            const isLoan = existing.type === 'loan' || (existing.type as string) === 'debt' || (existing.type as string) === 'سلفة' || (existing.type as string) === 'دين';
+            const amount = Number(existing.amount) || 0;
+            await adjustFundBalance(existing.fundId, isLoan ? +amount : -amount);
+          }
+
+          const ftId = `ft_emp_${id}`;
+          const ftIdAlt = `ft_emptx_${id}`;
+          fileDb.delete("fund_transactions", ftId);
+          fileDb.delete("fund_transactions", ftIdAlt);
+          if (isPgConfigured()) {
+            await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'fund_transactions'), ($2, 'fund_transactions') ON CONFLICT (record_id) DO NOTHING`, [ftId, ftIdAlt]).catch(() => {});
+            await executePg(`DELETE FROM fund_transactions WHERE id = $1 OR id = $2`, [ftId, ftIdAlt]).catch(() => {});
+          }
+
           await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'employee_transactions') ON CONFLICT (record_id) DO NOTHING`, [id]).catch(() => {});
           fileDb.delete("employee_transactions", id);
           await executePg(`DELETE FROM employee_transactions WHERE id = $1`, [id]).catch(() => {});

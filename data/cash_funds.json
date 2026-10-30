@@ -2,7 +2,7 @@
   {
     "id": "fund-4",
     "name": "صندوق ماهر 1",
-    "balance": 18527000,
+    "balance": 6688000,
     "description": "",
     "orderIndex": 0,
     "createdAt": "2026-09-04T18:20:53.845Z"
@@ -10,7 +10,7 @@
   {
     "id": "fund-2",
     "name": "ماهر 2",
-    "balance": 9268000,
+    "balance": 529558000,
     "description": "",
     "orderIndex": 1,
     "createdAt": "2026-09-04T18:19:54.513Z"
@@ -58,7 +58,7 @@
   {
     "id": "fund_1787412692389_0x4u5",
     "name": "صندوق كربلاء الاولى",
-    "balance": 0,
+    "balance": 11000,
     "description": "",
     "orderIndex": 7,
     "createdAt": "2026-08-22T15:31:32.391Z"
@@ -86,5 +86,13 @@
     "description": "",
     "orderIndex": 10,
     "createdAt": "2026-09-04T18:20:13.852Z"
+  },
+  {
+    "id": "fund_1791618782897_u79cy",
+    "name": "هيثم",
+    "balance": 364000,
+    "description": "",
+    "orderIndex": 11,
+    "createdAt": "2026-10-10T07:53:02.897Z"
   }
 ]

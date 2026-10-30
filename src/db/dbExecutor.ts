@@ -68,6 +68,12 @@ export async function executePg(sql: string, params: any[] = []): Promise<any[]>
 
         if (e.message && e.message.includes('does not exist')) {
           try {
+            if (e.message.includes('employee_name')) {
+              const currentPool = createPool();
+              await currentPool.query('ALTER TABLE employee_transactions ADD COLUMN IF NOT EXISTS employee_name TEXT;').catch(() => {});
+              const resRetry = await currentPool.query(sql, params);
+              return resRetry.rows || [];
+            }
             if (e.message.includes('avatar_url') && e.message.includes('reps')) {
               const currentPool = createPool();
               await currentPool.query('ALTER TABLE reps ADD COLUMN IF NOT EXISTS avatar_url TEXT;').catch(() => {});

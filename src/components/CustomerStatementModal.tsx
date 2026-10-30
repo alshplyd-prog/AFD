@@ -26,21 +26,34 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   lang,
   currentRep,
 }) => {
-  // Back gesture / Back button support
+  const prevIsOpenRef = React.useRef(false);
+  const onCloseRef = React.useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Initialize dates strictly when modal transitions from closed to open
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      const today = getLocalDateString();
+      setStartDate(today);
+      setEndDate(today);
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Back gesture / Back button support isolated from date state
   useEffect(() => {
     if (!isOpen) return;
-    const today = getLocalDateString();
-    setStartDate(today);
-    setEndDate(today);
     window.history.pushState({ modal: 'customer_statement' }, '');
     const handlePopState = () => {
-      onClose();
+      onCloseRef.current?.();
     };
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
   const [selectedListIds, setSelectedListIds] = useState<string[]>(['all']);
   const [isListDropdownOpen, setIsListDropdownOpen] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<string>(() => getLocalDateString());

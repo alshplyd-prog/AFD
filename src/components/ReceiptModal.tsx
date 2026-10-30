@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, CheckCircle, ExternalLink, Download, Copy, Info, FileText, Share2, Printer, Image as ImageIcon } from 'lucide-react';
+import { X, CheckCircle, ExternalLink, Download, Copy, Info, FileText, Share2, Printer, Image as ImageIcon, Settings } from 'lucide-react';
 import { numberToArabicWords } from '../lib/tafqeet';
 import { openThermalPrintWindow, directPrintReceipt, sendToRawBTDirectly, downloadReceiptImage, shareReceiptImage, generateReceiptCanvasDataUrl, sendReceiptToRawBTIntent, sendReceiptPdfToRawBTIntent, downloadReceiptPdf, DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { openReceiptPdfWindow } from '../lib/receiptPdf';
@@ -26,6 +26,7 @@ interface ReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   autoTriggerPrint?: boolean;
+  onOpenPrinterSettings?: () => void;
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({
@@ -33,6 +34,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   isOpen,
   onClose,
   autoTriggerPrint,
+  onOpenPrinterSettings,
 }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
 
@@ -367,6 +369,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <span>نسخ النص</span>
             </button>
           </div>
+
+          {onOpenPrinterSettings && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenPrinterSettings();
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900 text-teal-800 dark:text-teal-200 border border-teal-300 dark:border-teal-800 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            >
+              <Settings className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <span>⚙️ إعدادات وطريقة الطباعة (تغيير الطابعة)</span>
+            </button>
+          )}
 
           <button
             onClick={onClose}

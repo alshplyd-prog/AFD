@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "emp_1792444854676_5qc5v",
+    "name": "زيد",
+    "phone": "",
+    "jobTitle": "مندوب / محصل",
+    "position": "مندوب / محصل",
+    "salary": 0,
+    "debtBalance": 0,
+    "totalDebt": 0,
+    "isRep": true,
+    "repId": "rep_1790325874814_0njii",
+    "createdAt": "2026-10-19T21:20:54.676Z"
+  },
+  {
+    "id": "emp_1792582315555_0y387",
+    "name": "سيد نزار",
+    "phone": "0780",
+    "jobTitle": "مندوب / محصل",
+    "position": "مندوب / محصل",
+    "salary": 0,
+    "debtBalance": 0,
+    "totalDebt": 0,
+    "isRep": true,
+    "repId": "rep_1792578863867_soh3s",
+    "createdAt": "2026-10-21T11:31:55.556Z"
+  }
+]

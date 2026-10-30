@@ -80,8 +80,8 @@ export function formatRepReceiptAsPlainText(receipt: RepReceiptData): string {
 ================================
 ${paymentsText ? `قائمة التسديدات المحددة:\n--------------------------------\n${paymentsText}\n================================\n` : ''}اجمالي التحصيلات: ${totalMoney}
 (${amountWords})
-================================
-تاريخ الطباعة: ${receipt.dateStr} - ${receipt.timeStr}`.trim();
+تاريخ الطباعة: ${receipt.dateStr} - ${receipt.timeStr}
+\n\n\n`;
 }
 
 /**
@@ -376,7 +376,19 @@ export function buildRepReceiptCanvas(receipt: RepReceiptData): HTMLCanvasElemen
   ctx.fillStyle = '#64748b';
   ctx.font = 'bold 12px system-ui, Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`تاريخ الطباعة: ${receipt.dateStr} - ${receipt.timeStr}`, 192, totalHeight - 12);
+  const footerTimestampY = currentY + 130;
+  ctx.fillText(`تاريخ الطباعة: ${receipt.dateStr} - ${receipt.timeStr}`, 192, footerTimestampY);
+
+  // Trim canvas height to end of text + 1cm (80 dots = 10mm on 203 DPI thermal printer)
+  const trimmedHeight = Math.min(canvas.height, footerTimestampY + 80);
+  const trimmedCanvas = document.createElement('canvas');
+  trimmedCanvas.width = width;
+  trimmedCanvas.height = trimmedHeight;
+  const tCtx = trimmedCanvas.getContext('2d');
+  if (tCtx) {
+    tCtx.drawImage(canvas, 0, 0);
+    return trimmedCanvas;
+  }
 
   return canvas;
 }

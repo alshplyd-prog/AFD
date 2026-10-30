@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowLeftRight,
-  Trash2
+  Trash2,
+  MapPin
 } from 'lucide-react';
 import {
   Language,
@@ -92,6 +93,11 @@ interface ServerTotalsData {
   };
   lists?: {
     count: number;
+  };
+  locations?: {
+    total: number;
+    customerLocations?: number;
+    repLocations?: number;
   };
 }
 
@@ -215,6 +221,17 @@ export const ServerQueriesModal: React.FC<ServerQueriesModalProps> = ({
   const localInventoryQuantity = cleanAppInventory.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0);
   const localInventoryItems = cleanAppInventory.length;
 
+  const localContractsWithLocation = appContracts.filter(
+    (c) =>
+      c &&
+      c.latitude != null &&
+      c.longitude != null &&
+      !isNaN(Number(c.latitude)) &&
+      !isNaN(Number(c.longitude)) &&
+      Number(c.latitude) !== 0
+  );
+  const localLocationsCount = localContractsWithLocation.length;
+
   const handleCopyTable = () => {
     if (!data) return;
     const text = `
@@ -245,6 +262,10 @@ export const ServerQueriesModal: React.FC<ServerQueriesModalProps> = ({
 
 7. المخزن والمواد:
 - السيرفر: ${data.inventory.totalQuantity} قطعة | التطبيق: ${localInventoryQuantity} قطعة
+
+8. المواقع الجغرافية (GPS):
+- السيرفر (Hostinger): ${data.locations?.total ?? 0} موقع مثبت
+- التطبيق (محلياً): ${localLocationsCount} موقع مثبت
 `;
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -348,7 +369,7 @@ export const ServerQueriesModal: React.FC<ServerQueriesModalProps> = ({
           {data && (
             <>
               {/* Top Highlights Grid (First item = Cash Funds / Box on the right) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
                 {/* 1. Cash Funds / Box (الصندوق - أول خيار من اليمين) */}
                 <div className="p-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border-2 border-teal-300 dark:border-teal-800/80 text-right shadow-xs">
                   <div className="flex items-center justify-between mb-1">
@@ -439,6 +460,20 @@ export const ServerQueriesModal: React.FC<ServerQueriesModalProps> = ({
                     {data.inventory.totalQuantity.toLocaleString('en-US')}
                   </div>
                   <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">{data.inventory.totalItems} نوع مادة</div>
+                </div>
+
+                {/* 8. Locations (المواقع الجغرافية GPS) */}
+                <div className="p-2.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-right">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black text-rose-700 dark:text-rose-300">المواقع (GPS)</span>
+                    <MapPin className="w-4 h-4 text-rose-600" />
+                  </div>
+                  <div className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100">
+                    {(data.locations?.total ?? 0).toLocaleString('en-US')}
+                  </div>
+                  <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-0.5 truncate">
+                    سيرفر: {data.locations?.total ?? 0} | تطبيق: {localLocationsCount}
+                  </div>
                 </div>
               </div>
 
@@ -658,6 +693,35 @@ export const ServerQueriesModal: React.FC<ServerQueriesModalProps> = ({
                         </td>
                         <td className="p-3 text-center">
                           {renderStatusBadge(data.inventory.totalQuantity, localInventoryQuantity)}
+                        </td>
+                      </tr>
+
+                      {/* 8. Locations Row - المواقع الجغرافية المثبتة */}
+                      <tr className="hover:bg-rose-50/30 dark:hover:bg-rose-950/20 transition-colors">
+                        <td className="p-3 font-black text-rose-800 dark:text-rose-300">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-rose-600" />
+                            <span>مواقع الزبائن الجغرافية (GPS)</span>
+                          </div>
+                        </td>
+                        <td className="p-3 bg-emerald-50/30 dark:bg-emerald-950/10 border-x border-emerald-100 dark:border-emerald-900/40 font-black text-slate-900 dark:text-slate-100">
+                          <div>
+                            إجمالي المواقع المثبتة: <span className="text-emerald-700 dark:text-emerald-400">{(data.locations?.total ?? 0).toLocaleString('en-US')} موقع</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-bold mt-0.5">
+                            مواقع الزبائن: {data.locations?.customerLocations ?? data.locations?.total ?? 0} {data.locations?.repLocations ? `| مواقع المندوبين: ${data.locations.repLocations}` : ''}
+                          </div>
+                        </td>
+                        <td className="p-3 bg-indigo-50/30 dark:bg-indigo-950/10 border-l border-indigo-100 dark:border-indigo-900/40 font-black text-slate-900 dark:text-slate-100">
+                          <div>
+                            إجمالي المواقع المثبتة: <span className="text-indigo-700 dark:text-indigo-400">{localLocationsCount.toLocaleString('en-US')} موقع</span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-bold mt-0.5">
+                            الزبائن المحددة إحداثياتهم ومواقعهم بالخريطة
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          {renderStatusBadge(data.locations?.total ?? 0, localLocationsCount)}
                         </td>
                       </tr>
 

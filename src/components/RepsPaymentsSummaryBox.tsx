@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText } from 'lucide-react';
+import { Wallet, UserCheck, Calendar, Filter, X, ChevronLeft, ChevronDown, Receipt, FolderKanban, AlertCircle, Phone, CheckCircle2, Printer, FileSpreadsheet, Download, ExternalLink, FileText } from 'lucide-react';
 import { SalesRepresentative, PaymentRecord, InstallmentContract, CustomerList, Language } from '../types';
 import { silentIframePrint, openUniversalPdfPrintWindow, directPrintReceipt, DEFAULT_DUPLICATE_RECEIPT_WARNING } from '../lib/bluetoothPrinter';
 import { RepReceiptModal, RepReceiptData, directPrintRepReceipt } from './RepReceiptModal';
@@ -363,80 +363,86 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
     <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl sm:rounded-3xl p-2 sm:p-3.5 md:p-4 shadow-2xl dir-rtl space-y-2 sm:space-y-3 h-[95vh] max-h-[95vh] flex flex-col overflow-hidden w-full max-w-full lg:max-w-7xl xl:max-w-[1600px] 2xl:max-w-[1800px] mx-auto">
       {/* Date Range Selection Bar - Responsive across mobile and desktop */}
       <div className="bg-slate-50 dark:bg-slate-900/70 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2 shrink-0">
-        {/* Same Row: From Date & To Date Facing Each Other + Close Button */}
-        <div className="flex items-center gap-2">
-          <div className="grid grid-cols-2 gap-2 flex-1 items-center">
-            {/* From Date */}
-            <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs min-w-0">
-              <span className="text-xs sm:text-sm font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                {isAr ? 'من:' : 'From:'}
+        {/* Single Row on Mobile: List Selector + From Date + To Date (+ Close Button) */}
+        <div className="flex items-center gap-1 sm:gap-2 w-full">
+          {/* Customer List Selector */}
+          <div className="relative flex-1 min-w-0 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg sm:rounded-xl px-1.5 sm:px-2.5 py-1 sm:py-1.5 shadow-2xs flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1 min-w-0 truncate">
+              <FolderKanban className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-amber-500 shrink-0" />
+              <span className="text-[10px] xs:text-[11px] sm:text-xs font-black text-slate-800 dark:text-slate-200 truncate">
+                {boxListId === 'all'
+                  ? (isAr ? 'كل القوائم' : 'All Lists')
+                  : (visibleLists.find((l) => l.id === boxListId)?.name || (isAr ? 'قائمة' : 'List'))}
               </span>
-              <span className="font-mono font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
-                {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
-              </span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                title={isAr ? 'من تاريخ' : 'From Date'}
-              />
             </div>
+            <select
+              value={boxListId}
+              onChange={(e) => setBoxListId(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+              title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
+            >
+              <option value="all">
+                {isAr ? `كل القوائم (${visibleLists.length})` : `All Lists (${visibleLists.length})`}
+              </option>
+              {visibleLists.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3 h-3 text-slate-400 shrink-0 pointer-events-none" />
+          </div>
 
-            {/* To Date */}
-            <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs min-w-0">
-              <span className="text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-1 pointer-events-none">
-                <span className="w-2 h-2 rounded-full bg-teal-500"></span>
-                {isAr ? 'إلى:' : 'To:'}
-              </span>
-              <span className="font-mono font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
-                {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
-              </span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                title={isAr ? 'إلى تاريخ' : 'To Date'}
-              />
-            </div>
+          {/* From Date */}
+          <div className="relative flex-1 min-w-0 flex items-center justify-between gap-0.5 sm:gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg sm:rounded-xl px-1.5 sm:px-2.5 py-1 sm:py-1.5 shadow-2xs">
+            <span className="text-[10px] xs:text-[11px] sm:text-xs font-black text-emerald-700 dark:text-emerald-400 whitespace-nowrap shrink-0 flex items-center gap-0.5 pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              {isAr ? 'من:' : 'From:'}
+            </span>
+            <span className="font-mono font-bold text-[10px] xs:text-[11px] sm:text-xs text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
+              {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
+            </span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+              title={isAr ? 'من تاريخ' : 'From Date'}
+            />
+          </div>
+
+          {/* To Date */}
+          <div className="relative flex-1 min-w-0 flex items-center justify-between gap-0.5 sm:gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg sm:rounded-xl px-1.5 sm:px-2.5 py-1 sm:py-1.5 shadow-2xs">
+            <span className="text-[10px] xs:text-[11px] sm:text-xs font-black text-teal-700 dark:text-teal-400 whitespace-nowrap shrink-0 flex items-center gap-0.5 pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+              {isAr ? 'إلى:' : 'To:'}
+            </span>
+            <span className="font-mono font-bold text-[10px] xs:text-[11px] sm:text-xs text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none" dir="ltr">
+              {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
+            </span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+              title={isAr ? 'إلى تاريخ' : 'To Date'}
+            />
           </div>
 
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
+              className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 shadow-2xs"
               title={isAr ? 'إغلاق' : 'Close'}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
         {/* Quick Presets in Single Horizontal Row */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {visibleLists.length > 1 && (
-            <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 shadow-2xs shrink-0">
-              <FolderKanban className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <select
-                value={boxListId}
-                onChange={(e) => setBoxListId(e.target.value)}
-                className="bg-transparent text-[11px] sm:text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer border-0 p-0"
-                title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
-              >
-                <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                  {isAr ? `كل القوائم (${visibleLists.length})` : `All Lists (${visibleLists.length})`}
-                </option>
-                {visibleLists.map((l) => (
-                  <option key={l.id} value={l.id} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setQuickPreset('today')}

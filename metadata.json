@@ -1,6 +1,6 @@
 {
-  "name": "Remix Name Keeper",
-  "description": "A contact management application for saving, searching, and organizing contacts with call and message capabilities.",
+  "name": "نظام الكرار للمبيعات والأقساط",
+  "description": "نظام متكامل لإدارة المبيعات المباشرة وبالتقسيط، متابعة الزبائن، تحصيل الأقساط، وإدارة المخزن والمناديب.",
   "requestFramePermissions": [
     "bluetooth"
   ],

@@ -22,7 +22,8 @@ import {
   Navigation,
   LocateFixed,
   MapPinned,
-  ExternalLink
+  ExternalLink,
+  MessageCircle
 } from 'lucide-react';
 import { InstallmentContract, PaymentRecord, Language, SalesRepresentative, CustomerList } from '../types';
 import { numberToArabicWords } from '../lib/tafqeet';
@@ -32,6 +33,19 @@ import { normalizeEntityName } from '../lib/nameHelpers';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { updateCustomerLocation } from '../lib/postgresClient';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
+
+const formatIraqiPhoneForWhatsApp = (phone?: string): string => {
+  if (!phone) return '';
+  let cleaned = phone.replace(/[^0-9+]/g, '');
+  if (cleaned.startsWith('0')) {
+    cleaned = '964' + cleaned.slice(1);
+  } else if (cleaned.startsWith('+964')) {
+    cleaned = cleaned.slice(1);
+  } else if (!cleaned.startsWith('964') && cleaned.length === 10) {
+    cleaned = '964' + cleaned;
+  }
+  return cleaned;
+};
 
 interface ContractDetailsModalProps {
   contract: InstallmentContract | null;
@@ -233,8 +247,54 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
   const liveTotalPaid = netFinanced > 0 ? Math.min(netFinanced, rawPaymentsSum) : rawPaymentsSum;
   const liveRemaining = Math.max(0, netFinanced - rawPaymentsSum);
   const excessAmount = Math.max(0, rawPaymentsSum - netFinanced);
-  const isCompleted = (liveRemaining === 0 && (netFinanced === 0 || rawPaymentsSum > 0));
-  const paidPercent = netFinanced > 0 ? Math.min(100, Math.round((liveTotalPaid / netFinanced) * 100)) : 100;
+  const handleSendPaymentWhatsApp = (p: PaymentRecord) => {
+    const amountNum = Number(p.amountPaid ?? (p as any).amount ?? 0);
+    const amountDigits = `${amountNum.toLocaleString('en-US')} د.ع`;
+    const amountWords = `فقط ${numberToArabicWords(amountNum)} لا غير`;
+    const customerDisplayName = contract.customerName || p.customerName || (isAr ? 'زبون' : 'Customer');
+    const dateStr = formatPaymentDateTime(p, isAr);
+
+    let remainingInfo = '';
+    try {
+      const snapshot = getPaymentReceiptBalances(p, contract, safePayments);
+      if (typeof snapshot.remainingBalance === 'number') {
+        remainingInfo = `\n💳 *المتبقي بعد التسديد:* ${snapshot.remainingBalance.toLocaleString('en-US')} د.ع`;
+      }
+    } catch (err) {
+      // ignore
+    }
+
+    const message = `*وصل استلام تسديد* 🧾
+━━━━━━━━━━━━━━━
+👤 *اسم الزبون:* ${customerDisplayName}
+💵 *الواصل:* ${amountDigits}
+🔢 *المبلغ رقماً:* ${amountDigits}
+✍️ *المبلغ كتابة:* ${amountWords}
+📅 *التاريخ:* ${dateStr}${contract.itemName ? `\n📦 *المادة:* ${contract.itemName}` : ''}${remainingInfo}
+━━━━━━━━━━━━━━━
+_الكرار للموبايل والتقسيط_`.trim();
+
+    const rawPhone = contract.customerPhone || (contract as any)?.phone || (p as any)?.customerPhone;
+    const cleanPhone = formatIraqiPhoneForWhatsApp(rawPhone);
+    const encodedText = encodeURIComponent(message);
+
+    const waUrl = cleanPhone
+      ? `https://wa.me/${cleanPhone}?text=${encodedText}`
+      : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (isMobile) {
+      const waScheme = cleanPhone
+        ? `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`
+        : `whatsapp://send?text=${encodedText}`;
+      window.location.href = waScheme;
+      setTimeout(() => {
+        window.open(waUrl, '_blank');
+      }, 500);
+    } else {
+      window.open(waUrl, '_blank');
+    }
+  };
 
   const handlePaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -749,6 +809,16 @@ export const ContractDetailsModal: React.FC<ContractDetailsModalProps> = ({
                             {/* Actions: Print, Edit, Delete */}
                             <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-1.5">
+                                {/* WhatsApp Receipt Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleSendPaymentWhatsApp(p)}
+                                  className="p-1.5 rounded-xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors shadow-2xs cursor-pointer inline-flex items-center justify-center group"
+                                  title={isAr ? 'إرسال وصل التسديد عبر واتساب (الاسم، الواصل، المبلغ رقماً وكتابة، التاريخ)' : 'Send payment receipt via WhatsApp'}
+                                >
+                                  <MessageCircle className="w-4 h-4 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                                </button>
+
                                 {/* Print Receipt button - matches screenshot styling */}
                                 <button
                                   type="button"

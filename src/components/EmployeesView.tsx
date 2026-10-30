@@ -247,6 +247,19 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
     const selectedFund = debtFundId || funds[0]?.id;
     if (!selectedEmpForDebt || amount <= 0 || !selectedFund) return;
 
+    if (debtType === 'loan') {
+      const fund = funds.find((f) => f.id === selectedFund);
+      const fundBal = Number(fund?.balance) || 0;
+      if (amount > fundBal) {
+        setDebtError(
+          isAr
+            ? `عذراً، رصيد الصندوق المحدد (${fund?.name || ''}: ${fundBal.toLocaleString('en-US')} د.ع) غير كافٍ لصرف هذا الدين!`
+            : `Insufficient fund balance (${fundBal.toLocaleString('en-US')} IQD)!`
+        );
+        return;
+      }
+    }
+
     if (debtType === 'repay') {
       const currentBalance = computeEmployeeDebtBalance(selectedEmpForDebt, transactions);
       if (amount > currentBalance) {
@@ -558,20 +571,23 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1.5">
                         {isAdmin && (
                           <>
                             <button
+                              type="button"
                               onClick={() => handleOpenDebtModal(emp, 'loan')}
-                              className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs"
+                              className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                              title={isAr ? 'تسجيل دين أو سلفة جديدة' : 'New Loan'}
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>{isAr ? 'دين جديد' : 'New Loan'}</span>
                             </button>
 
                             <button
+                              type="button"
                               onClick={() => handleOpenDebtModal(emp, 'repay')}
-                              className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs"
+                              className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
+                              title={isAr ? 'تسجيل سداد أو راجع دين' : 'Return Debt'}
                             >
                               <ArrowDownLeft className="w-3.5 h-3.5" />
                               <span>{isAr ? 'راجع دين' : 'Return Debt'}</span>
@@ -622,9 +638,8 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
 
           {filteredEmployees.length === 0 && (
@@ -982,11 +997,16 @@ export const EmployeesView: React.FC<EmployeesViewProps> = ({
                   {isAr ? 'رقم الهاتف' : 'Phone Number'}
                 </label>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={empPhone}
-                  onChange={(e) => setEmpPhone(e.target.value)}
+                  onChange={(e) => {
+                    const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+                    setEmpPhone(converted.replace(/\D/g, ''));
+                  }}
                   placeholder="07700000000"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 dir-ltr text-right"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-bold text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 dir-ltr text-left font-mono"
                 />
               </div>
 

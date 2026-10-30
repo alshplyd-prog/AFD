@@ -39,13 +39,14 @@ import {
   Zap,
   Layers,
   ListFilter,
-  CalendarClock
+  CalendarClock,
+  BellRing
 } from 'lucide-react';
 import { Language, InstallmentContract, PaymentRecord, ActiveTab, SalesRepresentative, CustomerList, Employee, EmployeeTransaction, PaymentConflictRecord, AppointmentRecord } from '../types';
 import { DEFAULT_REPS } from '../data/initialContracts';
 import { reconcileAllLocalWithDatabase } from '../lib/postgresClient';
 import { requestAllBackgroundAndSyncPermissions } from '../lib/offlineQueue';
-import { isAppointmentDueForNotification } from '../lib/dateUtils';
+import { isAppointmentDueForNotification, requestExternalNotificationPermission, showBrowserNotification } from '../lib/dateUtils';
 
 interface AppNotificationItem {
   id: string;
@@ -213,6 +214,61 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isListDropdownOpen]);
+
+  // External Device Notification Permission & Testing state
+  const [isExternalNotifGranted, setIsExternalNotifGranted] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkPerm = async () => {
+      try {
+        const { isExternalNotificationEnabled } = await import('../lib/capacitorPush');
+        const granted = await isExternalNotificationEnabled();
+        if (isMounted) setIsExternalNotifGranted(granted);
+      } catch (e) {
+        if (typeof window !== 'undefined' && 'Notification' in window && isMounted) {
+          setIsExternalNotifGranted(Notification.permission === 'granted');
+        }
+      }
+    };
+    checkPerm();
+    return () => {
+      isMounted = false;
+    };
+  }, [isNotificationsOpen]);
+
+  const handleEnableExternalNotifications = async () => {
+    try {
+      const granted = await requestExternalNotificationPermission();
+      setIsExternalNotifGranted(granted);
+      if (granted) {
+        await showBrowserNotification(
+          isAr ? 'الكرار للتقسيط' : 'Al-Karrar Installments',
+          isAr
+            ? 'تم تفعيل الإشعارات الخارجية على جهازك بنجاح! ستصلك تنبيهات المبيعات والمواعيد والتسديدات.'
+            : 'External device notifications enabled successfully!'
+        );
+      } else {
+        alert(isAr ? 'يرجى السماح بصلاحية الإشعارات من إعدادات جهازك' : 'Please allow notification permission in your device settings');
+      }
+    } catch (e) {
+      console.warn('handleEnableExternalNotifications error:', e);
+    }
+  };
+
+  const handleTestExternalNotification = async () => {
+    const success = await showBrowserNotification(
+      isAr ? '🔔 إشعار خارجي تجريبي' : '🔔 Test External Notification',
+      isAr
+        ? 'تم استلام الإشعار الخارجي على شاشة جهازك بنجاح! نظام الإشعارات نشط ومستعد.'
+        : 'External device notification received successfully!'
+    );
+    if (!success && !isExternalNotifGranted) {
+      alert(isAr ? 'يرجى الضغط على زر تفعيل الإشعارات أولاً للسماح بها' : 'Please enable notifications first');
+    }
+  };
 
   // Dedicated Quick Edit for Excess Payment from Notification
   const [quickExcessEdit, setQuickExcessEdit] = useState<{
@@ -393,13 +449,19 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
       return false;
     };
 
-    // 1. New sales alerts: shown to everyone who has access to the customer list
+    // Strict list permission checker: non-admin reps can ONLY see items belonging to lists they have access to
+    const isRepAllowedList = (listId?: string | null): boolean => {
+      if (isSupervisorOrAdmin) return true;
+      if (!currentRep) return true;
+      if (currentRep.allowedListIds && currentRep.allowedListIds.includes('all')) return true;
+      if (!listId) return false;
+      if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) return false;
+      return currentRep.allowedListIds.includes(listId);
+    };
+
+    // 1. New sales alerts: shown strictly to users with access to the customer list
     contracts.forEach((c) => {
-      const hasAccess =
-        isSupervisorOrAdmin ||
-        !currentRep?.allowedListIds ||
-        currentRep.allowedListIds.includes('all') ||
-        (c.listId && currentRep.allowedListIds.includes(c.listId));
+      const hasAccess = isRepAllowedList(c.listId);
 
       const displayRepName =
         c.repName === 'سيد نزار' || c.customerName?.includes('محمد خالد')
@@ -476,11 +538,8 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
       const targetContract = contracts.find(
         (con) => con.id === conflict.contractId || con.customerName === conflict.customerName
       );
-      const hasConflictAccess =
-        isSupervisorOrAdmin ||
-        !currentRep?.allowedListIds ||
-        currentRep.allowedListIds.includes('all') ||
-        (targetContract?.listId && currentRep.allowedListIds.includes(targetContract.listId));
+      const isMyConflict = Boolean(currentRep && conflict.repName === currentRep.name);
+      const hasConflictAccess = isSupervisorOrAdmin || isMyConflict || isRepAllowedList(targetContract?.listId);
 
       if (!hasConflictAccess) return;
 
@@ -544,9 +603,8 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
 
         const repNameOfPayment = lastPayment.repName || c.repName || (isAr ? 'المندوب' : 'Rep');
 
-        const hasListAccess = !currentRep || !currentRep.allowedListIds || currentRep.allowedListIds.length === 0 || currentRep.allowedListIds.includes('all') || (c.listId && currentRep.allowedListIds.includes(c.listId));
-        const isMyContract = currentRep && (c.repName === currentRep.name || lastPayment.repName === currentRep.name);
-        const hasAccess = isSupervisorOrAdmin || isMyContract || hasListAccess;
+        const isMyContract = Boolean(currentRep && (c.repName === currentRep.name || lastPayment.repName === currentRep.name));
+        const hasAccess = isSupervisorOrAdmin || isMyContract || isRepAllowedList(c.listId);
 
         if (hasAccess) {
           items.push({
@@ -577,7 +635,12 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
       const now = new Date();
 
       appointments.forEach((app) => {
-        if (isAppointmentDueForNotification(app, contracts, now)) {
+        // Check if representative has access to this appointment's contract/list
+        const matchedApptContract = contracts.find((c) => c.id === app.contractId || (app.customerName && c.customerName.trim().toLowerCase() === app.customerName.trim().toLowerCase()));
+        const apptListId = matchedApptContract?.listId || app.listId;
+        const hasListAccess = isRepAllowedList(apptListId);
+
+        if (hasListAccess && isAppointmentDueForNotification(app, contracts, now)) {
           const timeLabel = app.appointmentTime || app.dueTime ? ` [الساعة ${app.appointmentTime || app.dueTime}]` : '';
           items.push({
             id: `appt-due-${app.id}`,
@@ -864,10 +927,45 @@ export const HeaderAndStats: React.FC<HeaderAndStatsProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsNotificationsOpen(false)}
-                          className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                          className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                         >
                           <X className="w-4 h-4" />
                         </button>
+                      </div>
+                    </div>
+
+                    {/* External Notification Status Bar (تنبيهات شاشة الجهاز وقفل الشاشة) */}
+                    <div className="px-3 py-2 bg-slate-100/90 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-2 text-[11px]">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isExternalNotifGranted ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                        <span className="font-bold truncate text-slate-700 dark:text-slate-300">
+                          {isExternalNotifGranted
+                            ? (isAr ? 'الإشعارات الخارجية (الجهاز): نشطة' : 'Device alerts: Active')
+                            : (isAr ? 'الإشعارات الخارجية: غير مفعلة' : 'Device alerts: Inactive')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isExternalNotifGranted ? (
+                          <button
+                            type="button"
+                            onClick={handleTestExternalNotification}
+                            className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] inline-flex items-center gap-1 shadow-2xs transition-all cursor-pointer"
+                            title={isAr ? 'إرسال إشعار تجريبي للجهاز للتأكد من عمله' : 'Send test notification to device'}
+                          >
+                            <BellRing className="w-3 h-3" />
+                            <span>{isAr ? 'تجربة إشعار' : 'Test'}</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleEnableExternalNotifications}
+                            className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-black text-[10px] inline-flex items-center gap-1 shadow-2xs transition-all cursor-pointer animate-pulse"
+                            title={isAr ? 'تفعيل ظهور الإشعارات على شاشة الجهاز' : 'Enable device notifications'}
+                          >
+                            <Bell className="w-3 h-3" />
+                            <span>{isAr ? 'تفعيل الآن' : 'Enable'}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 

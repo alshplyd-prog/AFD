@@ -552,6 +552,17 @@ export function buildReceiptCanvas(receiptData: ThermalReceiptData): HTMLCanvasE
   ctx.font = 'bold 17px monospace';
   ctx.fillText('==================', width / 2, y);
 
+  // Trim canvas height to end of text + 1cm (80 dots = 10mm on 203 DPI thermal printer)
+  const trimmedHeight = Math.min(canvas.height, y + 80);
+  const trimmedCanvas = document.createElement('canvas');
+  trimmedCanvas.width = width;
+  trimmedCanvas.height = trimmedHeight;
+  const tCtx = trimmedCanvas.getContext('2d');
+  if (tCtx) {
+    tCtx.drawImage(canvas, 0, 0);
+    return trimmedCanvas;
+  }
+
   return canvas;
 }
 
@@ -710,6 +721,17 @@ export function buildReceiptCanvasTable(receiptData: ThermalReceiptData): HTMLCa
   ctx.font = 'bold 15px system-ui, Arial, sans-serif';
   ctx.fillText('شكراً لتعاملكم معنا', width / 2, y);
 
+  // Trim canvas height to end of text + 1cm (80 dots = 10mm on 203 DPI thermal printer)
+  const trimmedHeight = Math.min(canvas.height, y + 80);
+  const trimmedCanvas = document.createElement('canvas');
+  trimmedCanvas.width = width;
+  trimmedCanvas.height = trimmedHeight;
+  const tCtx = trimmedCanvas.getContext('2d');
+  if (tCtx) {
+    tCtx.drawImage(canvas, 0, 0);
+    return trimmedCanvas;
+  }
+
   return canvas;
 }
 
@@ -727,10 +749,35 @@ export function buildEscPosBitmapBytesFromCanvas(canvas: HTMLCanvasElement): Uin
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
 
+    // Scan from bottom to top to find the exact last row of printed text or lines
+    let lastContentY = 0;
+    for (let y = height - 1; y >= 0; y--) {
+      let hasDarkPixel = false;
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const alpha = data[idx + 3];
+        const luminance = r * 0.299 + g * 0.587 + b * 0.114;
+        if (alpha > 128 && luminance < 190) {
+          hasDarkPixel = true;
+          break;
+        }
+      }
+      if (hasDarkPixel) {
+        lastContentY = y;
+        break;
+      }
+    }
+
+    // Effective bitmap height ends cleanly right after the last dark pixel line (with 16 dots / 2mm safety buffer)
+    const effectiveHeight = lastContentY > 0 ? Math.min(height, lastContentY + 16) : height;
+
     const widthBytes = Math.ceil(width / 8);
     const imageBytes: number[] = [];
 
-    for (let y = 0; y < height; y++) {
+    for (let y = 0; y < effectiveHeight; y++) {
       for (let xByte = 0; xByte < widthBytes; xByte++) {
         let byteVal = 0;
         for (let bit = 0; bit < 8; bit++) {
@@ -761,13 +808,18 @@ export function buildEscPosBitmapBytesFromCanvas(canvas: HTMLCanvasElement): Uin
     // GS v 0 0 xL xH yL yH (Print raster bit image)
     const xL = widthBytes % 256;
     const xH = Math.floor(widthBytes / 256);
-    const yL = height % 256;
-    const yH = Math.floor(height / 256);
+    const yL = effectiveHeight % 256;
+    const yH = Math.floor(effectiveHeight / 256);
 
     const rasterHeader = [0x1d, 0x76, 0x30, 0x00, xL, xH, yL, yH];
 
-    // Feed 1 line & Paper cut (GS V 66 0)
-    const footer = [0x1b, 0x64, 0x01, 0x1d, 0x56, 0x42, 0x00];
+    // Feed precisely 1 cm (80 dots = 10mm on standard 203 DPI thermal printers) after text ends
+    // Followed by Paper Cut commands: GS V 66 0 (partial cut with feed) + GS V 1 (standard partial cut)
+    const footer = [
+      0x1b, 0x4a, 0x50,        // ESC J 80 (feed 80 dots = 10mm = 1 cm)
+      0x1d, 0x56, 0x42, 0x00,  // GS V 66 0 (partial cut with feed)
+      0x1d, 0x56, 0x01         // GS V 1 (partial cut standard)
+    ];
 
     const result = new Uint8Array(header.length + rasterHeader.length + imageBytes.length + footer.length);
     result.set(header, 0);
@@ -863,8 +915,8 @@ export function buildEscPosBytes(receiptData: ThermalReceiptData): Uint8Array {
   const footerBytes = encoder.encode('================================\nشكراً لتعاملكم معنا\n');
   parts.push(...Array.from(footerBytes));
 
-  // Feed 1 line & Paper Cut: GS V 66 0
-  parts.push(0x1b, 0x64, 0x01, 0x1d, 0x56, 0x42, 0x00);
+  // Feed precisely 1cm (80 dots / 10mm) & Paper Cut: ESC J 80 + GS V 66 0 + GS V 1
+  parts.push(0x1b, 0x4a, 0x50, 0x1d, 0x56, 0x42, 0x00, 0x1d, 0x56, 0x01);
 
   return new Uint8Array(parts);
 }
@@ -1211,7 +1263,7 @@ export function formatReceiptForRawBTText(receiptData: any): string {
     txt += `<b>المبلغ الكلي:</b> ${total.toLocaleString('en-US')} دينار\n`;
   }
   txt += `--------------------------------\n`;
-  txt += `<center>شكراً لتعاملكم معنا</center>\n\n\n`;
+  txt += `<center>شكراً لتعاملكم معنا</center>\n\n`;
   return txt;
 }
 
@@ -2779,7 +2831,7 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
     }
     body {
       margin: 0 auto;
-      padding: 1mm 2mm;
+      padding: 1mm 2mm 10mm 2mm; /* 10mm = exactly 1cm after text ends */
       width: 58mm;
       max-width: 58mm;
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', Tahoma, sans-serif;
@@ -2792,7 +2844,7 @@ export function silentIframePrint(htmlContent: string, title: string = 'وصل �
   </style>
 </head>
 <body>
-  <div style="width: 58mm; max-width: 58mm; margin: 0 auto; padding: 1mm;">
+  <div style="width: 58mm; max-width: 58mm; margin: 0 auto; padding: 1mm 1mm 10mm 1mm;">
     ${htmlContent}
   </div>
 </body>

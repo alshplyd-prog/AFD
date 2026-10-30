@@ -78,28 +78,73 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     });
   }, [contracts, selectedListId, startDate, endDate, searchQuery, currentRep]);
 
-  // Helper to get purchase price for a contract
-  const getPurchasePrice = (c: InstallmentContract): number => {
+  // Helper to extract clean base name without quantity annotations
+  const extractCleanItemName = (rawName: string): string => {
+    if (!rawName) return '';
+    return rawName
+      .replace(/(?:\(|\[)?\s*(?:العدد|عدد)\s*[:=-]?\s*\d+\s*(?:\)|\])?/gi, '')
+      .replace(/\s*\(العدد:\s*\d+\)/gi, '')
+      .trim();
+  };
+
+  // Helper to extract contract quantity reliably from itemName or itemQuantity
+  const extractContractQuantity = (c: { itemName?: string; itemQuantity?: number }): number => {
+    // 1. Check if quantity is embedded in itemName: e.g. "اجهزه 175 (عدد 20)" or "(العدد: 20)" or "عدد 20"
+    const name = c.itemName || '';
+    const match = name.match(/(?:\(|\[)?\s*(?:العدد|عدد)\s*[:=-]?\s*(\d+)\s*(?:\)|\])?/i);
+    if (match && match[1]) {
+      const parsed = parseInt(match[1], 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    // 2. If explicit itemQuantity is set and > 1
+    if (c.itemQuantity && Number(c.itemQuantity) > 1) {
+      return Number(c.itemQuantity);
+    }
+
+    // 3. Fallback to c.itemQuantity or 1
+    return Math.max(1, Number(c.itemQuantity) || 1);
+  };
+
+  // Helper to get unit purchase price
+  const getUnitPurchasePrice = (c: InstallmentContract): number => {
     if (c.purchasePrice !== undefined && c.purchasePrice > 0) {
       return c.purchasePrice;
     }
     if (c.itemId) {
       const found = inventory.find((i) => i.id === c.itemId);
       if (found && found.purchasePrice && found.purchasePrice > 0) {
-        const qty = c.itemQuantity || 1;
-        return found.purchasePrice * qty;
+        return found.purchasePrice;
+      }
+    }
+    // Fallback: match by clean item name against inventory
+    const cleanName = extractCleanItemName(c.itemName || '');
+    if (cleanName) {
+      const foundByName = inventory.find((i) =>
+        i.name.trim().toLowerCase() === cleanName.toLowerCase() ||
+        cleanName.toLowerCase().startsWith(i.name.trim().toLowerCase())
+      );
+      if (foundByName && foundByName.purchasePrice && foundByName.purchasePrice > 0) {
+        return foundByName.purchasePrice;
       }
     }
     return 0;
   };
 
-  // Helper to format Item Name & Quantity in the same cell
+  // Helper to get total purchase price: سعر شرائها يضرب في عددها
+  const getPurchasePrice = (c: InstallmentContract): number => {
+    const qty = extractContractQuantity(c);
+    const unitPrice = getUnitPurchasePrice(c);
+    return unitPrice * qty;
+  };
+
+  // Helper to format Item Name & Quantity in the same cell: حتى اذا جهاز واحد انطي عدد 1 مقابله
   const formatItemAndQty = (c: InstallmentContract): string => {
-    const rawName = c.itemName || (isAr ? 'مادة غير محددة' : 'Unspecified Item');
-    if (c.itemQuantity && c.itemQuantity > 1 && !rawName.includes('عدد')) {
-      return `${rawName} (العدد: ${c.itemQuantity})`;
-    }
-    return rawName;
+    const baseName = extractCleanItemName(c.itemName || '') || c.itemName || (isAr ? 'مادة غير محددة' : 'Unspecified Item');
+    const qty = extractContractQuantity(c);
+    return `${baseName} (العدد: ${qty})`;
   };
 
   // Calculate Totals for Footer Row
@@ -107,8 +152,11 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     let totalSelling = 0;
     let totalPurchase = 0;
     let totalDailyInst = 0;
+    let totalQty = 0;
 
     filteredSales.forEach((c) => {
+      const qty = extractContractQuantity(c);
+      totalQty += qty;
       totalSelling += c.totalPrice || 0;
       totalPurchase += getPurchasePrice(c);
       totalDailyInst += c.dailyInstallment || 0;
@@ -118,12 +166,30 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
 
     return {
       count: filteredSales.length,
+      totalQty,
       totalSelling,
       totalPurchase,
       totalDailyInst,
       totalProfit,
     };
   }, [filteredSales, inventory]);
+
+  // مجموع نوع المادة والعدد وسعر شرائها الإجمالي المضروب في العدد
+  const itemTypeSummary = useMemo(() => {
+    const map = new Map<string, { name: string; qty: number; totalPurchase: number; totalSelling: number }>();
+    filteredSales.forEach((c) => {
+      const cleanName = extractCleanItemName(c.itemName || '') || c.itemName?.trim() || (isAr ? 'مادة غير محددة' : 'Unspecified Item');
+      const qty = extractContractQuantity(c);
+      const purchase = getPurchasePrice(c);
+      const selling = c.totalPrice || 0;
+      const existing = map.get(cleanName) || { name: cleanName, qty: 0, totalPurchase: 0, totalSelling: 0 };
+      existing.qty += qty;
+      existing.totalPurchase += purchase;
+      existing.totalSelling += selling;
+      map.set(cleanName, existing);
+    });
+    return Array.from(map.values()).sort((a, b) => b.qty - a.qty);
+  }, [filteredSales, inventory, isAr]);
 
   // Selected List Label
   const selectedListLabel = useMemo(() => {
@@ -136,21 +202,21 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 font-sans dir-rtl select-none">
       {/* Responsive Filter Bar: Adapts to all devices - Expands on large screens, contracts outer padding on small screens */}
       <div className="p-2 sm:p-3 md:p-3.5 bg-slate-100 dark:bg-slate-800/95 border-b border-slate-300 dark:border-slate-700 shrink-0 space-y-2">
-        {/* Top Controls Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full">
+        {/* Top Controls Row: List Selector + From Date + To Date in a single row on mobile */}
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 w-full items-center">
           {/* Customer List Selector */}
-          <div className="relative flex-1 min-w-[140px] xs:min-w-[160px] sm:min-w-[180px] max-w-full sm:max-w-xs">
+          <div className="relative w-full min-w-0">
             <button
               type="button"
               onClick={() => setIsListDropdownOpen((prev) => !prev)}
-              className="flex items-center justify-between gap-1.5 bg-white dark:bg-slate-700 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-650 w-full text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 cursor-pointer"
+              className="flex items-center justify-between gap-1 bg-white dark:bg-slate-700 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-650 w-full text-[10px] xs:text-[11px] sm:text-xs font-black text-slate-800 dark:text-slate-100 cursor-pointer"
               title={isAr ? 'تصفية حسب القائمة' : 'Filter by List'}
             >
-              <div className="flex items-center gap-1.5 min-w-0 truncate">
-                <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="flex items-center gap-1 min-w-0 truncate">
+                <Layers className="w-3 h-3 xs:w-3.5 xs:h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span className="truncate">{selectedListLabel}</span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
 
             {isListDropdownOpen && (
@@ -207,14 +273,14 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
           </div>
 
           {/* From Date Picker */}
-          <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-700 px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs flex-1 min-w-[125px] xs:min-w-[140px] sm:min-w-[155px]">
-            <div className="flex items-center gap-1 min-w-0 shrink-0 pointer-events-none">
-              <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+          <div className="relative flex items-center justify-between gap-0.5 sm:gap-1 bg-white dark:bg-slate-700 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs w-full min-w-0">
+            <div className="flex items-center gap-0.5 shrink-0 pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+              <span className="text-[10px] xs:text-[11px] sm:text-xs font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
                 {isAr ? 'من:' : 'From:'}
               </span>
             </div>
-            <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+            <span className="font-mono font-bold text-[10px] xs:text-[11px] sm:text-xs text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
               {startDate ? startDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
             </span>
             <input
@@ -227,14 +293,14 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
           </div>
 
           {/* To Date Picker */}
-          <div className="relative flex items-center justify-between gap-1.5 bg-white dark:bg-slate-700 px-2.5 py-2 rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs flex-1 min-w-[125px] xs:min-w-[140px] sm:min-w-[155px]">
-            <div className="flex items-center gap-1 min-w-0 shrink-0 pointer-events-none">
-              <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="text-xs sm:text-sm font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
+          <div className="relative flex items-center justify-between gap-0.5 sm:gap-1 bg-white dark:bg-slate-700 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-300 dark:border-slate-600 shadow-2xs w-full min-w-0">
+            <div className="flex items-center gap-0.5 shrink-0 pointer-events-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0"></span>
+              <span className="text-[10px] xs:text-[11px] sm:text-xs font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
                 {isAr ? 'إلى:' : 'To:'}
               </span>
             </div>
-            <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
+            <span className="font-mono font-bold text-[10px] xs:text-[11px] sm:text-xs text-slate-900 dark:text-slate-100 tracking-tight whitespace-nowrap shrink-0 text-left pointer-events-none leading-none" dir="ltr">
               {endDate ? endDate.replace(/-/g, '/') : (isAr ? '----/--/--' : '----/--/--')}
             </span>
             <input
@@ -277,10 +343,10 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
             </button>
           )}
 
-          {/* Sales Count Pill */}
+          {/* Sales Count & Total Items Pill */}
           <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/80 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700 px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-black shrink-0 whitespace-nowrap shadow-2xs">
             <ShoppingBag className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <span>{totals.count} {isAr ? 'مبيع' : 'Sales'}</span>
+            <span>{totals.count} {isAr ? 'مبيع' : 'Sales'} ({totals.totalQty} {isAr ? 'جهاز' : 'Items'})</span>
           </div>
 
           {/* Close Button if provided */}
@@ -295,6 +361,32 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
             </button>
           )}
         </div>
+
+        {/* Item Types Summary Breakdown (مجموع نوع المادة والعدد وسعر شرائها) */}
+        {itemTypeSummary.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1.5 border-t border-slate-200 dark:border-slate-700">
+            <span className="text-[10px] xs:text-[11px] font-black text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5 text-blue-500" />
+              {isAr ? 'مجموع المواد:' : 'Items Summary:'}
+            </span>
+            {itemTypeSummary.map((item, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 px-2 py-0.5 rounded-lg text-[10px] xs:text-[11px] font-black shrink-0 shadow-2xs whitespace-nowrap"
+              >
+                <span className="text-slate-800 dark:text-slate-200 font-black">{item.name}</span>
+                <span className="bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-1.5 py-0.2 rounded-md font-extrabold text-[10px]">
+                  {isAr ? `العدد: ${item.qty}` : `Qty: ${item.qty}`}
+                </span>
+                {item.totalPurchase > 0 && (
+                  <span className="text-rose-700 dark:text-rose-300 font-bold text-[10px]" dir="ltr">
+                    ({item.totalPurchase.toLocaleString('en-US')} د.ع)
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Expanded Table Container (Fills Full Height & Width) */}
@@ -342,6 +434,8 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
               </tr>
             ) : (
               filteredSales.map((c, idx) => {
+                const qty = extractContractQuantity(c);
+                const unitPrice = getUnitPurchasePrice(c);
                 const pPrice = getPurchasePrice(c);
                 const listName = c.listName || customerLists.find((l) => l.id === c.listId)?.name || '—';
 
@@ -386,9 +480,18 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
                       {(c.dailyInstallment || 0).toLocaleString('en-US')}
                     </td>
 
-                    {/* Purchase Price (سعر الشراء) */}
+                    {/* Purchase Price (سعر الشراء مضروب في العدد) */}
                     <td className="px-2 py-1.5 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-rose-800 dark:text-rose-300 text-xs sm:text-sm whitespace-nowrap">
-                      {pPrice > 0 ? pPrice.toLocaleString('en-US') : '—'}
+                      {pPrice > 0 ? (
+                        <div>
+                          <span>{pPrice.toLocaleString('en-US')}</span>
+                          {qty > 1 && (
+                            <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-semibold" dir="ltr">
+                              ({unitPrice.toLocaleString('en-US')} × {qty})
+                            </span>
+                          )}
+                        </div>
+                      ) : '—'}
                     </td>
 
                     {/* Selling Price (سعر البيع) */}
@@ -417,8 +520,11 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
           {filteredSales.length > 0 && (
             <tfoot className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 font-black text-slate-900 dark:text-slate-100 border-t-2 border-slate-900 dark:border-slate-500 shadow-md">
               <tr>
-                <td colSpan={4} className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
+                <td colSpan={3} className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2.5 py-2 border border-slate-900 dark:border-slate-600 text-right font-black text-xs sm:text-sm">
                   {isAr ? 'الإجمالي للفترة المحددة' : 'Period Totals'}
+                </td>
+                <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2 py-2 border border-slate-900 dark:border-slate-600 text-center font-black text-xs sm:text-sm whitespace-nowrap text-blue-950 dark:text-blue-200">
+                  {isAr ? `مجموع العدد: ${totals.totalQty} جهاز` : `Total Qty: ${totals.totalQty}`}
                 </td>
                 <td className="sticky bottom-0 z-20 bg-[#b8cce4] dark:bg-slate-800 px-2 py-2 border border-slate-900 dark:border-slate-600 text-center font-black dir-ltr text-amber-900 dark:text-amber-200 text-xs sm:text-sm whitespace-nowrap">
                   {totals.totalDailyInst.toLocaleString('en-US')}

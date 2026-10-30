@@ -145,6 +145,7 @@ import {
   deleteAllCustomersAndPayments,
   deleteAllEmployees,
   loadSnapshotFromIndexedDbIfAvailable,
+  saveCurrentRepToIndexedDb,
   generateUniqueId,
   reorderFundsInDatabase,
   reorderCustomerListsInDatabase,
@@ -156,7 +157,8 @@ import {
   updateAppointmentInPostgres,
   subscribeToAppointments,
   getLocalCache,
-  updateLocalCacheItem
+  updateLocalCacheItem,
+  run5DayPruneAndPollingInspection
 } from './lib/postgresClient';
 
 import { universalApiFetch } from './lib/apiConfig';
@@ -251,8 +253,27 @@ export default function App() {
 
   const loginTimestampRef = useRef<number>(Date.now());
 
+  const currentRepRef = useRef<SalesRepresentative | null>(currentRep);
+  useEffect(() => {
+    currentRepRef.current = currentRep;
+  }, [currentRep]);
 
+  const contractsRef = useRef<InstallmentContract[]>(contracts);
+  useEffect(() => {
+    contractsRef.current = contracts;
+  }, [contracts]);
 
+  const isFirstContractsLoadRef = useRef(true);
+  const knownContractIdsRef = useRef<Set<string>>(new Set());
+
+  const isFirstPaymentsLoadRef = useRef(true);
+  const knownPaymentIdsRef = useRef<Set<string>>(new Set());
+
+  const isFirstEmpTxsLoadRef = useRef(true);
+  const knownEmpTxIdsRef = useRef<Set<string>>(new Set());
+
+  const isFirstApptsLoadRef = useRef(true);
+  const knownApptIdsRef = useRef<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
 
   const [lang, setLang] = useState<Language>(() => {
@@ -266,6 +287,11 @@ export default function App() {
   });
 
   const isAr = lang === 'ar';
+
+  const isArRef = useRef<boolean>(isAr);
+  useEffect(() => {
+    isArRef.current = isAr;
+  }, [isAr]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
@@ -338,11 +364,23 @@ export default function App() {
   const handleSaveAppointment = async (newAppt: any) => {
     try {
       const saved = await saveAppointmentToPostgres(newAppt);
+      if (saved && saved.id) {
+        knownApptIdsRef.current.add(saved.id);
+      }
       // Immediately update local state so count and box reflect it without delay
       setAppointments((prev) => {
         const filtered = prev.filter((a) => a.id !== saved.id);
         return [...filtered, saved];
       });
+
+      showBrowserNotification(
+        isAr ? '📅 إشعار موعد جديد' : '📅 New Appointment Scheduled',
+        isAr
+          ? `"${saved.customerName || newAppt.customerName}" - بتاريخ ${saved.appointmentDate || newAppt.appointmentDate}${saved.appointmentTime ? ` الساعة ${saved.appointmentTime}` : ''}${saved.note ? ` (${saved.note})` : ''}`
+          : `Appointment scheduled for "${saved.customerName || newAppt.customerName}" on ${saved.appointmentDate || newAppt.appointmentDate}`,
+        { tag: `new_appt_${saved.id || Date.now()}` }
+      );
+
       setToastMessage(isAr ? 'تم حفظ الموعد بنجاح' : 'Appointment saved successfully');
       loadAppointments();
     } catch (e) {
@@ -507,6 +545,9 @@ export default function App() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', handleSwMessage);
     }
+
+    // Run 5-day cycle for automatic cleanup of payments older than 1 year and periodic polling
+    run5DayPruneAndPollingInspection(false).catch(() => {});
 
     // Periodic heartbeat (every 15s) to test database connectivity & auto-flush pending queue
     const connectionHeartbeatInterval = setInterval(async () => {
@@ -862,11 +903,41 @@ export default function App() {
 
     const unsubContracts = subscribeToContracts(
       (updatedContracts) => {
-        setContracts(updatedContracts);
+        const list = updatedContracts || [];
+        if (isFirstContractsLoadRef.current) {
+          isFirstContractsLoadRef.current = false;
+          list.forEach((c) => knownContractIdsRef.current.add(c.id));
+        } else {
+          list.forEach((c) => {
+            if (!knownContractIdsRef.current.has(c.id)) {
+              knownContractIdsRef.current.add(c.id);
+              const rep = currentRepRef.current;
+              const hasAccess =
+                !rep ||
+                rep.role === 'admin' ||
+                (rep.name && rep.name.includes('ضياء')) ||
+                rep.id === 'rep-1' ||
+                (rep.allowedListIds &&
+                  (rep.allowedListIds.includes('all') || (c.listId && rep.allowedListIds.includes(c.listId))));
+              if (hasAccess) {
+                const priceFmt = Number(c.totalPrice || 0).toLocaleString('en-US');
+                const instFmt = Number(c.dailyInstallment || 0).toLocaleString('en-US');
+                showBrowserNotification(
+                  isArRef.current ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
+                  isArRef.current
+                    ? `"${c.customerName}" - القسط: ${instFmt} د.ع - بقيمة (${priceFmt} د.ع) - ${c.itemName || 'مادة'} (${c.repName || 'المندوب'})`
+                    : `"${c.customerName}" - Installment: ${instFmt} IQD - Total: ${priceFmt} IQD by ${c.repName || 'Rep'}`,
+                  { tag: `sale_${c.id}` }
+                );
+              }
+            }
+          });
+        }
+        setContracts(list);
         setIsSyncing(false);
         setSyncError(false);
-        if (updatedContracts && updatedContracts.length > 0) {
-          precacheMapTilesForLocations(updatedContracts);
+        if (list.length > 0) {
+          precacheMapTilesForLocations(list);
         }
       },
       (err) => {
@@ -896,6 +967,16 @@ export default function App() {
         const valid = (updatedPayments || []).filter((p: any) => 
           p && p.id && (Number(p.amountPaid ?? p.amount) > 0) && !p.id.startsWith('contract_') && !p.id.startsWith('emp_') && !p.id.startsWith('item_')
         );
+        if (isFirstPaymentsLoadRef.current) {
+          isFirstPaymentsLoadRef.current = false;
+          valid.forEach((p) => knownPaymentIdsRef.current.add(p.id));
+        } else {
+          valid.forEach((p) => {
+            if (!knownPaymentIdsRef.current.has(p.id)) {
+              knownPaymentIdsRef.current.add(p.id);
+            }
+          });
+        }
         setPayments(valid);
       },
       (err) => {
@@ -1010,7 +1091,48 @@ export default function App() {
     });
 
     const unsubEmpTxs = subscribeToEmployeeTransactions((updatedTxs) => {
-      setEmployeeTransactions(updatedTxs);
+      const valid = updatedTxs || [];
+      if (isFirstEmpTxsLoadRef.current) {
+        isFirstEmpTxsLoadRef.current = false;
+        valid.forEach((t) => knownEmpTxIdsRef.current.add(t.id));
+      } else {
+        valid.forEach((t) => {
+          if (!knownEmpTxIdsRef.current.has(t.id)) {
+            knownEmpTxIdsRef.current.add(t.id);
+            const rep = currentRepRef.current;
+            const isTargetRep = Boolean(
+              !rep ||
+              rep.role === 'admin' ||
+              rep.role === 'supervisor' ||
+              (t.employeeName && rep.name && t.employeeName.trim().toLowerCase() === rep.name.trim().toLowerCase()) ||
+              t.employeeId === rep.id ||
+              t.employeeId === `rep-emp-${rep.id}` ||
+              t.employeeId === `rep_${rep.id}`
+            );
+            if (isTargetRep) {
+              const amtFmt = Number(t.amount || 0).toLocaleString('en-US');
+              if (t.type === 'loan') {
+                showBrowserNotification(
+                  isArRef.current ? '💸 إشعار دين / سلفة' : '💸 New Debt / Advance',
+                  isArRef.current
+                    ? `تم تسجيل سلفة/دين بمبلغ (${amtFmt} د.ع) لـ "${t.employeeName || 'الموظف'}"${t.note ? ` - ${t.note}` : ''}`
+                    : `New debt of (${amtFmt} IQD) for "${t.employeeName}"`,
+                  { tag: `emp_debt_${t.id}` }
+                );
+              } else {
+                showBrowserNotification(
+                  isArRef.current ? '💵 إشعار راجع دين' : '💵 Debt Repayment',
+                  isArRef.current
+                    ? `تم تسجيل سداد/راجع دين بمبلغ (${amtFmt} د.ع) من "${t.employeeName || 'الموظف'}"${t.note ? ` - ${t.note}` : ''}`
+                    : `Repayment of (${amtFmt} IQD) from "${t.employeeName}"`,
+                  { tag: `emp_repay_${t.id}` }
+                );
+              }
+            }
+          }
+        });
+      }
+      setEmployeeTransactions(valid);
     });
 
     const unsubPaymentConflicts = subscribeToPaymentConflicts((updatedConflicts) => {
@@ -1023,6 +1145,38 @@ export default function App() {
 
     const unsubAppointments = subscribeToAppointments((updatedAppointments) => {
       if (Array.isArray(updatedAppointments)) {
+        if (isFirstApptsLoadRef.current) {
+          isFirstApptsLoadRef.current = false;
+          updatedAppointments.forEach((a) => knownApptIdsRef.current.add(a.id));
+        } else {
+          updatedAppointments.forEach((a) => {
+            if (!knownApptIdsRef.current.has(a.id)) {
+              knownApptIdsRef.current.add(a.id);
+              const matchedC = (contractsRef.current || []).find(
+                (c) => c.id === a.contractId || (a.customerName && c.customerName === a.customerName)
+              );
+              const effectiveListId = a.listId || matchedC?.listId;
+              const rep = currentRepRef.current;
+              const hasAccess =
+                !rep ||
+                rep.role === 'admin' ||
+                (rep.name && rep.name.includes('ضياء')) ||
+                rep.id === 'rep-1' ||
+                (rep.allowedListIds &&
+                  (rep.allowedListIds.includes('all') ||
+                    (effectiveListId && rep.allowedListIds.includes(effectiveListId))));
+              if (hasAccess) {
+                showBrowserNotification(
+                  isArRef.current ? '📅 إشعار موعد جديد' : '📅 New Appointment Scheduled',
+                  isArRef.current
+                    ? `"${a.customerName}" - بتاريخ ${a.appointmentDate}${a.appointmentTime ? ` الساعة ${a.appointmentTime}` : ''}${a.note ? ` (${a.note})` : ''}`
+                    : `Appointment scheduled for "${a.customerName}" on ${a.appointmentDate}`,
+                  { tag: `new_appt_${a.id}` }
+                );
+              }
+            }
+          });
+        }
         setAppointments(updatedAppointments);
       }
     });
@@ -1054,8 +1208,10 @@ export default function App() {
   useEffect(() => {
     if (currentRep) {
       localStorage.setItem(REP_STORAGE_KEY, JSON.stringify(currentRep));
+      saveCurrentRepToIndexedDb(currentRep).catch(() => {});
     } else {
       localStorage.removeItem(REP_STORAGE_KEY);
+      saveCurrentRepToIndexedDb(null).catch(() => {});
     }
   }, [currentRep]);
 
@@ -1081,10 +1237,9 @@ export default function App() {
       const isSupervisorOrAdmin = !currentRep || currentRep.role === 'admin' || currentRep.role === 'supervisor';
       const isAssociatedRep = Boolean(currentRep && (c.repName === currentRep.name || associatedContract?.repName === currentRep.name));
       const isAllowedList = Boolean(
-        !currentRep?.allowedListIds ||
-        currentRep.allowedListIds.length === 0 ||
-        currentRep.allowedListIds.includes('all') ||
-        (associatedContract?.listId && currentRep.allowedListIds.includes(associatedContract.listId))
+        isSupervisorOrAdmin ||
+        (currentRep?.allowedListIds && currentRep.allowedListIds.includes('all')) ||
+        (associatedContract?.listId && currentRep?.allowedListIds && currentRep.allowedListIds.includes(associatedContract.listId))
       );
 
       const hasConflictAccess = isSupervisorOrAdmin || isAssociatedRep || isAllowedList;
@@ -1312,7 +1467,16 @@ export default function App() {
     return todayAllPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
   }, [todayAllPayments]);
 
-  const notifiedAppointmentsRef = useRef<Set<string>>(new Set());
+  const notifiedAppointmentsRef = useRef<Set<string>>((() => {
+    try {
+      const stored = localStorage.getItem('alkarrar_notified_appts_v2');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return new Set<string>(parsed);
+      }
+    } catch {}
+    return new Set<string>();
+  })());
   const hasInitializedAppointmentsRef = useRef<boolean>(false);
 
   // Check appointments in real-time and alert ONLY AT THEIR EXACT TIME (وليس عند إضافة الموعد أو قبله)
@@ -1327,9 +1491,15 @@ export default function App() {
         if (app.status === 'completed' || app.status === 'cancelled') return;
 
         // Check if representative is allowed to see this appointment's list
+        const matchedContract = contractsWithLiveBalances.find((c) => c.id === app.contractId || (app.customerName && c.customerName.trim().toLowerCase() === app.customerName.trim().toLowerCase()));
+        const effectiveListId = app.listId || matchedContract?.listId;
+
         if (currentRep && currentRep.role !== 'admin' && currentRep.role !== 'supervisor') {
-          if (currentRep.allowedListIds && !currentRep.allowedListIds.includes('all')) {
-            if (app.listId && !currentRep.allowedListIds.includes(app.listId)) {
+          if (!currentRep.allowedListIds || currentRep.allowedListIds.length === 0) {
+            return;
+          }
+          if (!currentRep.allowedListIds.includes('all')) {
+            if (!effectiveListId || !currentRep.allowedListIds.includes(effectiveListId)) {
               return;
             }
           }
@@ -1342,14 +1512,17 @@ export default function App() {
 
           if (!notifiedAppointmentsRef.current.has(alertKey)) {
             notifiedAppointmentsRef.current.add(alertKey);
+            try {
+              const arr = Array.from(notifiedAppointmentsRef.current).slice(-200);
+              localStorage.setItem('alkarrar_notified_appts_v2', JSON.stringify(arr));
+            } catch {}
 
             // If this is the initial load on app boot, record without blaring audio for old appointments
             if (!hasInitializedAppointmentsRef.current) {
               return;
             }
 
-            // Real-time alert right when the appointment time arrives!
-            playNotificationSound();
+            // Real-time alert right when the appointment time arrives - Sound + Text ONCE
             const timeLabel = apptTime ? ` [الساعة ${apptTime}]` : '';
             showToast(
               isAr
@@ -1360,7 +1533,8 @@ export default function App() {
               isAr ? 'تنبيه موعد مستحق الآن' : 'Appointment Due Now',
               isAr
                 ? `حان موعد الزبون "${app.customerName}"${app.note ? ` (${app.note})` : ''}${timeLabel}`
-                : `Appointment due for "${app.customerName}"${app.note ? ` (${app.note})` : ''}${timeLabel}`
+                : `Appointment due for "${app.customerName}"${app.note ? ` (${app.note})` : ''}${timeLabel}`,
+              { tag: alertKey }
             );
           }
         }
@@ -1442,6 +1616,15 @@ export default function App() {
     setCustomerPaymentsFilter(contract.id);
     setIsPaymentsHistoryOpen(true);
   };
+
+  const handleClosePaymentsHistory = useCallback(() => {
+    setIsPaymentsHistoryOpen(false);
+    setCustomerPaymentsFilter(null);
+  }, []);
+
+  const handleCloseCustomerStatement = useCallback(() => {
+    setIsStatementModalOpen(false);
+  }, []);
 
   // Record custom payment from details modal or add payment window
   const handleRecordCustomPayment = async (
@@ -1671,6 +1854,8 @@ export default function App() {
         );
         return;
       }
+
+      knownPaymentIdsRef.current.add(newPaymentId);
 
       showToast(
         hasGpsLocation
@@ -2092,8 +2277,22 @@ export default function App() {
           totalPaid: 0,
           createdAt: new Date().toISOString(),
         } as InstallmentContract;
+
+        knownContractIdsRef.current.add(id);
         setContracts((prev) => [newContract, ...prev]);
         await addContractToFirestore(newContract, quantityDeducted);
+
+        const priceFmt = Number(newContract.totalPrice || 0).toLocaleString('en-US');
+        const advanceFmt = Number(newContract.advancePayment || 0).toLocaleString('en-US');
+        const instFmt = Number(newContract.dailyInstallment || 0).toLocaleString('en-US');
+        showBrowserNotification(
+          isAr ? '🛍️ إشعار مبيع جديد' : '🛍️ New Sale Recorded',
+          isAr
+            ? `"${newContract.customerName}" - القسط: ${instFmt} د.ع - بقيمة (${priceFmt} د.ع) - ${newContract.itemName || 'مادة'}${Number(newContract.advancePayment) > 0 ? ` (المقدمة: ${advanceFmt} د.ع)` : ''} (${newContract.repName || 'المندوب'})`
+            : `"${newContract.customerName}" - Installment: ${instFmt} IQD - Total: ${priceFmt} IQD by ${newContract.repName || 'Rep'}`,
+          { tag: `sale_${newContract.id}` }
+        );
+
         showToast(isAr ? 'تمت إضافة الزبون والعقد وتعديل الكمية بالمخزن بنجاح!' : 'New customer & sale recorded!');
         if (ensuredListId && selectedListId !== 'all') {
           handleSelectListId(ensuredListId);
@@ -2740,21 +2939,36 @@ export default function App() {
     note?: string
   ) => {
     if (currentRep && currentRep.role !== 'admin') {
-      showToast(isAr ? 'عذراً، فقط المدير يمكنه إضافة أو تعديل الديون والراجع' : 'Only admin can manage debts');
+      showToast(isAr ? 'عفواً، إضافة الديون وسدادها مخصص للمدير حصراً' : 'Only admin can process debt transactions');
       return;
     }
+
+    if (fundId && type === 'loan') {
+      const targetFund = funds.find((f) => f.id === fundId);
+      const fundBal = Number(targetFund?.balance) || 0;
+      if (amount > fundBal) {
+        showToast(
+          isAr
+            ? `عذراً، رصيد الصندوق المحدد (${targetFund?.name || 'الصندوق'}: ${fundBal.toLocaleString('en-US')} د.ع) غير كافٍ لصرف هذا الدين!`
+            : `Insufficient fund balance (${fundBal.toLocaleString('en-US')} IQD)!`
+        );
+        return;
+      }
+    }
+
     try {
       const now = new Date().toISOString();
       const tempId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const empName = employee.name || 'الموظف';
       const optimisticTx: EmployeeTransaction = {
         id: tempId,
         employeeId: employee.id,
-        employeeName: employee.name,
+        employeeName: empName,
         fundId,
         type,
         amount,
         date: now,
-        recordedBy: currentRep?.name || '',
+        recordedBy: currentRep?.name || 'الإدارة',
         note: note || (type === 'loan' ? 'سلفة / دين' : 'تسديد دين'),
         createdAt: now,
       };
@@ -2764,10 +2978,10 @@ export default function App() {
 
       // 2. Optimistically update employee debtBalance
       setEmployees((prev) => {
-        const found = prev.some((e) => e.id === employee.id || (e.name || '').trim().toLowerCase() === (employee?.name || '').trim().toLowerCase());
+        const found = prev.some((e) => e.id === employee.id || (e.name || '').trim().toLowerCase() === (empName || '').trim().toLowerCase());
         if (found) {
           return prev.map((e) => {
-            if (e.id === employee.id || (e.name || '').trim().toLowerCase() === (employee?.name || '').trim().toLowerCase()) {
+            if (e.id === employee.id || (e.name || '').trim().toLowerCase() === (empName || '').trim().toLowerCase()) {
               const prevDebt = Number(e.debtBalance ?? e.totalDebt ?? 0);
               const newDebt = type === 'loan' ? prevDebt + amount : Math.max(0, prevDebt - amount);
               return { ...e, debtBalance: newDebt, totalDebt: newDebt };
@@ -2788,13 +3002,13 @@ export default function App() {
         }
       });
 
-      // 3. Optimistically update cash fund balance
+      // 3. Optimistically update cash fund balance (loan: decreases, repay: increases)
       if (fundId) {
         setFunds((prev) =>
           prev.map((f) => {
             if (f.id === fundId) {
               const currentBal = Number(f.balance) || 0;
-              const newBal = type === 'loan' ? currentBal - amount : currentBal + amount;
+              const newBal = type === 'loan' ? Math.max(0, currentBal - amount) : currentBal + amount;
               return { ...f, balance: newBal };
             }
             return f;
@@ -2802,11 +3016,48 @@ export default function App() {
         );
       }
 
-      await processEmployeeDebtTransaction(employee, fundId, type, amount, currentRep?.name || '', note);
+      // 4. Add operation to Fund Transactions (حركات الصندوق)
+      const ftId = `ft_emp_${tempId}`;
+      const ftNote = type === 'loan'
+        ? `دين / سلفة للموظف (${empName})${note ? ` - ${note}` : ''}`
+        : `راجع دين / تسديد من الموظف (${empName})${note ? ` - ${note}` : ''}`;
+      const newFt: FundTransaction = {
+        id: ftId,
+        fundId,
+        type: type === 'loan' ? 'employee_loan' : 'employee_repay',
+        amount,
+        note: ftNote,
+        repName: currentRep?.name || empName,
+        createdAt: now,
+      };
+      setFundTransactions((prev) => [newFt, ...prev]);
+
+      knownEmpTxIdsRef.current.add(tempId);
+      await processEmployeeDebtTransaction(optimisticTx);
+
+      const amtFmt = Number(amount || 0).toLocaleString('en-US');
+      if (type === 'loan') {
+        showBrowserNotification(
+          isAr ? '💸 إشعار دين جديد' : '💸 New Debt Recorded',
+          isAr
+            ? `تم تسجيل دين بمبلغ (${amtFmt} د.ع) على "${empName}"${note ? ` (${note})` : ''} بواسطة ${currentRep?.name || 'الإدارة'}`
+            : `New loan/debt of (${amtFmt} IQD) recorded for "${empName}"`,
+          { tag: `emp_debt_${optimisticTx.id}` }
+        );
+      } else {
+        showBrowserNotification(
+          isAr ? '💵 إشعار راجع دين' : '💵 Debt Repayment Recorded',
+          isAr
+            ? `تم تسجيل راجع دين بمبلغ (${amtFmt} د.ع) من "${empName}"${note ? ` (${note})` : ''} بواسطة ${currentRep?.name || 'الإدارة'}`
+            : `Repayment of (${amtFmt} IQD) recorded from "${empName}"`,
+          { tag: `emp_repay_${optimisticTx.id}` }
+        );
+      }
+
       showToast(
         type === 'loan'
-          ? isAr ? `تم تسجيل سحبة دين ${amount.toLocaleString('en-US')} د.ع للموظف ${employee.name}` : 'Loan recorded'
-          : isAr ? `تم تسجيل سداد مبلغ ${amount.toLocaleString('en-US')} د.ع من الموظف ${employee.name}` : 'Repay recorded'
+          ? isAr ? `تم تسجيل سحبة دين ${amount.toLocaleString('en-US')} د.ع للموظف ${empName}` : 'Loan recorded'
+          : isAr ? `تم تسجيل سداد مبلغ ${amount.toLocaleString('en-US')} د.ع من الموظف ${empName}` : 'Repay recorded'
       );
     } catch (err) {
       console.error('Failed debt tx:', err);
@@ -2831,13 +3082,13 @@ export default function App() {
         })
       );
 
-      // Optimistically revert fund balance
+      // Optimistically revert fund balance (حذف الدين يزداد رصيد الصندوق، حذف الراجع ينقص رصيد الصندوق)
       if (tx.fundId) {
         setFunds((prev) =>
           prev.map((f) => {
             if (f.id === tx.fundId) {
               const currentBal = Number(f.balance) || 0;
-              const newBal = tx.type === 'loan' ? currentBal + tx.amount : currentBal - tx.amount;
+              const newBal = tx.type === 'loan' ? currentBal + tx.amount : Math.max(0, currentBal - tx.amount);
               return { ...f, balance: newBal };
             }
             return f;
@@ -2845,8 +3096,13 @@ export default function App() {
         );
       }
 
+      // Remove linked fund transaction from local state
+      const targetFtId = `ft_emp_${tx.id}`;
+      const targetFtIdAlt = `ft_emptx_${tx.id}`;
+      setFundTransactions((prev) => prev.filter((ft) => ft.id !== targetFtId && ft.id !== targetFtIdAlt && ft.id !== tx.id));
+
       await deleteEmployeeDebtTransaction(tx, employee);
-      showToast(isAr ? 'تم حذف حركة الدين بنجاح' : 'Debt transaction deleted');
+      showToast(isAr ? 'تم حذف حركة الدين وتعديل حركة ورصيد الصندوق بنجاح' : 'Debt transaction and fund movements deleted');
     } catch (err) {
       console.error('Failed to delete debt tx:', err);
       showToast(isAr ? 'حدث خطأ أثناء حذف حركة الدين' : 'Error deleting debt transaction');
@@ -2864,7 +3120,7 @@ export default function App() {
 
       // Optimistically update transaction in local state
       setEmployeeTransactions((prev) =>
-        prev.map((t) => (t.id === tx.id ? { ...t, amount: newAmount, note: newNote } : t))
+        prev.map((t) => (t.id === tx.id ? { ...t, amount: newAmount, note: newNote, notes: newNote } : t))
       );
 
       // Optimistically update employee debtBalance
@@ -2879,13 +3135,13 @@ export default function App() {
         })
       );
 
-      // Optimistically update fund balance
+      // Optimistically update fund balance (loan decreases by diff, repay increases by diff)
       if (tx.fundId) {
         setFunds((prev) =>
           prev.map((f) => {
             if (f.id === tx.fundId) {
               const currentBal = Number(f.balance) || 0;
-              const newBal = tx.type === 'loan' ? currentBal - diff : currentBal + diff;
+              const newBal = tx.type === 'loan' ? Math.max(0, currentBal - diff) : currentBal + diff;
               return { ...f, balance: newBal };
             }
             return f;
@@ -2893,8 +3149,25 @@ export default function App() {
         );
       }
 
+      // Update linked fund transaction in local state
+      const targetFtId = `ft_emp_${tx.id}`;
+      const targetFtIdAlt = `ft_emptx_${tx.id}`;
+      const empName = employee.name || 'الموظف';
+      const ftNote = tx.type === 'loan'
+        ? `دين / سلفة للموظف (${empName})${newNote ? ` - ${newNote}` : ''}`
+        : `راجع دين / تسديد من الموظف (${empName})${newNote ? ` - ${newNote}` : ''}`;
+
+      setFundTransactions((prev) =>
+        prev.map((ft) => {
+          if (ft.id === targetFtId || ft.id === targetFtIdAlt || ft.id === tx.id) {
+            return { ...ft, amount: newAmount, note: ftNote };
+          }
+          return ft;
+        })
+      );
+
       await updateEmployeeDebtTransaction(tx, employee, newAmount, newNote);
-      showToast(isAr ? 'تم تعديل حركة الدين بنجاح' : 'Debt transaction updated');
+      showToast(isAr ? 'تم تعديل حركة الدين وحركة الصندوق بنجاح' : 'Debt transaction updated');
     } catch (err) {
       console.error('Failed to update debt tx:', err);
       showToast(isAr ? 'حدث خطأ أثناء تعديل حركة الدين' : 'Error updating debt transaction');
@@ -3758,8 +4031,8 @@ export default function App() {
                     <div className="p-2 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-300 group-hover:scale-105 transition-transform shadow-2xs">
                       <History className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
-                    <span className="text-[11px] xs:text-xs sm:text-sm font-extrabold bg-rose-200/80 dark:bg-rose-950 text-rose-800 dark:text-rose-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
-                      {payments.length} {isAr ? 'تسديد' : 'Payments'}
+                    <span className="text-xs sm:text-sm font-black bg-rose-700 text-white px-2.5 py-1 rounded-xl shadow-2xs whitespace-nowrap">
+                      {todayAllCollected.toLocaleString('en-US')} {isAr ? 'د.ع اليوم' : 'IQD Today'}
                     </span>
                   </div>
                   <div className="space-y-1 my-1">
@@ -4105,6 +4378,7 @@ export default function App() {
           setAutoTriggerReceiptPrint(false);
         }}
         autoTriggerPrint={autoTriggerReceiptPrint}
+        onOpenPrinterSettings={() => setIsPrinterSettingsOpen(true)}
       />
 
       <ContractDetailsModal
@@ -4184,10 +4458,7 @@ export default function App() {
 
       <PaymentsHistoryModal
         isOpen={isPaymentsHistoryOpen}
-        onClose={() => {
-          setIsPaymentsHistoryOpen(false);
-          setCustomerPaymentsFilter(null);
-        }}
+        onClose={handleClosePaymentsHistory}
         customerFilterId={customerPaymentsFilter}
         payments={
           customerPaymentsFilter
@@ -4246,7 +4517,7 @@ export default function App() {
 
       <CustomerStatementModal
         isOpen={isStatementModalOpen}
-        onClose={() => setIsStatementModalOpen(false)}
+        onClose={handleCloseCustomerStatement}
         contracts={contractsWithLiveBalances}
         payments={payments}
         customerLists={customerLists}

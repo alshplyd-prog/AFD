@@ -38,29 +38,49 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
   onPrintReceipt,
   onSettleExcessPayment,
 }) => {
-  // Mobile Back Button / Gesture support (popstate)
+  const prevIsOpenRef = React.useRef(false);
+  const prevCustomerFilterIdRef = React.useRef<string | null | undefined>(undefined);
+  const onCloseRef = React.useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  // Initialize dates strictly when modal transitions from closed to open, or if customerFilterId changes
+  useEffect(() => {
+    if (isOpen) {
+      const isJustOpened = !prevIsOpenRef.current;
+      const isFilterChanged = prevCustomerFilterIdRef.current !== customerFilterId;
+
+      if (isJustOpened || isFilterChanged) {
+        if (customerFilterId) {
+          // When opened for a specific customer ("عرض التسديدات"), show ALL payments across all dates to everyone
+          setStartDate('');
+          setEndDate('');
+          setFilterListId('all');
+        } else if (isJustOpened) {
+          const today = getLocalDateString();
+          setStartDate(today);
+          setEndDate(today);
+          setFilterListId('all');
+        }
+      }
+    }
+    prevIsOpenRef.current = isOpen;
+    prevCustomerFilterIdRef.current = customerFilterId;
+  }, [isOpen, customerFilterId]);
+
+  // Mobile Back Button / Gesture support (popstate) isolated from date state
   useEffect(() => {
     if (!isOpen) return;
-    if (customerFilterId) {
-      // When opened for a specific customer ("عرض التسديدات"), show ALL payments across all dates to everyone
-      setStartDate('');
-      setEndDate('');
-      setFilterListId('all');
-    } else {
-      const today = getLocalDateString();
-      setStartDate(today);
-      setEndDate(today);
-      setFilterListId('all');
-    }
     window.history.pushState({ modal: 'payments_history' }, '');
     const handlePopState = () => {
-      onClose();
+      onCloseRef.current?.();
     };
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [isOpen, customerFilterId, onClose]);
+  }, [isOpen]);
 
   const [filterListId, setFilterListId] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>(() => getLocalDateString());

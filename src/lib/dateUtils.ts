@@ -337,8 +337,17 @@ export function formatZeroBalanceCountdown(
 }
 
 
+let lastNotificationSoundTime = 0;
+
 export function playNotificationSound() {
   try {
+    const now = Date.now();
+    // Debounce audio trigger so it never plays repeatedly within 800ms
+    if (now - lastNotificationSoundTime < 800) {
+      return;
+    }
+    lastNotificationSoundTime = now;
+
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -356,22 +365,69 @@ export function playNotificationSound() {
   }
 }
 
-export function showBrowserNotification(title: string, body: string) {
+export function getCurrentLoggedRepFromStorage(): { id?: string; name?: string; role?: string; allowedListIds?: any } | null {
   try {
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then((permission) => {
-          if (permission === 'granted') {
-            new Notification(title, { body });
-          }
-        });
+    const savedRep = localStorage.getItem('sami_app_logged_rep');
+    if (!savedRep) return null;
+    const rep = JSON.parse(savedRep);
+    if (!rep || !rep.id || !rep.name) return null;
+    return rep;
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function showBrowserNotification(
+  title: string,
+  body: string,
+  options?: {
+    icon?: string;
+    badge?: string;
+    tag?: string;
+    data?: any;
+    vibrate?: number[];
+    requiredListId?: string | null;
+  }
+): Promise<boolean> {
+  // CRITICAL SECURITY: Block all notifications before login!
+  const loggedRep = getCurrentLoggedRepFromStorage();
+  if (!loggedRep) {
+    return false;
+  }
+
+  // Permission check: if notification belongs to a specific list, verify rep access
+  if (options?.requiredListId && loggedRep.role !== 'admin') {
+    const allowed = loggedRep.allowedListIds;
+    if (allowed && !allowed.includes('all')) {
+      const allowedArr = typeof allowed === 'string' ? allowed.split(',') : (Array.isArray(allowed) ? allowed : []);
+      if (!allowedArr.includes(options.requiredListId)) {
+        return false;
       }
     }
-  } catch (e) {
-    // Ignore
   }
+
+  try {
+    // Play sound once
+    playNotificationSound();
+
+    // Delegate to unified APK/Web notification dispatcher
+    const { sendExternalNotification } = await import('./capacitorPush');
+    return await sendExternalNotification(title, body, {
+      tag: options?.tag,
+      icon: options?.icon || '/pwa-192x192.png',
+      badge: options?.badge || '/favicon.png',
+      data: options?.data,
+      vibrate: options?.vibrate || [200, 100, 200],
+    });
+  } catch (e) {
+    console.warn('showBrowserNotification exception:', e);
+  }
+  return false;
+}
+
+export async function requestExternalNotificationPermission(): Promise<boolean> {
+  const { requestExternalNotificationPermission: req } = await import('./capacitorPush');
+  return await req();
 }
 
 export const WEEK_DAYS_AR = [
@@ -427,13 +483,6 @@ export function getNextDateForDayOfMonth(targetDayOfMonth: number): string {
   return `${targetYear}-${mStr}-${dStr}`;
 }
 
-export async function requestExternalNotificationPermission(): Promise<boolean> {
-  if (typeof window !== 'undefined' && 'Notification' in window) {
-    const res = await Notification.requestPermission();
-    return res === 'granted';
-  }
-  return false;
-}
 
 export function parseAppointmentDateTime(appointmentDateStr?: string, appointmentTimeStr?: string): Date | null {
   if (!appointmentDateStr) return null;
@@ -675,6 +724,67 @@ export function isAppointmentDueForNotification(
   }
 
   return false;
+}
+
+/**
+ * Calculates number of days starting from the second day of the sale
+ * (Day of sale = 0 days, 2nd day = 1 day, 3rd day = 2 days, etc.)
+ */
+export function getDaysSinceSaleSecondDay(saleDateStr?: string, targetDateStr?: string): number {
+  if (!saleDateStr) return 0;
+  const saleD = saleDateStr.split('T')[0].trim();
+  if (!saleD) return 0;
+  const targetD = (targetDateStr ? targetDateStr.split('T')[0].trim() : '') || getLocalDateString();
+  const [sY, sM, sD] = saleD.split('-').map(Number);
+  const [tY, tM, tD] = targetD.split('-').map(Number);
+  if (!sY || !sM || !sD || !tY || !tM || !tD) return 0;
+  const sUtc = Date.UTC(sY, sM - 1, sD);
+  const tUtc = Date.UTC(tY, tM - 1, tD);
+  const diffDays = Math.floor((tUtc - sUtc) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+}
+
+/**
+ * Calculates the accrued/overdue accumulated amount for a contract:
+ * Formula: (dailyInstallment * days starting second day of sale) - totalPaid
+ * If accumulated >= remaining balance, returns isOverdueDueAll: true and displayValue: 'منتهي'
+ */
+export function calculateAccumulatedInstallment(
+  contract: {
+    startDate?: string;
+    createdAt?: string;
+    dailyInstallment?: number;
+    totalPaid?: number;
+    totalPrice?: number;
+    advancePayment?: number;
+  },
+  targetDateStr?: string
+): {
+  days: number;
+  accumulated: number;
+  remaining: number;
+  isOverdueDueAll: boolean;
+  displayValue: string;
+} {
+  const saleDateStr = contract.startDate || (contract.createdAt ? contract.createdAt.split('T')[0] : '');
+  const days = getDaysSinceSaleSecondDay(saleDateStr, targetDateStr);
+  const installment = Number(contract.dailyInstallment || 0);
+  const totalPaid = Number(contract.totalPaid || 0);
+  const totalPrice = Number(contract.totalPrice || 0);
+  const advancePayment = Number(contract.advancePayment || 0);
+  const netFinanced = Math.max(0, totalPrice - advancePayment);
+  const remaining = Math.max(0, netFinanced - totalPaid);
+  const accumulated = Math.round((installment * days) - totalPaid);
+  const isOverdueDueAll = remaining > 0 && accumulated >= remaining;
+  const displayValue = isOverdueDueAll ? 'منتهي' : (accumulated > 0 ? accumulated.toLocaleString('en-US') : '0');
+
+  return {
+    days,
+    accumulated,
+    remaining,
+    isOverdueDueAll,
+    displayValue,
+  };
 }
 
 

@@ -587,11 +587,16 @@ export const RepsManagementModal: React.FC<RepsManagementModalProps> = ({
                     {isAr ? 'رقم الهاتف' : 'Phone Number'}
                   </label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+                      setPhone(converted.replace(/\D/g, ''));
+                    }}
                     placeholder="07801234567"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-semibold dir-ltr text-right"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-semibold dir-ltr text-left font-mono"
                   />
                 </div>
 
@@ -600,11 +605,16 @@ export const RepsManagementModal: React.FC<RepsManagementModalProps> = ({
                     {isAr ? 'رمز الدخول (PIN)' : 'PIN Code'}
                   </label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={code}
-                    onChange={(e) => setCode(e.target.value)}
+                    onChange={(e) => {
+                      const converted = e.target.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+                      setCode(converted.replace(/\D/g, ''));
+                    }}
                     placeholder="1234"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold dir-ltr text-right"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold dir-ltr text-left font-mono"
                   />
                 </div>
               </div>

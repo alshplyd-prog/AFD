@@ -31,6 +31,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   // Form states
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState('');
   const [dailyInstallment, setDailyInstallment] = useState('');
   const [quantity, setQuantity] = useState('');
   const [error, setError] = useState('');
@@ -48,12 +49,14 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       setEditingItem(item);
       setName(item.name);
       setPrice(item.price.toString());
+      setPurchasePrice(item.purchasePrice ? item.purchasePrice.toString() : '');
       setDailyInstallment(item.dailyInstallment ? item.dailyInstallment.toString() : '');
       setQuantity(item.quantity.toString());
     } else {
       setEditingItem(null);
       setName('');
       setPrice('');
+      setPurchasePrice('');
       setDailyInstallment('');
       setQuantity('');
     }
@@ -80,6 +83,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       onUpdateItem(editingItem.id, {
         name: name.trim(),
         price: Number(price),
+        purchasePrice: Number(purchasePrice) || 0,
         dailyInstallment: Number(dailyInstallment) || 0,
         quantity: Number(quantity),
       });
@@ -87,6 +91,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       onAddItem({
         name: name.trim(),
         price: Number(price),
+        purchasePrice: Number(purchasePrice) || 0,
         dailyInstallment: Number(dailyInstallment) || 0,
         quantity: Number(quantity),
         createdAt: new Date().toISOString(),
@@ -161,7 +166,8 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               <thead className="bg-slate-100/80 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 font-black border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th className="p-3">{isAr ? 'اسم المادة' : 'Item Name'}</th>
-                  <th className="p-3">{isAr ? 'سعر البيع (د.ع)' : 'Price'}</th>
+                  <th className="p-3">{isAr ? 'سعر البيع (د.ع)' : 'Sale Price'}</th>
+                  <th className="p-3">{isAr ? 'سعر الشراء (د.ع)' : 'Cost Price'}</th>
                   <th className="p-3">{isAr ? 'قسط المادة (د.ع)' : 'Daily Rate'}</th>
                   <th className="p-3">{isAr ? 'الكمية المتوفرة' : 'Stock'}</th>
                   <th className="p-3">{isAr ? 'تاريخ الإضافة' : 'Date Added'}</th>
@@ -185,6 +191,10 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
 
                       <td className="p-3 text-teal-600 dark:text-teal-400 font-black dir-ltr text-right">
                         {formatMoney(item.price)}
+                      </td>
+
+                      <td className="p-3 text-amber-600 dark:text-amber-400 font-black dir-ltr text-right">
+                        {item.purchasePrice ? formatMoney(item.purchasePrice) : '-'}
                       </td>
 
                       <td className="p-3 text-blue-600 dark:text-blue-400 font-black dir-ltr text-right">
@@ -267,7 +277,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                     {isAr ? 'سعر البيع (د.ع) *' : 'Sale Price *'}
@@ -280,7 +290,18 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold dir-ltr"
                   />
                 </div>
-
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    {isAr ? 'سعر الشراء (د.ع)' : 'Purchase Price'}
+                  </label>
+                  <input
+                    type="number"
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    placeholder="500000"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-bold dir-ltr"
+                  />
+                </div>
                 <div>
                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                     {isAr ? 'قسط المادة (د.ع)' : 'Daily Rate'}
