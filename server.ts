@@ -3522,22 +3522,20 @@ async function startServer() {
       const repName = t.repName || t.rep_name || '';
       const createdAt = t.createdAt || t.created_at || new Date().toISOString();
 
-      let alreadyExists = false;
       if (isPgConfigured()) {
-        const insertRes = await executePg(
+        await executePg(
           `INSERT INTO fund_transactions (id, fund_id, target_fund_id, type, amount, note, rep_name, created_at)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-           ON CONFLICT (id) DO NOTHING
-           RETURNING id`,
+           ON CONFLICT (id) DO UPDATE 
+           SET fund_id = EXCLUDED.fund_id,
+               target_fund_id = EXCLUDED.target_fund_id,
+               type = EXCLUDED.type,
+               amount = EXCLUDED.amount,
+               note = EXCLUDED.note,
+               rep_name = EXCLUDED.rep_name,
+               created_at = EXCLUDED.created_at`,
           [id, fundId, targetFundId, type, amount, note, repName, createdAt]
-        ).catch(() => []);
-        if (!insertRes || insertRes.length === 0) {
-          alreadyExists = true;
-        }
-      } else {
-        if ((fileDb.get<any>("fund_transactions") || []).some((tx: any) => tx.id === id)) {
-          alreadyExists = true;
-        }
+        ).catch(() => {});
       }
 
       const saved = fileDb.upsert("fund_transactions", {
@@ -3551,17 +3549,7 @@ async function startServer() {
         createdAt
       });
 
-      // Automatically update fund balances in PostgreSQL & fileDb ONLY IF NEW TRANSACTION
-      if (!alreadyExists) {
-        if (saved.type === 'transfer') {
-          if (saved.fundId) await adjustFundBalance(saved.fundId, -amount);
-          if (saved.targetFundId) await adjustFundBalance(saved.targetFundId, +amount);
-        } else if (saved.type === 'withdraw' || saved.type === 'expense' || saved.type === 'employee_loan') {
-          if (saved.fundId) await adjustFundBalance(saved.fundId, -amount);
-        } else if (saved.type === 'deposit' || saved.type === 'employee_repay') {
-          if (saved.fundId) await adjustFundBalance(saved.fundId, +amount);
-        }
-      }
+      await recalculateAllFundBalancesInPg();
 
       bumpSyncVersion();
       res.json({ success: true, transaction: saved });
@@ -3574,31 +3562,23 @@ async function startServer() {
     try {
       const { id } = req.params;
       const updates = req.body;
-      const existing = (fileDb.get<any>("fund_transactions") || []).find((x: any) => x.id === id);
-      const oldAmount = existing ? Number(existing.amount) || 0 : 0;
-      const newAmount = updates.amount !== undefined ? Number(updates.amount) || 0 : oldAmount;
-      const diff = newAmount - oldAmount;
-      const type = updates.type || existing?.type || 'deposit';
-      const fundId = updates.fundId || existing?.fundId || updates.fund_id;
-      const targetFundId = updates.targetFundId || existing?.targetFundId || updates.target_fund_id;
-      const note = updates.note !== undefined ? updates.note : (existing?.note || '');
 
       fileDb.update("fund_transactions", id, updates);
-      await executePg(
-        `UPDATE fund_transactions SET amount = COALESCE($1, amount), note = COALESCE($2, note) WHERE id = $3`,
-        [updates.amount, updates.note, id]
-      );
-
-      if (diff !== 0) {
-        if (type === 'transfer') {
-          if (fundId) await adjustFundBalance(fundId, -diff);
-          if (targetFundId) await adjustFundBalance(targetFundId, +diff);
-        } else if (type === 'withdraw' || type === 'expense' || type === 'employee_loan') {
-          if (fundId) await adjustFundBalance(fundId, -diff);
-        } else if (type === 'deposit' || type === 'employee_repay') {
-          if (fundId) await adjustFundBalance(fundId, +diff);
-        }
+      if (isPgConfigured()) {
+        await executePg(
+          `UPDATE fund_transactions SET 
+             fund_id = COALESCE($1, fund_id),
+             target_fund_id = COALESCE($2, target_fund_id),
+             type = COALESCE($3, type),
+             amount = COALESCE($4, amount),
+             note = COALESCE($5, note),
+             rep_name = COALESCE($6, rep_name)
+           WHERE id = $7`,
+          [updates.fundId || updates.fund_id, updates.targetFundId || updates.target_fund_id, updates.type, updates.amount, updates.note, updates.repName || updates.rep_name, id]
+        ).catch(() => {});
       }
+
+      await recalculateAllFundBalancesInPg();
 
       bumpSyncVersion();
       res.json({ success: true });
@@ -3610,26 +3590,13 @@ async function startServer() {
   app.delete("/api/fund-transactions/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const existing = (fileDb.get<any>("fund_transactions") || []).find((x: any) => x.id === id);
-      if (existing && existing.amount) {
-        const amount = Number(existing.amount) || 0;
-        const type = existing.type;
-        const fundId = existing.fundId || existing.fund_id;
-        const targetFundId = existing.targetFundId || existing.target_fund_id;
-
-        if (type === 'transfer') {
-          if (fundId) await adjustFundBalance(fundId, +amount);
-          if (targetFundId) await adjustFundBalance(targetFundId, -amount);
-        } else if (type === 'withdraw' || type === 'expense' || type === 'employee_loan') {
-          if (fundId) await adjustFundBalance(fundId, +amount);
-        } else if (type === 'deposit' || type === 'employee_repay') {
-          if (fundId) await adjustFundBalance(fundId, -amount);
-        }
-      }
 
       await executePg(`INSERT INTO deleted_records (record_id, table_name) VALUES ($1, 'fund_transactions') ON CONFLICT (record_id) DO NOTHING`, [id]).catch(() => {});
       fileDb.delete("fund_transactions", id);
-      await executePg(`DELETE FROM fund_transactions WHERE id = $1`, [id]);
+      await executePg(`DELETE FROM fund_transactions WHERE id = $1`, [id]).catch(() => {});
+
+      await recalculateAllFundBalancesInPg();
+
       bumpSyncVersion();
       res.json({ success: true });
     } catch (err: any) {

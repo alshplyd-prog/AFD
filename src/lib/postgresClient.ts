@@ -3704,18 +3704,29 @@ export const saveAppointmentToPostgres = async (appt: any): Promise<AppointmentR
     createdAt: appt.createdAt || new Date().toISOString(),
   };
 
-  // 1. Save immediately to local cache & mirror to IndexedDB
   updateLocalCacheItem('appointments', fullAppt);
   mirrorLocalSnapshotToIndexedDb(false);
   notifySubscribersRefresh();
 
-  // 2. Sync to remote container so Android APK gets it immediately
+  try {
+    const res = await fetchWithFallback('/api/appointments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fullAppt),
+    }, 8000);
+    if (res && res.ok) {
+      const data = await res.json().catch(() => null);
+      if (data?.appointment) {
+        updateLocalCacheItem('appointments', data.appointment);
+      }
+    }
+  } catch (err) {
+    const qPromise = addToPendingQueue('APPOINTMENT_CREATE', fullAppt);
+    saveToPostgres('appointments', 'POST', fullAppt, qPromise);
+  }
+
   const allCurrent = getLocalCache<AppointmentRecord>('appointments');
   syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
-
-  // 3. Queue and push to PostgreSQL
-  const qPromise = addToPendingQueue('APPOINTMENT_CREATE', fullAppt);
-  saveToPostgres('appointments', 'POST', fullAppt, qPromise);
   return fullAppt;
 };
 
@@ -3725,12 +3736,17 @@ export const deleteAppointmentFromPostgres = async (id: string): Promise<void> =
   mirrorLocalSnapshotToIndexedDb(false);
   notifySubscribersRefresh();
 
-  // Sync to remote container
+  try {
+    await fetchWithFallback(`/api/appointments/${id}`, {
+      method: 'DELETE',
+    }, 8000);
+  } catch (err) {
+    const qPromise = addToPendingQueue('APPOINTMENT_DELETE', { id });
+    saveToPostgres(`appointments/${id}`, 'DELETE', { id }, qPromise);
+  }
+
   const allCurrent = getLocalCache<AppointmentRecord>('appointments');
   syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
-
-  const qPromise = addToPendingQueue('APPOINTMENT_DELETE', { id });
-  saveToPostgres(`appointments/${id}`, 'DELETE', { id }, qPromise);
 };
 
 export const updateAppointmentInPostgres = async (id: string, updates: any): Promise<void> => {
@@ -3741,12 +3757,19 @@ export const updateAppointmentInPostgres = async (id: string, updates: any): Pro
   mirrorLocalSnapshotToIndexedDb(false);
   notifySubscribersRefresh();
 
-  // Sync to remote container
+  try {
+    await fetchWithFallback(`/api/appointments/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    }, 8000);
+  } catch (err) {
+    const qPromise = addToPendingQueue('APPOINTMENT_UPDATE', { id, ...updates });
+    saveToPostgres(`appointments/${id}`, 'PUT', updates, qPromise);
+  }
+
   const allCurrent = getLocalCache<AppointmentRecord>('appointments');
   syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
-
-  const qPromise = addToPendingQueue('APPOINTMENT_UPDATE', { id, ...updates });
-  saveToPostgres(`appointments/${id}`, 'PUT', updates, qPromise);
 };
 
 export const updateCustomerLocation = async (
