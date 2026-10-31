@@ -24,7 +24,7 @@ import {
   LocateFixed,
 } from 'lucide-react';
 import { InstallmentContract, CustomerList, SalesRepresentative, Language } from '../types';
-import { updateCustomerLocation } from '../lib/postgresClient';
+import { updateCustomerLocation, getLocalCache } from '../lib/postgresClient';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
 import { OfflineTileLayer, precacheMapTilesForLocations } from '../lib/offlineTileLayer';
 import { fetchStreetDrivingRoute } from '../lib/routingHelper';
@@ -45,6 +45,7 @@ interface CustomerMapsModalProps {
   onClose: () => void;
   contracts: InstallmentContract[];
   customerLists: CustomerList[];
+  customers?: any[];
   currentRep: SalesRepresentative | null;
   isAdmin: boolean;
   lang?: Language;
@@ -153,6 +154,7 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
   onClose,
   contracts = [],
   customerLists = [],
+  customers = [],
   currentRep,
   isAdmin,
   lang = 'ar',
@@ -217,13 +219,27 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
     return (brng + 360) % 360;
   }, []);
 
-  // Helper to extract valid coords from a contract (supports latitude/longitude or lat/lng)
+  // Helper to extract valid coords from a contract (supports latitude/longitude or lat/lng or customers lookup)
   const getCustomerCoords = useCallback((c: InstallmentContract): { lat: number; lng: number } | null => {
     const lat = Number(c.latitude ?? (c as any).lat);
     const lng = Number(c.longitude ?? (c as any).lng);
-    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return null;
-    return { lat, lng };
-  }, []);
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) return { lat, lng };
+
+    // Fallback: check matching customer in customers prop or local cache
+    const custList = (customers && customers.length > 0) ? customers : getLocalCache<any>('customers');
+    const matched = custList.find((cu: any) =>
+      (cu.id && (cu.id === c.id || cu.id === (c as any).customerId)) ||
+      (cu.name && c.customerName && cu.name.trim().toLowerCase() === c.customerName.trim().toLowerCase())
+    );
+    if (matched) {
+      const cLat = Number(matched.latitude ?? matched.lat);
+      const cLng = Number(matched.longitude ?? matched.lng);
+      if (!isNaN(cLat) && !isNaN(cLng) && cLat !== 0 && cLng !== 0) {
+        return { lat: cLat, lng: cLng };
+      }
+    }
+    return null;
+  }, [customers]);
 
   const headingBadgeRef = useRef<HTMLDivElement | null>(null);
   const headingDegreeTextRef = useRef<HTMLSpanElement | null>(null);

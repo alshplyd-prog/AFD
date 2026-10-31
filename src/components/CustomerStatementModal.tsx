@@ -32,15 +32,7 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
     onCloseRef.current = onClose;
   });
 
-  // Initialize dates strictly when modal transitions from closed to open
-  useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      const today = getLocalDateString();
-      setStartDate(today);
-      setEndDate(today);
-    }
-    prevIsOpenRef.current = isOpen;
-  }, [isOpen]);
+
 
   // Back gesture / Back button support isolated from date state
   useEffect(() => {
@@ -56,8 +48,28 @@ export const CustomerStatementModal: React.FC<CustomerStatementModalProps> = ({
   }, [isOpen]);
   const [selectedListIds, setSelectedListIds] = useState<string[]>(['all']);
   const [isListDropdownOpen, setIsListDropdownOpen] = useState<boolean>(false);
-  const [startDate, setStartDate] = useState<string>(() => getLocalDateString());
-  const [endDate, setEndDate] = useState<string>(() => getLocalDateString());
+  const [startDate, setStartDate] = useState<string>(() => {
+    try {
+      return localStorage.getItem('alkarrar_stmt_start_date') || getLocalDateString();
+    } catch (e) {
+      return getLocalDateString();
+    }
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    try {
+      return localStorage.getItem('alkarrar_stmt_end_date') || getLocalDateString();
+    } catch (e) {
+      return getLocalDateString();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('alkarrar_stmt_start_date', startDate);
+      localStorage.setItem('alkarrar_stmt_end_date', endDate);
+    } catch (e) {}
+  }, [startDate, endDate]);
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [numDaysToShow, setNumDaysToShow] = useState<number>(5);
   const [viewMode, setViewMode] = useState<'transactions' | 'customer_summaries' | 'matrix'>('matrix');

@@ -9,6 +9,15 @@
     "createdAt": "2026-09-21T10:40:55.564Z"
   },
   {
+    "id": "fund-2",
+    "name": "ماهر 2",
+    "fundId": "fund-2",
+    "description": "",
+    "orderIndex": 1,
+    "receiptTemplate": "template_1",
+    "createdAt": "2026-10-28T19:50:59.889Z"
+  },
+  {
     "id": "list-4",
     "name": "القائمة الاولى",
     "fundId": "fund_1787350349137_204v6",
@@ -41,7 +50,7 @@
     "fundId": "fund_1787412692389_0x4u5",
     "description": "",
     "orderIndex": 5,
-    "receiptTemplate": "template_2",
+    "receiptTemplate": "template_1",
     "createdAt": "2026-08-22T16:44:31.734Z"
   },
   {
@@ -79,17 +88,5 @@
     "orderIndex": 9,
     "receiptTemplate": "template_1",
     "createdAt": "2026-10-10T07:53:18.751Z"
-  }
-  ,
-  {
-    "id": "list_1789987255564_y9e1d_restored",
-    "name": "ماهر 2",
-    "fundId": "fund-2",
-    "description": "",
-    "orderIndex": 10,
-    "receiptTemplate": "template_1",
-    "createdAt": "2026-10-28T10:40:55.564Z",
-    "color": "#3b82f6",
-    "receipt_template": "template_1"
   }
 ]

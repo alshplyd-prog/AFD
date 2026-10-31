@@ -1321,9 +1321,11 @@ export default function App() {
 
   const isPaymentToday = (p: PaymentRecord) => {
     if (!p) return false;
-    if (p.paymentDate && getLocalDateString(p.paymentDate) === todayStr) return true;
-    if (p.createdAt && getLocalDateString(p.createdAt) === todayStr) return true;
-    return false;
+    // The payment transaction date is authoritative (paymentDate).
+    // Only fall back to createdAt if paymentDate is missing.
+    const effectiveDate = p.paymentDate || p.createdAt;
+    if (!effectiveDate) return false;
+    return getLocalDateString(effectiveDate) === todayStr;
   };
 
   // 1. Current logged-in representative debt & stats calculations for the home screen cards
@@ -1360,8 +1362,35 @@ export default function App() {
       }
       const status: 'active' | 'completed' = (remainingBalance === 0 && paymentsSum > 0 && net > 0) ? 'completed' : 'active';
 
+      // Fallback coordinate resolution from customers state or payments
+      let lat = c.latitude != null && !isNaN(Number(c.latitude)) && Number(c.latitude) !== 0 ? Number(c.latitude) : undefined;
+      let lng = c.longitude != null && !isNaN(Number(c.longitude)) && Number(c.longitude) !== 0 ? Number(c.longitude) : undefined;
+      let locationAddress = c.locationAddress || '';
+      let locationUpdatedAt = c.locationUpdatedAt;
+
+      if (lat == null) {
+        const matchedCust = customers.find((cu) =>
+          (cu.id && (cu.id === c.id || cu.id === (c as any).customerId)) ||
+          (cu.name && cNameNorm && normalizeEntityName(cu.name) === cNameNorm)
+        );
+        if (matchedCust) {
+          const cLat = Number(matchedCust.latitude ?? matchedCust.lat);
+          const cLng = Number(matchedCust.longitude ?? matchedCust.lng);
+          if (!isNaN(cLat) && !isNaN(cLng) && cLat !== 0 && cLng !== 0) {
+            lat = cLat;
+            lng = cLng;
+            locationAddress = locationAddress || matchedCust.location_address || matchedCust.locationAddress || matchedCust.address || '';
+            locationUpdatedAt = locationUpdatedAt || matchedCust.location_updated_at || matchedCust.locationUpdatedAt;
+          }
+        }
+      }
+
       return {
         ...c,
+        latitude: lat,
+        longitude: lng,
+        locationAddress,
+        locationUpdatedAt,
         totalPaid,
         excessAmount,
         rawTotalPaid: paymentsSum,
@@ -1369,7 +1398,7 @@ export default function App() {
         status,
       } as InstallmentContract;
     });
-  }, [contracts, payments]);
+  }, [contracts, payments, customers]);
 
   const liveSelectedContract = useMemo(() => {
     if (!selectedContract) return null;
@@ -1456,7 +1485,7 @@ export default function App() {
   }, [repPayments, todayStr]);
 
   const repTodayCollected = useMemo(() => {
-    return repTodayPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    return repTodayPayments.reduce((sum, p) => sum + (Number(p.amountPaid ?? (p as any).amount) || 0), 0);
   }, [repTodayPayments]);
 
   const todayAllPayments = useMemo(() => {
@@ -1464,7 +1493,7 @@ export default function App() {
   }, [payments, todayStr]);
 
   const todayAllCollected = useMemo(() => {
-    return todayAllPayments.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
+    return todayAllPayments.reduce((sum, p) => sum + (Number(p.amountPaid ?? (p as any).amount) || 0), 0);
   }, [todayAllPayments]);
 
   const notifiedAppointmentsRef = useRef<Set<string>>((() => {
@@ -1918,12 +1947,14 @@ export default function App() {
     }
 
     try {
+      const effectiveDate = newPaymentDate || payment.paymentDate;
       const updatedPaymentObj: PaymentRecord = {
         ...payment,
         amountPaid: newAmount,
         amount: newAmount,
         note: newNote !== undefined ? newNote : payment.note,
-        paymentDate: newPaymentDate || payment.paymentDate,
+        paymentDate: effectiveDate,
+        createdAt: newPaymentDate ? `${newPaymentDate}T12:00:00.000Z` : payment.createdAt,
         repName: newRepName !== undefined ? newRepName : payment.repName,
         isEdited: true,
         updatedAt: new Date().toISOString(),
@@ -1971,6 +2002,7 @@ export default function App() {
                   totalPaid: newTotalPaid,
                   remainingBalance: newRemaining,
                   status: newStatus,
+                  lastPaymentDate: newLastDate || c.lastPaymentDate,
                 }
               : c
           )
@@ -1985,11 +2017,12 @@ export default function App() {
             totalPaid: newTotalPaid,
             remainingBalance: newRemaining,
             status: newStatus,
+            lastPaymentDate: newLastDate || selectedContract.lastPaymentDate,
           });
         }
       }
 
-      // Adjust fund in React state if amount changed
+      // Adjust fund balance in React state if amount changed
       const oldAmt = Number(payment.amountPaid ?? payment.amount) || 0;
       const diff = newAmount - oldAmt;
       let targetFundId = payment.fundId;
@@ -2003,14 +2036,22 @@ export default function App() {
             f.id === targetFundId ? { ...f, balance: Math.max(0, (Number(f.balance) || 0) + diff) } : f
           )
         );
-        setFundTransactions((prev) =>
-          prev.map((ft) =>
-            ft.id === `ft_pay_${payment.id}`
-              ? { ...ft, amount: newAmount, note: newNote !== undefined ? newNote : ft.note, repName: newRepName !== undefined ? newRepName : ft.repName }
-              : ft
-          )
-        );
       }
+
+      // ALWAYS synchronize fund transactions with new amount, date, and rep
+      setFundTransactions((prev) =>
+        prev.map((ft) =>
+          ft.id === `ft_pay_${payment.id}`
+            ? {
+                ...ft,
+                amount: newAmount,
+                note: newNote !== undefined ? newNote : ft.note,
+                repName: newRepName !== undefined ? newRepName : ft.repName,
+                createdAt: effectiveDate ? `${effectiveDate}T12:00:00.000Z` : ft.createdAt,
+              }
+            : ft
+        )
+      );
 
       await updatePaymentInFirestore(
         payment.id,
@@ -2018,7 +2059,8 @@ export default function App() {
           amountPaid: newAmount,
           amount: newAmount,
           note: newNote !== undefined ? newNote : payment.note,
-          paymentDate: newPaymentDate || payment.paymentDate,
+          paymentDate: effectiveDate,
+          createdAt: newPaymentDate ? `${newPaymentDate}T12:00:00.000Z` : payment.createdAt,
           repName: newRepName !== undefined ? newRepName : payment.repName,
           fundId: targetFundId || payment.fundId,
           contractId: payment.contractId,
@@ -4640,6 +4682,7 @@ export default function App() {
         }}
         contracts={contractsWithLiveBalances}
         customerLists={customerLists}
+        customers={customers}
         currentRep={currentRep}
         isAdmin={isAdmin}
         lang={lang}

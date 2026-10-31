@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "__appointments_sync_master__",
+    "contractId": "appointments_container",
+    "customerName": "مزامنة المواعيد",
+    "attemptedAmount": 0,
+    "actualRemainingBalance": 0,
+    "excessAmount": 0,
+    "repName": "",
+    "note": "[{\"id\":\"appt_1793444313151_93gth\",\"contractId\":\"contract_1790064700810_j6w5e\",\"customerName\":\"سعد راضي كاضم\",\"customerPhone\":\"07815337995\",\"customerAddress\":\"\",\"listId\":\"list_1789987255564_y9e1d\",\"listName\":\"ماهر 1\",\"appointmentType\":\"specific_date\",\"recurringDayName\":\"\",\"recurringMonthDayName\":\"\",\"appointmentDate\":\"2026-10-31\",\"appointmentTime\":\"2:00 م\",\"dueDate\":\"2026-10-31\",\"dueTime\":\"2:00 م\",\"title\":\"موعد سعد راضي كاضم\",\"notes\":\"تحصيل قسط\",\"note\":\"تحصيل قسط\",\"status\":\"pending\",\"createdByName\":\"ضياء المحاسب\",\"createdByRepName\":\"ضياء المحاسب\",\"createdByRepId\":\"rep-1\",\"createdAt\":\"2026-10-31T10:58:33.151Z\"}]",
+    "paymentDate": "",
+    "createdAt": "2026-10-31T11:07:54.569Z",
+    "status": "appointment_sync_record"
+  }
+]

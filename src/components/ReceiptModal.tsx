@@ -370,19 +370,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </button>
           </div>
 
-          {onOpenPrinterSettings && (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onOpenPrinterSettings();
-              }}
-              className="w-full py-2 px-3 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900 text-teal-800 dark:text-teal-200 border border-teal-300 dark:border-teal-800 font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-            >
-              <Settings className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              <span>⚙️ إعدادات وطريقة الطباعة (تغيير الطابعة)</span>
-            </button>
-          )}
+
 
           <button
             onClick={onClose}

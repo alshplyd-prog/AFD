@@ -592,111 +592,41 @@ async function recordPaymentFundAdjustment(
     }
 
     if (isReversal) {
-      // Payment deleted/reversed: delete transaction and deduct fund balance ONLY ONCE
-      let deletedAmt = 0;
-      let targetFundId = fundId;
+      if (isPgConfigured()) {
+        await executePg("DELETE FROM fund_transactions WHERE id = $1", [ftId]).catch(() => {});
+      }
+      fileDb.delete("fund_transactions", ftId);
+    } else {
+      if (!fundId || amount <= 0) return;
+      const note = `تسديد قسط زبون: ${customerName || ''}`;
+      const createdAt = paymentDate ? new Date(paymentDate).toISOString() : new Date().toISOString();
 
       if (isPgConfigured()) {
-        const delRes = await executePg("DELETE FROM fund_transactions WHERE id = $1 RETURNING amount, fund_id", [ftId]).catch(() => []);
-        if (delRes && delRes.length > 0) {
-          deletedAmt = Number(delRes[0].amount) || amount;
-          targetFundId = delRes[0].fund_id || fundId;
-        }
-      }
-
-      if (existingFt && !deletedAmt) {
-        deletedAmt = Number(existingFt.amount) || amount;
-        targetFundId = existingFt.fundId || fundId;
-      }
-
-      fileDb.delete("fund_transactions", ftId);
-
-      if (deletedAmt > 0 && targetFundId) {
-        await adjustFundBalance(targetFundId, -deletedAmt);
-      }
-    } else {
-      // Adding or updating installment
-      if (existingFt) {
-        // Transaction ALREADY exists - only adjust delta if amount or fund changed
-        const oldAmt = Number(existingFt.amount) || 0;
-        const oldFundId = existingFt.fundId || fundId;
-
-        if (oldFundId !== fundId) {
-          // Fund changed: revert from old fund, add to new fund
-          await adjustFundBalance(oldFundId, -oldAmt);
-          await adjustFundBalance(fundId, +amount);
-        } else {
-          const diff = amount - oldAmt;
-          if (diff !== 0) {
-            await adjustFundBalance(fundId, diff);
-          }
-        }
-
-        const note = `تسديد قسط زبون: ${customerName || ''}`;
-        const createdAt = paymentDate ? new Date(paymentDate).toISOString() : (existingFt.createdAt || new Date().toISOString());
-
         await executePg(`
-          UPDATE fund_transactions SET fund_id = $1, amount = $2, note = $3, rep_name = $4
-          WHERE id = $5
-        `, [fundId, amount, note, repName || '', ftId]).catch(() => {});
-
-        fileDb.update("fund_transactions", ftId, {
-          id: ftId,
-          fundId,
-          type: 'installment',
-          amount,
-          note,
-          repName: repName || '',
-          createdAt
-        });
-      } else {
-        // Brand new installment transaction
-        const note = `تسديد قسط زبون: ${customerName || ''}`;
-        const createdAt = paymentDate ? new Date(paymentDate).toISOString() : new Date().toISOString();
-
-        if (isPgConfigured()) {
-          // Atomic insert: if already inserted by a parallel request, ON CONFLICT returns 0 rows!
-          const insertRes = await executePg(`
-            INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
-            VALUES ($1, $2, 'installment', $3, $4, $5, $6)
-            ON CONFLICT (id) DO NOTHING
-            RETURNING id
-          `, [ftId, fundId, amount, note, repName || '', createdAt]).catch(() => []);
-
-          if (!insertRes || insertRes.length === 0) {
-            // Already inserted concurrently! Do NOT adjust fund balance again.
-            fileDb.upsert("fund_transactions", {
-              id: ftId,
-              fundId,
-              type: 'installment',
-              amount,
-              note,
-              repName: repName || '',
-              createdAt
-            });
-            return;
-          }
-        }
-
-        // Prevent fileDb double-apply when running without PG
-        if (!isPgConfigured() && (fileDb.get<any>("fund_transactions") || []).some((f: any) => f.id === ftId)) {
-          return;
-        }
-
-        fileDb.upsert("fund_transactions", {
-          id: ftId,
-          fundId,
-          type: 'installment',
-          amount,
-          note,
-          repName: repName || '',
-          createdAt
-        });
-
-        // Add to fund balance EXACTLY ONCE
-        await adjustFundBalance(fundId, +amount);
+          INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+          VALUES ($1, $2, 'installment', $3, $4, $5, $6)
+          ON CONFLICT (id) DO UPDATE 
+          SET amount = EXCLUDED.amount, 
+              fund_id = EXCLUDED.fund_id,
+              note = EXCLUDED.note,
+              rep_name = EXCLUDED.rep_name,
+              created_at = EXCLUDED.created_at
+        `, [ftId, fundId, amount, note, repName || '', createdAt]).catch(() => {});
       }
+
+      fileDb.upsert("fund_transactions", {
+        id: ftId,
+        fundId,
+        type: 'installment',
+        amount,
+        note,
+        repName: repName || '',
+        createdAt
+      });
     }
+
+    // Always recalculate fund balances from fund_transactions to guarantee 100% accuracy and consistency
+    await recalculateAllFundBalancesInPg();
   } finally {
     paymentAdjustmentMutex.delete(ftId);
     resolveLock();

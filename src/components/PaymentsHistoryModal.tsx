@@ -151,19 +151,10 @@ export const PaymentsHistoryModal: React.FC<PaymentsHistoryModalProps> = ({
 
     // 2. Date range filter
     if (startDate || endDate) {
-      if (!p.paymentDate) return false;
-      const pDate = new Date(p.paymentDate);
-      if (isNaN(pDate.getTime())) return false;
-      if (startDate) {
-        const sDate = new Date(startDate);
-        sDate.setHours(0, 0, 0, 0);
-        if (pDate < sDate) return false;
-      }
-      if (endDate) {
-        const eDate = new Date(endDate);
-        eDate.setHours(23, 59, 59, 999);
-        if (pDate > eDate) return false;
-      }
+      const pDateStr = getLocalDateString(p.paymentDate || p.createdAt);
+      if (!pDateStr) return false;
+      if (startDate && pDateStr < startDate) return false;
+      if (endDate && pDateStr > endDate) return false;
     }
 
     // 3. Search query filter

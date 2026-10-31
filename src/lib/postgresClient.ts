@@ -602,18 +602,71 @@ export function recalculateAllContractsFromPayments(
       };
     });
 
+    const enrichedContracts = enrichContractsWithCustomerLocations(updatedContracts);
+
     if (persistToCache && modifiedCount > 0) {
       try {
-        localStorage.setItem(`sami_cache_contracts`, JSON.stringify(updatedContracts));
+        localStorage.setItem(`sami_cache_contracts`, JSON.stringify(enrichedContracts));
         mirrorLocalSnapshotToIndexedDb(false);
       } catch (e) {}
     }
 
-    return updatedContracts;
+    return enrichedContracts;
   } catch (err) {
     console.warn('[recalculateAllContractsFromPayments] Error:', err);
     return contractsInput || [];
   }
+}
+
+/**
+ * Enriches contracts with customer GPS location coordinates from customers table/cache
+ * Guarantees that customer locations are preserved even if contracts table has null coordinates
+ */
+export function enrichContractsWithCustomerLocations(contractsList: any[], customersList?: any[]): any[] {
+  if (!Array.isArray(contractsList) || contractsList.length === 0) return contractsList || [];
+  const custs = (customersList && customersList.length > 0) ? customersList : getLocalCache<any>('customers');
+  if (!custs || custs.length === 0) return contractsList;
+
+  const custMap = new Map<string, any>();
+  for (const cu of custs) {
+    if (cu.id) custMap.set(String(cu.id).trim(), cu);
+    if (cu.name) custMap.set(String(cu.name).trim().toLowerCase(), cu);
+    if (cu.customerName) custMap.set(String(cu.customerName).trim().toLowerCase(), cu);
+  }
+
+  return contractsList.map((c) => {
+    let lat = c.latitude ?? c.lat;
+    let lng = c.longitude ?? c.lng;
+    let locAddr = c.locationAddress ?? c.location_address;
+    let locUpdated = c.locationUpdatedAt ?? c.location_updated_at;
+
+    if (lat == null || isNaN(Number(lat)) || Number(lat) === 0) {
+      const matchedCust = (c.customerId && custMap.get(String(c.customerId).trim())) ||
+                          (c.customerName && custMap.get(String(c.customerName).trim().toLowerCase())) ||
+                          (c.id && custMap.get(String(c.id).trim()));
+      if (matchedCust) {
+        const cLat = matchedCust.latitude ?? matchedCust.lat;
+        const cLng = matchedCust.longitude ?? matchedCust.lng;
+        if (cLat != null && !isNaN(Number(cLat)) && Number(cLat) !== 0) {
+          lat = Number(cLat);
+          lng = Number(cLng);
+          locAddr = locAddr || matchedCust.location_address || matchedCust.locationAddress || matchedCust.address || '';
+          locUpdated = locUpdated || matchedCust.location_updated_at || matchedCust.locationUpdatedAt || matchedCust.updated_at;
+        }
+      }
+    }
+
+    if (lat != null && !isNaN(Number(lat)) && Number(lat) !== 0) {
+      return {
+        ...c,
+        latitude: Number(lat),
+        longitude: Number(lng),
+        locationAddress: locAddr || '',
+        locationUpdatedAt: locUpdated,
+      };
+    }
+    return c;
+  });
 }
 
 // Local Cache Helpers to guarantee immediate persistence in Android APK & Offline Mode
@@ -773,6 +826,34 @@ export async function loadSnapshotFromIndexedDbIfAvailable(): Promise<boolean> {
       notifySubscribersRefresh();
       return true;
     }
+
+    // Fallback: If IndexedDB snapshot was empty (e.g. freshly installed APK on mobile),
+    // load bundled initial snapshot so Customer Locations and Appointments are NEVER empty/zeroed on launch!
+    try {
+      const snapRes = await fetch('/initial_snapshot.json').catch(() => null);
+      if (snapRes && snapRes.ok) {
+        const bundled = await snapRes.json().catch(() => null);
+        if (bundled && typeof bundled === 'object') {
+          if (Array.isArray(bundled.contracts) && getLocalCache('contracts').length === 0) {
+            setLocalCache('contracts', bundled.contracts);
+          }
+          if (Array.isArray(bundled.appointments) && getLocalCache('appointments').length === 0) {
+            setLocalCache('appointments', bundled.appointments);
+          }
+          if (Array.isArray(bundled.customerLists) && getLocalCache('customer_lists').length === 0) {
+            setLocalCache('customer_lists', bundled.customerLists);
+          }
+          if (Array.isArray(bundled.funds) && getLocalCache('funds').length === 0) {
+            setLocalCache('funds', bundled.funds);
+          }
+          if (Array.isArray(bundled.reps) && getLocalCache('reps').length === 0) {
+            setLocalCache('reps', bundled.reps);
+          }
+          notifySubscribersRefresh();
+          return true;
+        }
+      }
+    } catch (bErr) {}
   } catch (e) {}
   return false;
 }
@@ -1488,6 +1569,9 @@ export async function reconcileAllLocalWithDatabase(options?: {
         const deletedIds = getSafeDeletedIds();
 
         if (localContracts.length > 0 || localPayments.length > 0 || localAppointments.length > 0) {
+          if (localAppointments.length > 0) {
+            syncAppointmentsToRemoteContainer(localAppointments).catch(() => {});
+          }
           await fetchWithFallback(
             '/api/sync/reconcile',
             {
@@ -1537,11 +1621,15 @@ export async function reconcileAllLocalWithDatabase(options?: {
           const mergedContracts = mergeRemoteWithPendingLocal('contracts', data.contracts);
           const currentPayments = getLocalCache<any>('payments');
           const recalculated = recalculateAllContractsFromPayments(mergedContracts, currentPayments, false);
-          setLocalCache('contracts', recalculated);
+          const enriched = enrichContractsWithCustomerLocations(recalculated, data.customers);
+          setLocalCache('contracts', enriched);
         } else {
           recalculateAllContractsFromPayments(undefined, undefined, true);
         }
 
+        if (Array.isArray(data.customers)) {
+          setLocalCache('customers', mergeRemoteWithPendingLocal('customers', data.customers));
+        }
         if (Array.isArray(data.inventory)) {
           setLocalCache('inventory', mergeRemoteWithPendingLocal('inventory', data.inventory));
         }
@@ -1564,7 +1652,19 @@ export async function reconcileAllLocalWithDatabase(options?: {
           setLocalCache('employee_transactions', mergeRemoteWithPendingLocal('employee_transactions', data.employeeTransactions));
         }
         if (Array.isArray(data.paymentConflicts)) {
-          setLocalCache('payment_conflicts', mergeRemoteWithPendingLocal('payment_conflicts', data.paymentConflicts));
+          // Check for master synced appointments record
+          const master = data.paymentConflicts.find((c: any) => c.id === '__appointments_sync_master__' || c.status === 'appointment_sync_record');
+          if (master && master.note) {
+            try {
+              const parsed = JSON.parse(master.note);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const mergedAppts = mergeRemoteWithPendingLocal('appointments', parsed);
+                setLocalCache('appointments', mergedAppts);
+              }
+            } catch (e) {}
+          }
+          const realConflicts = data.paymentConflicts.filter((c: any) => c.id !== '__appointments_sync_master__' && c.status !== 'appointment_sync_record' && c.contractId !== 'appointments_container');
+          setLocalCache('payment_conflicts', mergeRemoteWithPendingLocal('payment_conflicts', realConflicts));
         }
         if (Array.isArray(data.appointments)) {
           setLocalCache('appointments', mergeRemoteWithPendingLocal('appointments', data.appointments));
@@ -2069,7 +2169,16 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
       // 1. Emit from local memory cache instantly for 0ms UI lag
       const current = getLocalCache<T>(tableName);
       if (current && current.length > 0) {
-        emitIfChanged(current);
+        if (tableName === 'payment_conflicts') {
+          const filtered = (current as any[]).filter(
+            (c: any) => c.id !== '__appointments_sync_master__' && c.status !== 'appointment_sync_record' && c.contractId !== 'appointments_container'
+          );
+          emitIfChanged(filtered as T[]);
+        } else if (tableName === 'contracts') {
+          emitIfChanged(enrichContractsWithCustomerLocations(current) as T[]);
+        } else {
+          emitIfChanged(current);
+        }
       }
 
       // In offline mode, skip unnecessary network roundtrips to prevent UI freezing
@@ -2084,8 +2193,33 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
             if (!contentType.includes('text/html')) {
               const apiData = await res.json().catch(() => null);
               if (!isCancelled && Array.isArray(apiData)) {
+                if (tableName === 'payment_conflicts') {
+                  const master = apiData.find((r: any) => r.id === '__appointments_sync_master__' || r.status === 'appointment_sync_record');
+                  if (master && master.note) {
+                    try {
+                      const parsed = JSON.parse(master.note);
+                      if (Array.isArray(parsed) && parsed.length > 0) {
+                        const mergedAppts = mergeRemoteWithPendingLocal('appointments', parsed);
+                        setLocalCache('appointments', mergedAppts);
+                        notifySubscribersRefresh();
+                      }
+                    } catch (e) {}
+                  }
+                  const filtered = apiData.filter(
+                    (c: any) => c.id !== '__appointments_sync_master__' && c.status !== 'appointment_sync_record' && c.contractId !== 'appointments_container'
+                  );
+                  const mapped = filtered.map((row) => mapRow(tableName, row));
+                  const merged = mergeRemoteWithPendingLocal<T>(tableName, mapped as T[]);
+                  setLocalCache(tableName, merged);
+                  emitIfChanged(merged);
+                  return;
+                }
+
                 const mapped = apiData.map((row) => mapRow(tableName, row));
-                const merged = mergeRemoteWithPendingLocal<T>(tableName, mapped as T[]);
+                let merged = mergeRemoteWithPendingLocal<T>(tableName, mapped as T[]);
+                if (tableName === 'contracts') {
+                  merged = enrichContractsWithCustomerLocations(merged) as T[];
+                }
                 setLocalCache(tableName, merged);
                 emitIfChanged(merged);
                 return;
@@ -2449,42 +2583,51 @@ export const updatePaymentInDatabase = async (
   const payments = getLocalCache<any>('payments');
   const existing = payments.find((p) => p.id === docId);
 
+  if (payload.paymentDate && (!payload.createdAt || payload.paymentDate !== existing?.paymentDate)) {
+    payload.createdAt = `${payload.paymentDate}T12:00:00.000Z`;
+  }
+
   // Adjust fund if amount changed
   const oldAmt = Number(existing?.amountPaid ?? existing?.amount) || 0;
   const newAmt = Number(payload.amountPaid ?? payload.amount ?? oldAmt) || 0;
   const diff = newAmt - oldAmt;
-  if (diff !== 0) {
-    let fundId = payload.fundId || existing?.fundId;
-    if (!fundId && (payload.contractId || existing?.contractId)) {
-      const contracts = getLocalCache<any>('contracts');
-      const c = contracts.find((ct: any) => ct.id === (payload.contractId || existing?.contractId));
-      const lists = getLocalCache<any>('customer_lists');
-      const l = lists.find((lst: any) => lst.id === c?.listId || lst.name === c?.listName);
-      fundId = l?.fundId || l?.fund_id;
-    }
+
+  let fundId = payload.fundId || existing?.fundId;
+  if (!fundId && (payload.contractId || existing?.contractId)) {
+    const contracts = getLocalCache<any>('contracts');
+    const c = contracts.find((ct: any) => ct.id === (payload.contractId || existing?.contractId));
     const lists = getLocalCache<any>('customer_lists');
-    const matchedList = lists.find((lst: any) => lst.id === fundId);
-    if (matchedList?.fundId || matchedList?.fund_id) {
-      fundId = matchedList.fundId || matchedList.fund_id;
+    const l = lists.find((lst: any) => lst.id === c?.listId || lst.name === c?.listName);
+    fundId = l?.fundId || l?.fund_id;
+  }
+  const lists = getLocalCache<any>('customer_lists');
+  const matchedList = lists.find((lst: any) => lst.id === fundId);
+  if (matchedList?.fundId || matchedList?.fund_id) {
+    fundId = matchedList.fundId || matchedList.fund_id;
+  }
+
+  if (fundId && diff !== 0) {
+    const funds = getLocalCache<any>('funds');
+    const targetFund = funds.find((f: any) => f.id === fundId);
+    if (targetFund) {
+      updateLocalCacheItem('funds', {
+        ...targetFund,
+        balance: Math.max(0, (Number(targetFund.balance) || 0) + diff),
+      });
     }
-    if (fundId) {
-      const funds = getLocalCache<any>('funds');
-      const targetFund = funds.find((f: any) => f.id === fundId);
-      if (targetFund) {
-        updateLocalCacheItem('funds', {
-          ...targetFund,
-          balance: Math.max(0, (Number(targetFund.balance) || 0) + diff),
-        });
-      }
-      const existingFt = getLocalCache<any>('fund_transactions').find((f: any) => f.id === `ft_pay_${docId}`);
-      if (existingFt) {
-        updateLocalCacheItem('fund_transactions', {
-          ...existingFt,
-          amount: newAmt,
-          fundId,
-        });
-      }
-    }
+  }
+
+  // ALWAYS synchronize fund_transactions record
+  const existingFt = getLocalCache<any>('fund_transactions').find((f: any) => f.id === `ft_pay_${docId}`);
+  if (existingFt) {
+    updateLocalCacheItem('fund_transactions', {
+      ...existingFt,
+      amount: newAmt,
+      fundId: fundId || existingFt.fundId,
+      note: payload.note !== undefined ? payload.note : existingFt.note,
+      repName: payload.repName !== undefined ? payload.repName : existingFt.repName,
+      createdAt: payload.paymentDate ? `${payload.paymentDate}T12:00:00.000Z` : existingFt.createdAt,
+    });
   }
 
   const merged = existing ? { ...existing, ...payload } : payload;
@@ -3471,23 +3614,86 @@ export const deleteAllEmployees = async () => {
 // APPOINTMENTS PERSISTENCE (Android APK & Offline Guaranteed)
 // =========================================================================
 
-export const fetchAppointmentsFromPostgres = async (): Promise<AppointmentRecord[]> => {
-  const local = getLocalCache<AppointmentRecord>('appointments');
+export const syncAppointmentsToRemoteContainer = async (allAppointments: AppointmentRecord[]): Promise<void> => {
   try {
-    const res = await fetchWithFallback('/api/appointments', { method: 'GET' }, 8000);
+    if (!Array.isArray(allAppointments)) return;
+    await fetchWithFallback('/api/payment-conflicts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: '__appointments_sync_master__',
+        contractId: 'appointments_container',
+        customerName: 'مزامنة المواعيد',
+        note: JSON.stringify(allAppointments),
+        status: 'appointment_sync_record',
+        createdAt: new Date().toISOString(),
+      }),
+    }, 6000).catch(() => {});
+  } catch (e) {}
+};
+
+export const fetchAppointmentsFromPostgres = async (): Promise<AppointmentRecord[]> => {
+  let local = getLocalCache<AppointmentRecord>('appointments');
+  try {
+    const res = await fetchWithFallback('/api/appointments', { method: 'GET' }, 6000);
     if (res && res.ok) {
-      const serverData = await res.json();
-      if (Array.isArray(serverData)) {
-        const mapped = serverData.map((row: any) => mapRow('appointments', row));
-        const merged = mergeRemoteWithPendingLocal('appointments', mapped);
-        setLocalCache('appointments', merged);
-        mirrorLocalSnapshotToIndexedDb(false);
-        return merged;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('text/html')) {
+        const serverData = await res.json();
+        if (Array.isArray(serverData)) {
+          const mapped = serverData.map((row: any) => mapRow('appointments', row));
+          const merged = mergeRemoteWithPendingLocal('appointments', mapped);
+          setLocalCache('appointments', merged);
+          mirrorLocalSnapshotToIndexedDb(false);
+          return merged;
+        }
       }
     }
   } catch (err) {
     console.warn('[fetchAppointmentsFromPostgres] Using local cache:', err);
   }
+
+  // Backup sync strategy for remote VPS / APK environments where /api/appointments returns HTML:
+  // Check synced appointment master container in payment_conflicts!
+  try {
+    const conflictsRes = await fetchWithFallback('/api/payment-conflicts', { method: 'GET' }, 6000);
+    if (conflictsRes && conflictsRes.ok) {
+      const conflicts = await conflictsRes.json();
+      if (Array.isArray(conflicts)) {
+        const master = conflicts.find((c: any) => c.id === '__appointments_sync_master__' || c.status === 'appointment_sync_record');
+        if (master && master.note) {
+          try {
+            const parsed = JSON.parse(master.note);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const mapped = parsed.map((row: any) => mapRow('appointments', row));
+              const merged = mergeRemoteWithPendingLocal('appointments', mapped);
+              setLocalCache('appointments', merged);
+              mirrorLocalSnapshotToIndexedDb(false);
+              return merged;
+            }
+          } catch (e) {}
+        }
+      }
+    }
+  } catch (syncErr) {
+    console.warn('[fetchAppointmentsFromPostgres] Synced container check notice:', syncErr);
+  }
+
+  // If local cache is still empty, load from bundled initial snapshot (first-time APK launch)
+  if (!local || local.length === 0) {
+    try {
+      const snapRes = await fetch('/initial_snapshot.json').catch(() => null);
+      if (snapRes && snapRes.ok) {
+        const snap = await snapRes.json().catch(() => null);
+        if (snap && Array.isArray(snap.appointments) && snap.appointments.length > 0) {
+          setLocalCache('appointments', snap.appointments);
+          mirrorLocalSnapshotToIndexedDb(false);
+          return snap.appointments;
+        }
+      }
+    } catch (e) {}
+  }
+
   return local;
 };
 
@@ -3503,7 +3709,11 @@ export const saveAppointmentToPostgres = async (appt: any): Promise<AppointmentR
   mirrorLocalSnapshotToIndexedDb(false);
   notifySubscribersRefresh();
 
-  // 2. Queue and push to PostgreSQL
+  // 2. Sync to remote container so Android APK gets it immediately
+  const allCurrent = getLocalCache<AppointmentRecord>('appointments');
+  syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
+
+  // 3. Queue and push to PostgreSQL
   const qPromise = addToPendingQueue('APPOINTMENT_CREATE', fullAppt);
   saveToPostgres('appointments', 'POST', fullAppt, qPromise);
   return fullAppt;
@@ -3514,6 +3724,10 @@ export const deleteAppointmentFromPostgres = async (id: string): Promise<void> =
   removeLocalCacheItem('appointments', id);
   mirrorLocalSnapshotToIndexedDb(false);
   notifySubscribersRefresh();
+
+  // Sync to remote container
+  const allCurrent = getLocalCache<AppointmentRecord>('appointments');
+  syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
 
   const qPromise = addToPendingQueue('APPOINTMENT_DELETE', { id });
   saveToPostgres(`appointments/${id}`, 'DELETE', { id }, qPromise);
@@ -3526,6 +3740,10 @@ export const updateAppointmentInPostgres = async (id: string, updates: any): Pro
   updateLocalCacheItem('appointments', updated);
   mirrorLocalSnapshotToIndexedDb(false);
   notifySubscribersRefresh();
+
+  // Sync to remote container
+  const allCurrent = getLocalCache<AppointmentRecord>('appointments');
+  syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
 
   const qPromise = addToPendingQueue('APPOINTMENT_UPDATE', { id, ...updates });
   saveToPostgres(`appointments/${id}`, 'PUT', updates, qPromise);
@@ -3555,6 +3773,38 @@ export const updateCustomerLocation = async (
     updateLocalCacheItem('contracts', updated);
   }
 
+  // Update in customers cache and push to /api/customers/:id
+  const localCustomers = getLocalCache<any>('customers');
+  const matchedCustomer = localCustomers.find((cu: any) =>
+    (cu.id && (cu.id === contractId || cu.id === (contract as any)?.customerId)) ||
+    (contract?.customerName && cu.name && normName(cu.name) === normName(contract.customerName))
+  );
+
+  if (matchedCustomer) {
+    const custUpdates = {
+      ...matchedCustomer,
+      latitude: updates.latitude,
+      longitude: updates.longitude,
+      location_address: updates.locationAddress,
+      location_updated_at: updates.locationUpdatedAt,
+    };
+    updateLocalCacheItem('customers', custUpdates);
+
+    // Push to server /api/customers/:id
+    try {
+      fetchWithFallback(`/api/customers/${matchedCustomer.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          latitude: updates.latitude,
+          longitude: updates.longitude,
+          location_address: updates.locationAddress,
+          location_updated_at: updates.locationUpdatedAt,
+        }),
+      }, 8000).catch(() => {});
+    } catch (e) {}
+  }
+
   if (isClearing) {
     // Clear in local payments so past payment GPS won't resurrect the location
     const localPayments = getLocalCache<any>('payments');
@@ -3570,20 +3820,6 @@ export const updateCustomerLocation = async (
     });
     if (payChanged) {
       setLocalCache('payments', updatedPayments);
-    }
-
-    // Clear in local customers
-    const localCustomers = getLocalCache<any>('customers');
-    let custChanged = false;
-    const updatedCusts = localCustomers.map((c: any) => {
-      if (c.id === contractId || (contract?.customerName && c.name && normName(c.name) === normName(contract.customerName))) {
-        custChanged = true;
-        return { ...c, latitude: null, longitude: null, locationAddress: null, locationUpdatedAt: null };
-      }
-      return c;
-    });
-    if (custChanged) {
-      setLocalCache('customers', updatedCusts);
     }
   }
 

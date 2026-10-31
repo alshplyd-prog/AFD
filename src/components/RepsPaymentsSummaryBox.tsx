@@ -5,7 +5,7 @@ import { silentIframePrint, openUniversalPdfPrintWindow, directPrintReceipt, DEF
 import { RepReceiptModal, RepReceiptData, directPrintRepReceipt } from './RepReceiptModal';
 import { ReceiptModal, ReceiptData } from './ReceiptModal';
 import { numberToArabicWords } from '../lib/tafqeet';
-import { getPaymentFormattedDateAndTime } from '../lib/dateUtils';
+import { getPaymentFormattedDateAndTime, getLocalDateString } from '../lib/dateUtils';
 import { getPaymentReceiptBalances } from '../lib/paymentCalculator';
 import { normalizeEntityName } from '../lib/nameHelpers';
 
@@ -19,13 +19,6 @@ interface RepsPaymentsSummaryBoxProps {
   lang: Language;
   onClose?: () => void;
 }
-
-const getLocalDateString = (d: Date = new Date()): string => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
 
 export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
   currentRep,
@@ -44,9 +37,28 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
   // Internal list selection state - defaults to 'all' so supervisors/admins see all their accessible lists immediately
   const [boxListId, setBoxListId] = useState<string>('all');
 
-  // Date range state - defaults to today so today's collections are displayed and printed by default
-  const [startDate, setStartDate] = useState<string>(() => getLocalDateString());
-  const [endDate, setEndDate] = useState<string>(() => getLocalDateString());
+  // Date range state - defaults to today or persisted localStorage
+  const [startDate, setStartDate] = useState<string>(() => {
+    try {
+      return localStorage.getItem('alkarrar_repsbox_start_date') || getLocalDateString();
+    } catch (e) {
+      return getLocalDateString();
+    }
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    try {
+      return localStorage.getItem('alkarrar_repsbox_end_date') || getLocalDateString();
+    } catch (e) {
+      return getLocalDateString();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('alkarrar_repsbox_start_date', startDate);
+      localStorage.setItem('alkarrar_repsbox_end_date', endDate);
+    } catch (e) {}
+  }, [startDate, endDate]);
 
   // Selected rep detail modal state
   const [selectedRepDetails, setSelectedRepDetails] = useState<SalesRepresentative | null>(null);
@@ -245,17 +257,10 @@ export const RepsPaymentsSummaryBox: React.FC<RepsPaymentsSummaryBoxProps> = ({
 
     // Date range filter
     if (startDate || endDate) {
-      const pDate = new Date(p.paymentDate);
-      if (startDate) {
-        const sDate = new Date(startDate);
-        sDate.setHours(0, 0, 0, 0);
-        if (pDate < sDate) return false;
-      }
-      if (endDate) {
-        const eDate = new Date(endDate);
-        eDate.setHours(23, 59, 59, 999);
-        if (pDate > eDate) return false;
-      }
+      const pDateStr = getLocalDateString(p.paymentDate || p.createdAt);
+      if (!pDateStr) return false;
+      if (startDate && pDateStr < startDate) return false;
+      if (endDate && pDateStr > endDate) return false;
     }
 
     return true;

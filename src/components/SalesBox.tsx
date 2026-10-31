@@ -78,19 +78,26 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
     });
   }, [contracts, selectedListId, startDate, endDate, searchQuery, currentRep]);
 
+  const toWesternDigits = (str: string): string => {
+    return (str || '').replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  };
+
   // Helper to extract clean base name without quantity annotations
   const extractCleanItemName = (rawName: string): string => {
     if (!rawName) return '';
     return rawName
-      .replace(/(?:\(|\[)?\s*(?:العدد|عدد)\s*[:=-]?\s*\d+\s*(?:\)|\])?/gi, '')
-      .replace(/\s*\(العدد:\s*\d+\)/gi, '')
+      .replace(/(?:\(|\[)?\s*(?:العدد|عدد)\s*[:=-]?\s*[\d٠-٩]+\s*(?:\)|\])?/gi, '')
+      .replace(/\s*\(العدد:\s*[\d٠-٩]+\)/gi, '')
+      .replace(/\s*\(\s*[\d٠-٩]+\s*جهاز\s*\)/gi, '')
       .trim();
   };
 
-  // Helper to extract contract quantity reliably from itemName or itemQuantity
-  const extractContractQuantity = (c: { itemName?: string; itemQuantity?: number }): number => {
+  // Helper to extract contract quantity reliably from itemName or itemQuantity or totalPrice ratio
+  const extractContractQuantity = (c: { itemName?: string; itemQuantity?: number; totalPrice?: number; itemId?: string }): number => {
+    const rawName = c.itemName || '';
+    const name = toWesternDigits(rawName);
+
     // 1. Check if quantity is embedded in itemName: e.g. "اجهزه 175 (عدد 20)" or "(العدد: 20)" or "عدد 20"
-    const name = c.itemName || '';
     const match = name.match(/(?:\(|\[)?\s*(?:العدد|عدد)\s*[:=-]?\s*(\d+)\s*(?:\)|\])?/i);
     if (match && match[1]) {
       const parsed = parseInt(match[1], 10);
@@ -104,7 +111,25 @@ export const SalesBox: React.FC<SalesBoxProps> = ({
       return Number(c.itemQuantity);
     }
 
-    // 3. Fallback to c.itemQuantity or 1
+    // 3. Check if matching inventory item has selling price, and totalPrice is a clean multiple of it
+    if (c.totalPrice && c.totalPrice > 0) {
+      let invItem = c.itemId ? inventory.find((i) => i.id === c.itemId) : undefined;
+      if (!invItem) {
+        const cleanName = extractCleanItemName(rawName);
+        invItem = inventory.find(
+          (i) => i.name.trim().toLowerCase() === cleanName.toLowerCase() ||
+                 cleanName.toLowerCase().startsWith(i.name.trim().toLowerCase())
+        );
+      }
+      if (invItem && invItem.price && invItem.price > 0) {
+        const multiple = Math.round(c.totalPrice / invItem.price);
+        if (multiple > 1 && Math.abs(multiple * invItem.price - c.totalPrice) < 5) {
+          return multiple;
+        }
+      }
+    }
+
+    // 4. Fallback to c.itemQuantity or 1
     return Math.max(1, Number(c.itemQuantity) || 1);
   };
 

@@ -116,6 +116,9 @@ export const OfflinePaymentConflictsModal: React.FC<OfflinePaymentConflictsModal
 
   // Filter conflicts so that only users with permission on the customer's list can view settlement/conflict items ("لمن لديه صلاحية بالقائمة")
   const permittedConflicts = conflicts.filter((c) => {
+    if (c.id === '__appointments_sync_master__' || (c.status as string) === 'appointment_sync_record' || c.contractId === 'appointments_container') {
+      return false;
+    }
     if (isManager) return true;
     if (!currentRep?.allowedListIds || currentRep.allowedListIds.includes('all')) return true;
 
