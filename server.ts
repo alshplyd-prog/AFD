@@ -160,6 +160,24 @@ function mapAppointmentRow(r: any) {
   };
 }
 
+function mapCustomerRow(r: any) {
+  return {
+    id: r.id,
+    name: r.name ?? '',
+    phone: r.phone ?? '',
+    address: r.address ?? '',
+    listId: r.list_id ?? r.listId ?? null,
+    listName: r.list_name ?? r.listName ?? null,
+    notes: r.notes ?? '',
+    status: r.status ?? 'active',
+    latitude: r.latitude != null ? Number(r.latitude) : undefined,
+    longitude: r.longitude != null ? Number(r.longitude) : undefined,
+    locationAddress: r.location_address ?? r.locationAddress ?? '',
+    locationUpdatedAt: r.location_updated_at ?? r.locationUpdatedAt ?? undefined,
+    createdAt: r.created_at ?? r.createdAt ?? new Date().toISOString(),
+  };
+}
+
 // Helper to adjust cash fund balance safely in both fileDb and PostgreSQL
 async function adjustFundBalance(fundId: string, delta: number) {
   if (!fundId || delta === 0) return;
@@ -1029,7 +1047,10 @@ async function startServer() {
           SET order_index = nl.new_idx
           FROM numbered_lists nl
           WHERE cl.id = nl.id AND (cl.order_index IS NULL);
+
+          DELETE FROM payment_conflicts WHERE id = '__appointments_sync_master__' OR status = 'appointment_sync_record';
         `).catch(() => {});
+        fileDb.delete('payment_conflicts', '__appointments_sync_master__');
       }
       await cleanupDuplicateEntities().catch((e) => console.warn("Deduplication cleanup notice:", e));
       await recalculateAllFundBalancesInPg().catch((e) => console.warn("Recalculate balances notice:", e));
@@ -1923,12 +1944,36 @@ async function startServer() {
         if (updates.latitude !== undefined || updates.longitude !== undefined) {
           const newLat = (updates.latitude != null && updates.latitude !== 0 && !isNaN(Number(updates.latitude))) ? Number(updates.latitude) : null;
           const newLng = (updates.longitude != null && updates.longitude !== 0 && !isNaN(Number(updates.longitude))) ? Number(updates.longitude) : null;
+          const newLocAddress = updates.locationAddress ?? updates.location_address ?? null;
+          const newLocUpdated = updates.locationUpdatedAt ?? updates.location_updated_at ?? null;
+
           await executePg(`
             UPDATE customers
-            SET latitude = $1, longitude = $2
-            WHERE id IN (SELECT customer_id FROM sales WHERE id = $3)
-               OR name IN (SELECT customer_name FROM sales WHERE id = $3)
-          `, [newLat, newLng, id]).catch(() => {});
+            SET latitude = $1, longitude = $2, location_address = $3, location_updated_at = $4
+            WHERE id IN (SELECT customer_id FROM sales WHERE id = $5)
+               OR name IN (SELECT customer_name FROM sales WHERE id = $5)
+          `, [newLat, newLng, newLocAddress, newLocUpdated, id]).catch(() => {});
+
+          // Also update in fileDb customers
+          const allCusts = fileDb.get<any>("customers") || [];
+          const matchedSale = (fileDb.get<any>("contracts") || []).find((c: any) => c.id === id);
+          let custChanged = false;
+          for (let i = 0; i < allCusts.length; i++) {
+            if (
+              (matchedSale?.customerId && allCusts[i].id === matchedSale.customerId) ||
+              (matchedSale?.customerName && allCusts[i].name && allCusts[i].name.trim().toLowerCase() === matchedSale.customerName.trim().toLowerCase()) ||
+              allCusts[i].id === id
+            ) {
+              allCusts[i].latitude = newLat;
+              allCusts[i].longitude = newLng;
+              allCusts[i].location_address = newLocAddress;
+              allCusts[i].location_updated_at = newLocUpdated;
+              custChanged = true;
+            }
+          }
+          if (custChanged) {
+            fileDb.setAll("customers", allCusts);
+          }
 
           if (newLat == null || newLng == null) {
             await executePg(`
@@ -3068,17 +3113,60 @@ async function startServer() {
     try {
       const { id } = req.params;
       const b = req.body;
-      await executePg(`
-        UPDATE customers SET
-          name = COALESCE($1, name),
-          phone = COALESCE($2, phone),
-          address = COALESCE($3, address),
-          list_id = COALESCE($4, list_id),
-          list_name = COALESCE($5, list_name),
-          notes = COALESCE($6, notes),
-          status = COALESCE($7, status)
-        WHERE id = $8
-      `, [b.name, b.phone, b.address, b.listId ?? b.list_id, b.listName ?? b.list_name, b.notes, b.status, id]).catch(() => {});
+      const latVal = b.latitude !== undefined ? (b.latitude != null && b.latitude !== 0 && !isNaN(Number(b.latitude)) ? Number(b.latitude) : null) : undefined;
+      const lngVal = b.longitude !== undefined ? (b.longitude != null && b.longitude !== 0 && !isNaN(Number(b.longitude)) ? Number(b.longitude) : null) : undefined;
+      const locAddrVal = b.locationAddress ?? b.location_address;
+      const locUpdVal = b.locationUpdatedAt ?? b.location_updated_at;
+
+      if (isPgConfigured()) {
+        await executePg(`
+          UPDATE customers SET
+            name = COALESCE($1, name),
+            phone = COALESCE($2, phone),
+            address = COALESCE($3, address),
+            list_id = COALESCE($4, list_id),
+            list_name = COALESCE($5, list_name),
+            notes = COALESCE($6, notes),
+            status = COALESCE($7, status),
+            latitude = CASE WHEN $8::boolean THEN $9::double precision ELSE latitude END,
+            longitude = CASE WHEN $10::boolean THEN $11::double precision ELSE longitude END,
+            location_address = COALESCE($12, location_address),
+            location_updated_at = COALESCE($13, location_updated_at)
+          WHERE id = $14
+        `, [
+          b.name,
+          b.phone,
+          b.address,
+          b.listId ?? b.list_id,
+          b.listName ?? b.list_name,
+          b.notes,
+          b.status,
+          b.latitude !== undefined,
+          latVal ?? null,
+          b.longitude !== undefined,
+          lngVal ?? null,
+          locAddrVal,
+          locUpdVal,
+          id
+        ]).catch(() => {});
+
+        if (b.latitude !== undefined || b.longitude !== undefined) {
+          await executePg(`
+            UPDATE sales
+            SET latitude = $1, longitude = $2, location_address = $3, location_updated_at = $4
+            WHERE customer_id = $5 OR customer_name IN (SELECT name FROM customers WHERE id = $5)
+          `, [latVal ?? null, lngVal ?? null, locAddrVal ?? null, locUpdVal ?? null, id]).catch(() => {});
+        }
+      }
+
+      fileDb.update("customers", id, {
+        ...b,
+        ...(latVal !== undefined ? { latitude: latVal } : {}),
+        ...(lngVal !== undefined ? { longitude: lngVal } : {}),
+        ...(locAddrVal !== undefined ? { locationAddress: locAddrVal, location_address: locAddrVal } : {}),
+        ...(locUpdVal !== undefined ? { locationUpdatedAt: locUpdVal, location_updated_at: locUpdVal } : {})
+      });
+      bumpSyncVersion();
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -4261,6 +4349,7 @@ async function startServer() {
             cAt
           ];
           await executePg(query, vals);
+          await executePg("DELETE FROM deleted_records WHERE record_id = $1", [id]).catch(() => {});
         } catch (pgErr) {
           console.warn("PostgreSQL save appointment warning:", pgErr);
         }
@@ -6026,6 +6115,7 @@ async function startServer() {
             cAt
           ];
           await executePg(query, vals).catch((err) => console.warn("Error inserting appointment in sync:", err));
+          await executePg("DELETE FROM deleted_records WHERE record_id = $1", [id]).catch(() => {});
           return true;
         }
 

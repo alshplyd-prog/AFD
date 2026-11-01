@@ -22,9 +22,10 @@ import {
   Receipt,
   ExternalLink,
   LocateFixed,
+  RefreshCw,
 } from 'lucide-react';
 import { InstallmentContract, CustomerList, SalesRepresentative, Language } from '../types';
-import { updateCustomerLocation, getLocalCache } from '../lib/postgresClient';
+import { updateCustomerLocation, getLocalCache, reconcileAllLocalWithDatabase } from '../lib/postgresClient';
 import { captureDeviceLocation } from '../lib/geolocationHelper';
 import { OfflineTileLayer, precacheMapTilesForLocations } from '../lib/offlineTileLayer';
 import { fetchStreetDrivingRoute } from '../lib/routingHelper';
@@ -183,6 +184,12 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
   const isUserManuallyPanningRef = useRef<boolean>(false);
   const hasFittedInitialBoundsRef = useRef<boolean>(false);
   const prevSelectedListIdRef = useRef<string>('all');
+
+  useEffect(() => {
+    if (isOpen) {
+      reconcileAllLocalWithDatabase({ force: true }).catch(() => {});
+    }
+  }, [isOpen]);
 
   // In-App Route State (عرض المسار على نفس الخريطة)
   const [activeRoute, setActiveRoute] = useState<{
@@ -1114,6 +1121,16 @@ export const CustomerMapsModal: React.FC<CustomerMapsModalProps> = ({
                 {contractsOnMap.length} {isAr ? 'موقع' : 'pins'}
               </span>
             </div>
+
+            {/* Live Sync Button */}
+            <button
+              type="button"
+              onClick={() => reconcileAllLocalWithDatabase({ force: true }).catch(() => {})}
+              className="p-2 rounded-2xl bg-slate-800 text-emerald-400 border border-slate-700 hover:bg-slate-700 transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+              title={isAr ? 'تزامن مباشر مع السيرفر' : 'Live Sync'}
+            >
+              <RefreshCw className="w-4 h-4 animate-spin-hover" />
+            </button>
 
             {/* Toggle Drawer */}
             <button

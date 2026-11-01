@@ -277,7 +277,26 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
         if (item && item.id) {
           // If the record exists on the PostgreSQL server, it is authoritative unless pending local offline deletion
           if (item.id === 'rep-1' || !pendingDeleteIds.has(item.id)) {
-            map.set(item.id, item);
+            let mergedItem = item;
+            if (tableName === 'contracts' && Array.isArray(existingLocal)) {
+              const localMatch: any = existingLocal.find((e: any) => e && e.id === item.id);
+              const itemAny: any = item;
+              if (localMatch) {
+                const localLat = localMatch.latitude ?? localMatch.lat;
+                const localLng = localMatch.longitude ?? localMatch.lng;
+                const serverLat = itemAny.latitude ?? itemAny.lat;
+                if (localLat != null && !isNaN(Number(localLat)) && Number(localLat) !== 0 && (serverLat == null || isNaN(Number(serverLat)) || Number(serverLat) === 0)) {
+                  mergedItem = {
+                    ...item,
+                    latitude: Number(localLat),
+                    longitude: Number(localLng),
+                    locationAddress: itemAny.locationAddress || localMatch.locationAddress || localMatch.location_address || '',
+                    locationUpdatedAt: itemAny.locationUpdatedAt || localMatch.locationUpdatedAt || localMatch.location_updated_at,
+                  };
+                }
+              }
+            }
+            map.set(item.id, mergedItem);
             if (deletedSet.has(item.id)) {
               unmarkIds.push(item.id);
             }
@@ -288,12 +307,11 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
         unmarkRecordAsDeleted(unmarkIds);
       }
 
-      // 2. Preserve genuine pending local items (created offline awaiting upload)
+      // 2. Preserve active local items that are missing from server response
       if (Array.isArray(existingLocal)) {
         for (const item of existingLocal) {
           if (item && item.id && (item.id === 'rep-1' || (!pendingDeleteIds.has(item.id) && !deletedSet.has(item.id)))) {
-            if (pendingCreateIds.has(item.id) && !map.has(item.id)) {
-              // Valid pending offline item waiting to sync to server
+            if (!map.has(item.id)) {
               map.set(item.id, item);
             }
           }
@@ -1569,9 +1587,6 @@ export async function reconcileAllLocalWithDatabase(options?: {
         const deletedIds = getSafeDeletedIds();
 
         if (localContracts.length > 0 || localPayments.length > 0 || localAppointments.length > 0) {
-          if (localAppointments.length > 0) {
-            syncAppointmentsToRemoteContainer(localAppointments).catch(() => {});
-          }
           await fetchWithFallback(
             '/api/sync/reconcile',
             {
@@ -1652,17 +1667,6 @@ export async function reconcileAllLocalWithDatabase(options?: {
           setLocalCache('employee_transactions', mergeRemoteWithPendingLocal('employee_transactions', data.employeeTransactions));
         }
         if (Array.isArray(data.paymentConflicts)) {
-          // Check for master synced appointments record
-          const master = data.paymentConflicts.find((c: any) => c.id === '__appointments_sync_master__' || c.status === 'appointment_sync_record');
-          if (master && master.note) {
-            try {
-              const parsed = JSON.parse(master.note);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                const mergedAppts = mergeRemoteWithPendingLocal('appointments', parsed);
-                setLocalCache('appointments', mergedAppts);
-              }
-            } catch (e) {}
-          }
           const realConflicts = data.paymentConflicts.filter((c: any) => c.id !== '__appointments_sync_master__' && c.status !== 'appointment_sync_record' && c.contractId !== 'appointments_container');
           setLocalCache('payment_conflicts', mergeRemoteWithPendingLocal('payment_conflicts', realConflicts));
         }
@@ -2194,17 +2198,6 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
               const apiData = await res.json().catch(() => null);
               if (!isCancelled && Array.isArray(apiData)) {
                 if (tableName === 'payment_conflicts') {
-                  const master = apiData.find((r: any) => r.id === '__appointments_sync_master__' || r.status === 'appointment_sync_record');
-                  if (master && master.note) {
-                    try {
-                      const parsed = JSON.parse(master.note);
-                      if (Array.isArray(parsed) && parsed.length > 0) {
-                        const mergedAppts = mergeRemoteWithPendingLocal('appointments', parsed);
-                        setLocalCache('appointments', mergedAppts);
-                        notifySubscribersRefresh();
-                      }
-                    } catch (e) {}
-                  }
                   const filtered = apiData.filter(
                     (c: any) => c.id !== '__appointments_sync_master__' && c.status !== 'appointment_sync_record' && c.contractId !== 'appointments_container'
                   );
@@ -3614,22 +3607,8 @@ export const deleteAllEmployees = async () => {
 // APPOINTMENTS PERSISTENCE (Android APK & Offline Guaranteed)
 // =========================================================================
 
-export const syncAppointmentsToRemoteContainer = async (allAppointments: AppointmentRecord[]): Promise<void> => {
-  try {
-    if (!Array.isArray(allAppointments)) return;
-    await fetchWithFallback('/api/payment-conflicts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: '__appointments_sync_master__',
-        contractId: 'appointments_container',
-        customerName: 'مزامنة المواعيد',
-        note: JSON.stringify(allAppointments),
-        status: 'appointment_sync_record',
-        createdAt: new Date().toISOString(),
-      }),
-    }, 6000).catch(() => {});
-  } catch (e) {}
+export const syncAppointmentsToRemoteContainer = async (_allAppointments: AppointmentRecord[]): Promise<void> => {
+  // Legacy sync container removed - appointments now sync directly via /api/appointments
 };
 
 export const fetchAppointmentsFromPostgres = async (): Promise<AppointmentRecord[]> => {
@@ -3651,32 +3630,6 @@ export const fetchAppointmentsFromPostgres = async (): Promise<AppointmentRecord
     }
   } catch (err) {
     console.warn('[fetchAppointmentsFromPostgres] Using local cache:', err);
-  }
-
-  // Backup sync strategy for remote VPS / APK environments where /api/appointments returns HTML:
-  // Check synced appointment master container in payment_conflicts!
-  try {
-    const conflictsRes = await fetchWithFallback('/api/payment-conflicts', { method: 'GET' }, 6000);
-    if (conflictsRes && conflictsRes.ok) {
-      const conflicts = await conflictsRes.json();
-      if (Array.isArray(conflicts)) {
-        const master = conflicts.find((c: any) => c.id === '__appointments_sync_master__' || c.status === 'appointment_sync_record');
-        if (master && master.note) {
-          try {
-            const parsed = JSON.parse(master.note);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              const mapped = parsed.map((row: any) => mapRow('appointments', row));
-              const merged = mergeRemoteWithPendingLocal('appointments', mapped);
-              setLocalCache('appointments', merged);
-              mirrorLocalSnapshotToIndexedDb(false);
-              return merged;
-            }
-          } catch (e) {}
-        }
-      }
-    }
-  } catch (syncErr) {
-    console.warn('[fetchAppointmentsFromPostgres] Synced container check notice:', syncErr);
   }
 
   // If local cache is still empty, load from bundled initial snapshot (first-time APK launch)
@@ -3725,8 +3678,7 @@ export const saveAppointmentToPostgres = async (appt: any): Promise<AppointmentR
     saveToPostgres('appointments', 'POST', fullAppt, qPromise);
   }
 
-  const allCurrent = getLocalCache<AppointmentRecord>('appointments');
-  syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
+  reconcileAllLocalWithDatabase({ force: true }).catch(() => {});
   return fullAppt;
 };
 
@@ -3745,8 +3697,7 @@ export const deleteAppointmentFromPostgres = async (id: string): Promise<void> =
     saveToPostgres(`appointments/${id}`, 'DELETE', { id }, qPromise);
   }
 
-  const allCurrent = getLocalCache<AppointmentRecord>('appointments');
-  syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
+  reconcileAllLocalWithDatabase({ force: true }).catch(() => {});
 };
 
 export const updateAppointmentInPostgres = async (id: string, updates: any): Promise<void> => {
@@ -3768,8 +3719,7 @@ export const updateAppointmentInPostgres = async (id: string, updates: any): Pro
     saveToPostgres(`appointments/${id}`, 'PUT', updates, qPromise);
   }
 
-  const allCurrent = getLocalCache<AppointmentRecord>('appointments');
-  syncAppointmentsToRemoteContainer(allCurrent).catch(() => {});
+  reconcileAllLocalWithDatabase({ force: true }).catch(() => {});
 };
 
 export const updateCustomerLocation = async (
@@ -3849,20 +3799,24 @@ export const updateCustomerLocation = async (
   mirrorLocalSnapshotToIndexedDb(true);
   notifySubscribersRefresh();
 
+  let resOk = true;
   try {
     const res = await fetchWithFallback(`/api/contracts/${contractId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     }, 8000);
-    return Boolean(res && res.ok);
+    resOk = Boolean(res && res.ok);
   } catch (err) {
     console.warn('[updateCustomerLocation] Offline or network error, queued in pendingQueue:', err);
     try {
       addToPendingQueue('UPDATE_CONTRACT', { id: contractId, ...updates });
     } catch (e) {}
-    return true;
+    resOk = true;
   }
+
+  reconcileAllLocalWithDatabase({ force: true }).catch(() => {});
+  return resOk;
 };
 
 

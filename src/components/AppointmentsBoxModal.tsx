@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Calendar,
   Clock,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Appointment, CustomerList, Language, SalesRepresentative, InstallmentContract } from '../types';
 import { getLocalDateString, isAppointmentDueForNotification } from '../lib/dateUtils';
+import { reconcileAllLocalWithDatabase } from '../lib/postgresClient';
 
 interface AppointmentsBoxModalProps {
   isOpen: boolean;
@@ -62,6 +63,12 @@ export const AppointmentsBoxModal: React.FC<AppointmentsBoxModalProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'due' | 'upcoming' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      reconcileAllLocalWithDatabase({ force: true }).catch(() => {});
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -256,15 +263,25 @@ export const AppointmentsBoxModal: React.FC<AppointmentsBoxModalProps> = ({
               </button>
             </div>
 
-            {/* Quick Close Button */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
-              title={isAr ? 'إغلاق' : 'Close'}
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Action Buttons: Live Sync + Close */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => reconcileAllLocalWithDatabase({ force: true }).catch(() => {})}
+                className="p-2 rounded-xl text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/60 transition-colors cursor-pointer"
+                title={isAr ? 'تزامن مباشر مع السيرفر' : 'Live Sync'}
+              >
+                <RefreshCw className="w-4 h-4 animate-spin-hover" />
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                title={isAr ? 'إغلاق' : 'Close'}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Search Input */}
