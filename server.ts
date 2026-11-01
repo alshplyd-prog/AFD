@@ -2756,6 +2756,28 @@ async function startServer() {
 
       await executePg(sql1, vals);
 
+      if (saved.balance > 0) {
+        const initId = `ft_init_${id}_${Date.now()}`;
+        const note = 'رصيد افتتاحي للصندوق';
+        if (isPgConfigured()) {
+          await executePg(`
+            INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+            VALUES ($1, $2, 'deposit', $3, $4, 'الإدارة', NOW()::text)
+            ON CONFLICT (id) DO NOTHING
+          `, [initId, id, saved.balance, note]).catch(() => {});
+        }
+        fileDb.upsert("fund_transactions", {
+          id: initId,
+          fundId: id,
+          type: 'deposit',
+          amount: saved.balance,
+          note,
+          repName: 'الإدارة',
+          createdAt: new Date().toISOString()
+        });
+        await recalculateAllFundBalancesInPg();
+      }
+
       bumpSyncVersion();
       res.json({ success: true, fund: saved });
     } catch (err: any) {
@@ -2820,6 +2842,65 @@ async function startServer() {
         ? Number(updates.balance)
         : existingFund?.balance;
 
+      if (updates.balance !== undefined && updates.balance !== null && updates.balance !== '') {
+        const targetBal = Number(updates.balance);
+        if (!isNaN(targetBal)) {
+          let currentCalcBalance = 0;
+          if (isPgConfigured()) {
+            const txRes = await executePg(`
+              SELECT COALESCE(SUM(
+                CASE 
+                  WHEN type IN ('deposit', 'installment', 'transfer_in', 'employee_repay', 'manual_adjustment', 'initial') AND fund_id = $1 THEN amount
+                  WHEN type = 'transfer' AND target_fund_id = $1 THEN amount
+                  WHEN type IN ('withdraw', 'transfer_out', 'transfer', 'expense', 'employee_loan') AND fund_id = $1 THEN -amount
+                  ELSE 0 
+                END
+              ), 0) as total
+              FROM fund_transactions
+              WHERE (fund_id = $1 OR target_fund_id = $1)
+                AND NOT EXISTS (SELECT 1 FROM deleted_records dr WHERE dr.record_id = fund_transactions.id)
+            `, [id]).catch(() => []);
+            currentCalcBalance = Math.max(0, Number(txRes?.[0]?.total) || 0);
+          } else {
+            const fileFundTxs = fileDb.get<any>("fund_transactions") || [];
+            currentCalcBalance = fileFundTxs.reduce((sum: number, tx: any) => {
+              const amt = Number(tx.amount) || 0;
+              if (tx.fundId === id) {
+                if (['deposit', 'installment', 'transfer_in', 'employee_repay', 'manual_adjustment', 'initial'].includes(tx.type)) return sum + amt;
+                if (['withdraw', 'transfer_out', 'transfer', 'expense', 'employee_loan'].includes(tx.type)) return sum - amt;
+              } else if (tx.targetFundId === id && tx.type === 'transfer') {
+                return sum + amt;
+              }
+              return sum;
+            }, 0);
+          }
+
+          const diff = targetBal - currentCalcBalance;
+          if (diff !== 0) {
+            const adjId = `ft_adj_${id}_${Date.now()}`;
+            const adjType = diff > 0 ? 'deposit' : 'withdraw';
+            const adjAmt = Math.abs(diff);
+            const note = 'تعديل يدوي لرصيد الخزينة';
+            if (isPgConfigured()) {
+              await executePg(`
+                INSERT INTO fund_transactions (id, fund_id, type, amount, note, rep_name, created_at)
+                VALUES ($1, $2, $3, $4, $5, 'الإدارة', NOW()::text)
+                ON CONFLICT (id) DO UPDATE SET amount = EXCLUDED.amount
+              `, [adjId, id, adjType, adjAmt, note]).catch(() => {});
+            }
+            fileDb.upsert("fund_transactions", {
+              id: adjId,
+              fundId: id,
+              type: adjType,
+              amount: adjAmt,
+              note,
+              repName: 'الإدارة',
+              createdAt: new Date().toISOString()
+            });
+          }
+        }
+      }
+
       const orderIndexToSet = updates.orderIndex !== undefined || updates.order_index !== undefined
         ? Number(updates.orderIndex ?? updates.order_index)
         : existingFund?.orderIndex;
@@ -2838,6 +2919,8 @@ async function startServer() {
          WHERE id = $5`,
         [updates.name, balanceToSet !== undefined ? balanceToSet : null, updates.description, orderIndexToSet !== undefined ? orderIndexToSet : null, id]
       );
+
+      await recalculateAllFundBalancesInPg();
       bumpSyncVersion();
       res.json({ success: true });
     } catch (err: any) {
@@ -6785,39 +6868,26 @@ async function startServer() {
       let totalInserted = 0;
       const affectedContractIds = new Set<string>();
 
-      // 0. Process any deleted IDs in bulk with strict safety guard against deleting active records
+      // 0. Process any deleted IDs in bulk with strict safety guard
       if (Array.isArray(payload.deletedIds) && payload.deletedIds.length > 0) {
         const rawDelIds = payload.deletedIds.filter(Boolean);
         if (rawDelIds.length > 0) {
-          let existingIds = new Set<string>();
-          if (isPgConfigured()) {
-            try {
-              const resExisting = await executePg(`SELECT id FROM sales WHERE id = ANY($1) UNION SELECT id FROM payments WHERE id = ANY($1)`, [rawDelIds]);
-              if (Array.isArray(resExisting)) {
-                resExisting.forEach((r: any) => existingIds.add(String(r.id)));
-              }
-            } catch (e) {}
-          }
-          const salesCache = fileDb.get<any>("contracts") || [];
-          const paymentsCache = fileDb.get<any>("payments") || [];
-          salesCache.forEach((c: any) => { if (c?.id) existingIds.add(String(c.id)); });
-          paymentsCache.forEach((p: any) => { if (p?.id) existingIds.add(String(p.id)); });
+          const protectedEmpIds = new Set([
+            'rep-1', 'rep-2', 'rep-emp-rep-1', 'rep-emp-rep-2',
+            'rep-emp-rep_1786620296205_ae0e2', 'rep-emp-rep_1787351248238_bgr70',
+            'rep-emp-rep_1787351289887_620kg', 'rep-emp-rep_1787351318939_bysbs',
+            'rep-emp-rep_1787351361675_xp56x', 'rep-emp-rep_1787351151276_4k6lg'
+          ]);
 
-          const delIds = rawDelIds.filter((id: string) => !existingIds.has(String(id)));
+          const delIds = rawDelIds.filter((id: string) => !protectedEmpIds.has(String(id)));
 
           if (delIds.length > 0) {
-            // Strictly classify deleted IDs by entity prefix to guarantee zero accidental deletions across tables
-            const contractDelIds = delIds.filter((id: string) => String(id).startsWith('contract_'));
+            const contractDelIds = delIds.filter((id: string) => String(id).startsWith('contract_') || String(id).startsWith('sale_'));
             const paymentDelIds = delIds.filter((id: string) => String(id).startsWith('pay_') || String(id).startsWith('payment_'));
+            const apptDelIds = delIds.filter((id: string) => String(id).startsWith('appt_') || String(id).startsWith('appointment_'));
             const itemDelIds = delIds.filter((id: string) => String(id).startsWith('item_') || String(id).startsWith('inv_'));
             const fundDelIds = delIds.filter((id: string) => String(id).startsWith('fund_'));
             const listDelIds = delIds.filter((id: string) => String(id).startsWith('list_'));
-            const protectedEmpIds = new Set([
-              'rep-1', 'rep-2', 'rep-emp-rep-1', 'rep-emp-rep-2',
-              'rep-emp-rep_1786620296205_ae0e2', 'rep-emp-rep_1787351248238_bgr70',
-              'rep-emp-rep_1787351289887_620kg', 'rep-emp-rep_1787351318939_bysbs',
-              'rep-emp-rep_1787351361675_xp56x', 'rep-emp-rep_1787351151276_4k6lg'
-            ]);
             const empDelIds = delIds.filter((id: string) => String(id).startsWith('emp_') && !protectedEmpIds.has(String(id)));
 
             if (contractDelIds.length > 0) {
@@ -6834,24 +6904,46 @@ async function startServer() {
               await executePg(`INSERT INTO deleted_records (record_id, table_name) SELECT unnest($1::text[]), 'payments' ON CONFLICT (record_id) DO NOTHING`, [paymentDelIds]).catch(() => {});
               if (isPgConfigured()) {
                 await executePg(`DELETE FROM payments WHERE id = ANY($1)`, [paymentDelIds]).catch(() => {});
+                await executePg(`DELETE FROM fund_transactions WHERE id = ANY(SELECT 'ft_pay_' || unnest($1::text[]))`, [paymentDelIds]).catch(() => {});
               }
               for (const dId of paymentDelIds) {
                 fileDb.delete("payments", dId);
+                fileDb.delete("fund_transactions", `ft_pay_${dId}`);
+              }
+            }
+
+            if (apptDelIds.length > 0) {
+              await executePg(`INSERT INTO deleted_records (record_id, table_name) SELECT unnest($1::text[]), 'appointments' ON CONFLICT (record_id) DO NOTHING`, [apptDelIds]).catch(() => {});
+              if (isPgConfigured()) {
+                await executePg(`DELETE FROM appointments WHERE id = ANY($1)`, [apptDelIds]).catch(() => {});
+              }
+              for (const dId of apptDelIds) {
+                fileDb.delete("appointments", dId);
               }
             }
 
             if (itemDelIds.length > 0) {
+              await executePg(`INSERT INTO deleted_records (record_id, table_name) SELECT unnest($1::text[]), 'inventory' ON CONFLICT (record_id) DO NOTHING`, [itemDelIds]).catch(() => {});
               await executePg(`DELETE FROM inventory_items WHERE id = ANY($1)`, [itemDelIds]).catch(() => {});
+              for (const dId of itemDelIds) fileDb.delete("inventory", dId);
             }
             if (fundDelIds.length > 0) {
+              await executePg(`INSERT INTO deleted_records (record_id, table_name) SELECT unnest($1::text[]), 'cash_funds' ON CONFLICT (record_id) DO NOTHING`, [fundDelIds]).catch(() => {});
               await executePg(`DELETE FROM cash_funds WHERE id = ANY($1)`, [fundDelIds]).catch(() => {});
+              for (const dId of fundDelIds) fileDb.delete("funds", dId);
             }
             if (listDelIds.length > 0) {
+              await executePg(`INSERT INTO deleted_records (record_id, table_name) SELECT unnest($1::text[]), 'customer_lists' ON CONFLICT (record_id) DO NOTHING`, [listDelIds]).catch(() => {});
               await executePg(`DELETE FROM customer_lists WHERE id = ANY($1)`, [listDelIds]).catch(() => {});
+              for (const dId of listDelIds) fileDb.delete("customer_lists", dId);
             }
             if (empDelIds.length > 0) {
+              await executePg(`INSERT INTO deleted_records (record_id, table_name) SELECT unnest($1::text[]), 'employees' ON CONFLICT (record_id) DO NOTHING`, [empDelIds]).catch(() => {});
               await executePg(`DELETE FROM employees WHERE id = ANY($1)`, [empDelIds]).catch(() => {});
+              for (const dId of empDelIds) fileDb.delete("employees", dId);
             }
+
+            await recalculateAllFundBalancesInPg().catch(() => {});
           }
         }
       }

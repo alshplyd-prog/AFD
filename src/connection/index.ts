@@ -23,7 +23,6 @@ export {
   flushPendingQueue,
   getPendingQueue,
 } from '../lib/offlineQueue';
-export * from '../lib/offlineSyncQueue';
 
 // 4. Core Business Data Functions (Hostinger PostgreSQL bridge)
 export * from '../lib/postgresClient';

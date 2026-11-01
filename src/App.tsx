@@ -317,7 +317,9 @@ export default function App() {
   const [isSalesBoxModalOpen, setIsSalesBoxModalOpen] = useState(false);
   const [appointments, setAppointments] = useState<AppointmentRecord[]>(() => getLocalCache<AppointmentRecord>('appointments'));
   const [isAppointmentsBoxModalOpen, setIsAppointmentsBoxModalOpen] = useState(false);
+  const [isAppointmentsBoxModal2Open, setIsAppointmentsBoxModal2Open] = useState(false);
   const [isCustomerMapsModalOpen, setIsCustomerMapsModalOpen] = useState(false);
+  const [isCustomerMapsModal2Open, setIsCustomerMapsModal2Open] = useState(false);
   const [customerMapsInitialContract, setCustomerMapsInitialContract] = useState<InstallmentContract | null>(null);
   const [customerMapsAutoDrawRoute, setCustomerMapsAutoDrawRoute] = useState<boolean>(false);
   const [isAddAppointmentModalOpen, setIsAddAppointmentModalOpen] = useState(false);
@@ -681,7 +683,9 @@ export default function App() {
       isFormModalOpen ||
       selectedContract ||
       isCustomerMapsModalOpen ||
+      isCustomerMapsModal2Open ||
       isAppointmentsBoxModalOpen ||
+      isAppointmentsBoxModal2Open ||
       isPaymentsHistoryOpen ||
       isInventoryModalOpen ||
       isRepsModalOpen ||
@@ -738,10 +742,18 @@ export default function App() {
         setSelectedContract(null);
         return true;
       }
+      if (isCustomerMapsModal2Open) {
+        setIsCustomerMapsModal2Open(false);
+        return true;
+      }
       if (isCustomerMapsModalOpen) {
         setIsCustomerMapsModalOpen(false);
         setCustomerMapsInitialContract(null);
         setCustomerMapsAutoDrawRoute(false);
+        return true;
+      }
+      if (isAppointmentsBoxModal2Open) {
+        setIsAppointmentsBoxModal2Open(false);
         return true;
       }
       if (isAppointmentsBoxModalOpen) {
@@ -866,7 +878,9 @@ export default function App() {
     isFormModalOpen,
     selectedContract,
     isCustomerMapsModalOpen,
+    isCustomerMapsModal2Open,
     isAppointmentsBoxModalOpen,
+    isAppointmentsBoxModal2Open,
     isPaymentsHistoryOpen,
     isSalesBoxModalOpen,
     isRepsPaymentsSummaryOpen,
@@ -2626,6 +2640,7 @@ export default function App() {
       const newFund = { ...fund, id, createdAt: new Date().toISOString() };
       setFunds((prev) => deduplicateEntitiesByName([...prev, newFund]));
       await addFundToFirestore(newFund);
+      await handleRecalculateFundBalances();
       showToast(isAr ? 'تمت إضافة الصندوق الخزني بنجاح' : 'Cash fund added successfully');
     } catch (err: any) {
       console.error('Failed to add fund:', err);
@@ -2639,7 +2654,9 @@ export default function App() {
         showToast(isAr ? 'عذراً، اسم الصندوق مسجل مسبقاً ولا يمكن تكراره' : 'Fund name already exists');
         return;
       }
+      setFunds((prev) => prev.map((f) => (f.id === id ? { ...f, ...data } : f)));
       await updateFundInFirestore(id, data);
+      await handleRecalculateFundBalances();
       showToast(isAr ? 'تم تحديث بيانات الصندوق' : 'Cash fund updated');
     } catch (err: any) {
       console.error('Failed to update fund:', err);
@@ -3802,7 +3819,37 @@ export default function App() {
                   </div>
                 </button>
 
-                {/* Customer Maps Box Card (صندوق خرائط الزبائن) */}
+                {/* Duplicated Appointments Box Card (صندوق المواعيد المستحقة والجدولية) */}
+                <button
+                  type="button"
+                  onClick={() => setIsAppointmentsBoxModal2Open(true)}
+                  className="bg-amber-50/70 dark:bg-slate-800/90 border-2 border-amber-200/80 dark:border-slate-700 hover:border-amber-400 dark:hover:border-amber-500 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 text-right transition-all shadow-xs hover:shadow-md group flex flex-col justify-between cursor-pointer min-w-0"
+                >
+                  <div className="flex items-center justify-between mb-2.5 sm:mb-3 gap-1 min-w-0">
+                    <div className="p-2.5 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 group-hover:scale-105 transition-transform shadow-2xs shrink-0">
+                      <CalendarClock className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                    </div>
+                    <span className="text-xs sm:text-sm font-extrabold bg-amber-200/80 dark:bg-amber-950 text-amber-800 dark:text-amber-200 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full whitespace-nowrap shrink-0">
+                      {appointments.length} {isAr ? 'موعد' : 'Appointments'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 my-1 min-w-0">
+                    <h3 className="text-sm sm:text-base md:text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                      {isAr ? 'صندوق المواعيد المستحقة' : 'Due Appointments Box'}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold line-clamp-2 leading-relaxed">
+                      {isAr
+                        ? 'إدارة ومتابعة المواعيد المستحقة والتنبيهات الفورية'
+                        : 'Manage due appointments and direct notifications'}
+                    </p>
+                  </div>
+                  <div className="pt-2 sm:pt-3 border-t border-amber-200/60 dark:border-slate-700/80 flex items-center justify-between text-xs sm:text-sm md:text-base font-black text-amber-700 dark:text-amber-300">
+                    <span>{isAr ? 'فتح المواعيد المستحقة' : 'Open Due Appointments'}</span>
+                    <ChevronLeft className="w-4 h-4 rtl:rotate-0 ltr:rotate-180 group-hover:-translate-x-1 transition-transform shrink-0" />
+                  </div>
+                </button>
+
+                {/* Customer Maps Box Card (صندوق خرائط الزبائن العامة) */}
                 <button
                   type="button"
                   onClick={() => setIsCustomerMapsModalOpen(true)}
@@ -3828,6 +3875,36 @@ export default function App() {
                   </div>
                   <div className="pt-2 sm:pt-3 border-t border-emerald-200/60 dark:border-slate-700/80 flex items-center justify-between text-xs sm:text-sm md:text-base font-black text-emerald-700 dark:text-emerald-300">
                     <span>{isAr ? 'فتح الخريطة' : 'Open Map'}</span>
+                    <ChevronLeft className="w-4 h-4 rtl:rotate-0 ltr:rotate-180 group-hover:-translate-x-1 transition-transform shrink-0" />
+                  </div>
+                </button>
+
+                {/* Duplicated Customer Maps Box Card (صندوق المسارات والتوجيه المباشر) */}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomerMapsModal2Open(true)}
+                  className="bg-emerald-50/70 dark:bg-slate-800/90 border-2 border-emerald-200/80 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 text-right transition-all shadow-xs hover:shadow-md group flex flex-col justify-between cursor-pointer min-w-0"
+                >
+                  <div className="flex items-center justify-between mb-2.5 sm:mb-3 gap-1 min-w-0">
+                    <div className="p-2.5 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 group-hover:scale-105 transition-transform shadow-2xs shrink-0">
+                      <MapPinned className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                    </div>
+                    <span className="text-xs sm:text-sm font-extrabold bg-emerald-200/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full whitespace-nowrap shrink-0">
+                      {accessibleContractsWithLocationCount} {isAr ? 'علامة ع الخريطة' : 'on Map'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 my-1 min-w-0">
+                    <h3 className="text-sm sm:text-base md:text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                      {isAr ? 'صندوق المسارات والتوجيه' : 'Routes & Navigation Box'}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold line-clamp-2 leading-relaxed">
+                      {isAr
+                        ? 'التوجيه المباشر ورسم مسارات الجباية والوصول للزبائن'
+                        : 'Direct GPS navigation & collection routes'}
+                    </p>
+                  </div>
+                  <div className="pt-2 sm:pt-3 border-t border-emerald-200/60 dark:border-slate-700/80 flex items-center justify-between text-xs sm:text-sm md:text-base font-black text-emerald-700 dark:text-emerald-300">
+                    <span>{isAr ? 'فتح التوجيه والمسارات' : 'Open Navigation & Routes'}</span>
                     <ChevronLeft className="w-4 h-4 rtl:rotate-0 ltr:rotate-180 group-hover:-translate-x-1 transition-transform shrink-0" />
                   </div>
                 </button>
@@ -4030,7 +4107,37 @@ export default function App() {
                   </div>
                 </button>
 
-                {/* Customer Maps Box Card (صندوق خرائط الزبائن) - Visible to Admin */}
+                {/* Duplicated Appointments Box Card (صندوق المواعيد المستحقة والجدولية) - Visible to Admin */}
+                <button
+                  type="button"
+                  onClick={() => setIsAppointmentsBoxModal2Open(true)}
+                  className="bg-amber-50/70 dark:bg-slate-800/90 border-2 border-amber-200/80 dark:border-slate-700 hover:border-amber-400 dark:hover:border-amber-500 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-5 text-right transition-all shadow-xs hover:shadow-md group flex flex-col justify-between cursor-pointer"
+                >
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <div className="p-2 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 group-hover:scale-105 transition-transform shadow-2xs">
+                      <CalendarClock className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                    </div>
+                    <span className="text-[11px] xs:text-xs sm:text-sm font-extrabold bg-amber-200/80 dark:bg-amber-950 text-amber-800 dark:text-amber-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                      {appointments.length} {isAr ? 'موعد' : 'Appointments'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 my-1">
+                    <h3 className="text-sm sm:text-base md:text-lg font-black text-slate-900 dark:text-slate-100">
+                      {isAr ? 'صندوق المواعيد المستحقة' : 'Due Appointments Box'}
+                    </h3>
+                    <p className="text-xs sm:text-sm md:text-base text-slate-500 dark:text-slate-400 font-semibold line-clamp-2">
+                      {isAr
+                        ? 'إدارة ومتابعة المواعيد المستحقة والتنبيهات الفورية'
+                        : 'Manage due appointments and direct notifications'}
+                    </p>
+                  </div>
+                  <div className="pt-2 sm:pt-3 border-t border-amber-200/60 dark:border-slate-700/80 flex items-center justify-between text-xs sm:text-sm md:text-base font-black text-amber-700 dark:text-amber-300">
+                    <span>{isAr ? 'فتح المواعيد المستحقة' : 'Open Due Appointments'}</span>
+                    <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 rtl:rotate-0 ltr:rotate-180 group-hover:-translate-x-1 transition-transform" />
+                  </div>
+                </button>
+
+                {/* Customer Maps Box Card (صندوق خرائط الزبائن العامة) - Visible to Admin */}
                 <button
                   type="button"
                   onClick={() => setIsCustomerMapsModalOpen(true)}
@@ -4056,6 +4163,36 @@ export default function App() {
                   </div>
                   <div className="pt-2 sm:pt-3 border-t border-emerald-200/60 dark:border-slate-700/80 flex items-center justify-between text-xs sm:text-sm md:text-base font-black text-emerald-700 dark:text-emerald-300">
                     <span>{isAr ? 'فتح الخريطة' : 'Open Map'}</span>
+                    <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 rtl:rotate-0 ltr:rotate-180 group-hover:-translate-x-1 transition-transform" />
+                  </div>
+                </button>
+
+                {/* Duplicated Customer Maps Box Card (صندوق المسارات والتوجيه المباشر) - Visible to Admin */}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomerMapsModal2Open(true)}
+                  className="bg-emerald-50/70 dark:bg-slate-800/90 border-2 border-emerald-200/80 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 rounded-2xl sm:rounded-3xl p-3 sm:p-4 md:p-5 text-right transition-all shadow-xs hover:shadow-md group flex flex-col justify-between cursor-pointer"
+                >
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <div className="p-2 sm:p-3 md:p-3.5 rounded-xl sm:rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 group-hover:scale-105 transition-transform shadow-2xs">
+                      <MapPinned className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                    </div>
+                    <span className="text-[11px] xs:text-xs sm:text-sm font-extrabold bg-emerald-200/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                      {accessibleContractsWithLocationCount} {isAr ? 'علامة ع الخريطة' : 'on Map'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 my-1">
+                    <h3 className="text-sm sm:text-base md:text-lg font-black text-slate-900 dark:text-slate-100">
+                      {isAr ? 'صندوق المسارات والتوجيه' : 'Routes & Navigation Box'}
+                    </h3>
+                    <p className="text-xs sm:text-sm md:text-base text-slate-500 dark:text-slate-400 font-semibold line-clamp-2">
+                      {isAr
+                        ? 'التوجيه المباشر ورسم مسارات الجباية والوصول للزبائن'
+                        : 'Direct GPS navigation & collection routes'}
+                    </p>
+                  </div>
+                  <div className="pt-2 sm:pt-3 border-t border-emerald-200/60 dark:border-slate-700/80 flex items-center justify-between text-xs sm:text-sm md:text-base font-black text-emerald-700 dark:text-emerald-300">
+                    <span>{isAr ? 'فتح التوجيه والمسارات' : 'Open Navigation & Routes'}</span>
                     <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 rtl:rotate-0 ltr:rotate-180 group-hover:-translate-x-1 transition-transform" />
                   </div>
                 </button>
@@ -4691,6 +4828,54 @@ export default function App() {
         onSelectCustomer={(contract) => {
           setSelectedContract(contract);
           setIsCustomerMapsModalOpen(false);
+        }}
+        onViewCustomerPayments={(contract) => {
+          setCustomerPaymentsFilter(contract.id);
+          setIsPaymentsHistoryOpen(true);
+        }}
+      />
+
+      {/* Appointments Box Modal 2 (صندوق المواعيد المستحقة والجدولية) */}
+      <AppointmentsBoxModal
+        isOpen={isAppointmentsBoxModal2Open}
+        onClose={() => setIsAppointmentsBoxModal2Open(false)}
+        appointments={appointments}
+        customerLists={customerLists}
+        contracts={contractsWithLiveBalances}
+        currentRep={currentRep}
+        isAdmin={isAdmin}
+        lang={lang}
+        onDeleteAppointment={handleDeleteAppointment}
+        onUpdateAppointment={handleUpdateAppointment}
+        onOpenAddModal={() => {
+          if (contractsWithLiveBalances.length > 0) {
+            setSelectedContractForAppointment(contractsWithLiveBalances[0]);
+            setIsAddAppointmentModalOpen(true);
+          }
+        }}
+        onSelectCustomer={(contract) => {
+          setSelectedContract(contract);
+          setIsAppointmentsBoxModal2Open(false);
+        }}
+      />
+
+      {/* Customer Maps Modal 2 (صندوق التوجيه والمسارات) */}
+      <CustomerMapsModal
+        isOpen={isCustomerMapsModal2Open}
+        onClose={() => {
+          setIsCustomerMapsModal2Open(false);
+        }}
+        contracts={contractsWithLiveBalances}
+        customerLists={customerLists}
+        customers={customers}
+        currentRep={currentRep}
+        isAdmin={isAdmin}
+        lang={lang}
+        initialCustomer={null}
+        autoDrawRoute={true}
+        onSelectCustomer={(contract) => {
+          setSelectedContract(contract);
+          setIsCustomerMapsModal2Open(false);
         }}
         onViewCustomerPayments={(contract) => {
           setCustomerPaymentsFilter(contract.id);

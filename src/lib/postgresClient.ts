@@ -9,6 +9,7 @@ import {
   INITIAL_EMPLOYEES,
   INITIAL_CONTRACTS,
   INITIAL_PAYMENTS,
+  INITIAL_APPOINTMENTS,
 } from '../data/initialContracts';
 import { AppointmentRecord } from '../types';
 
@@ -272,11 +273,10 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
 
     if (hasServerData) {
       // 1. Authoritative remote server data directly from PostgreSQL
-      const unmarkIds: string[] = [];
       for (const item of serverData) {
         if (item && item.id) {
-          // If the record exists on the PostgreSQL server, it is authoritative unless pending local offline deletion
-          if (item.id === 'rep-1' || !pendingDeleteIds.has(item.id)) {
+          // If the record exists on PostgreSQL server, it is authoritative unless marked deleted locally
+          if (item.id === 'rep-1' || (!pendingDeleteIds.has(item.id) && !deletedSet.has(item.id))) {
             let mergedItem = item;
             if (tableName === 'contracts' && Array.isArray(existingLocal)) {
               const localMatch: any = existingLocal.find((e: any) => e && e.id === item.id);
@@ -297,17 +297,11 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
               }
             }
             map.set(item.id, mergedItem);
-            if (deletedSet.has(item.id)) {
-              unmarkIds.push(item.id);
-            }
           }
         }
       }
-      if (unmarkIds.length > 0) {
-        unmarkRecordAsDeleted(unmarkIds);
-      }
 
-      // 2. Preserve active local items that are missing from server response
+      // 2. Preserve active local items missing from server ONLY if not deleted
       if (Array.isArray(existingLocal)) {
         for (const item of existingLocal) {
           if (item && item.id && (item.id === 'rep-1' || (!pendingDeleteIds.has(item.id) && !deletedSet.has(item.id)))) {
@@ -328,7 +322,31 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
       }
     }
 
+    // Filter out orphaned ft_pay_ or ft_emp_ transactions whose underlying payment or employee transaction is deleted
+    if (tableName === 'fund_transactions') {
+      const activePayments = getLocalCache<any>('payments');
+      const activePaymentIds = new Set(
+        activePayments.filter((p: any) => p && p.id && !deletedSet.has(String(p.id))).map((p: any) => String(p.id))
+      );
+      const activeEmpTxs = getLocalCache<any>('employee_transactions');
+      const activeEmpTxIds = new Set(
+        activeEmpTxs.filter((t: any) => t && t.id && !deletedSet.has(String(t.id))).map((t: any) => String(t.id))
+      );
 
+      for (const [key] of Array.from(map.entries())) {
+        if (key.startsWith('ft_pay_')) {
+          const pId = key.replace('ft_pay_', '');
+          if (!activePaymentIds.has(pId) || deletedSet.has(pId)) {
+            map.delete(key);
+          }
+        } else if (key.startsWith('ft_emp_')) {
+          const empTxId = key.replace('ft_emp_', '');
+          if (!activeEmpTxIds.has(empTxId) || deletedSet.has(empTxId)) {
+            map.delete(key);
+          }
+        }
+      }
+    }
 
     // Apply un-synced pending offline actions on top (new offline additions or edits)
     for (const act of pendingActions) {
@@ -336,7 +354,7 @@ function mergeRemoteWithPendingLocal<T extends { id?: string; name?: string }>(t
       if (!payload) continue;
       const docId = typeof payload === 'string' ? payload : payload.id;
 
-      if (type.startsWith('DELETE_') && docId) {
+      if ((type.startsWith('DELETE_') || type.endsWith('_DELETE')) && docId) {
         map.delete(docId);
         continue;
       }
@@ -636,6 +654,87 @@ export function recalculateAllContractsFromPayments(
   }
 }
 
+export function recalculateLocalFundBalances(persistToCache = true): any[] {
+  try {
+    const funds = getLocalCache<any>('funds');
+    const txs = getLocalCache<any>('fund_transactions');
+    if (!Array.isArray(funds) || funds.length === 0) return funds || [];
+
+    const deletedIds = getDeletedRecordIds();
+
+    const activePayments = getLocalCache<any>('payments');
+    const activePaymentIds = new Set(
+      activePayments
+        .filter((p: any) => p && p.id && !deletedIds.has(String(p.id)))
+        .map((p: any) => String(p.id))
+    );
+
+    const activeEmpTx = getLocalCache<any>('employee_transactions');
+    const activeEmpTxIds = new Set(
+      activeEmpTx
+        .filter((t: any) => t && t.id && !deletedIds.has(String(t.id)))
+        .map((t: any) => String(t.id))
+    );
+
+    const activeTxs = Array.isArray(txs)
+      ? txs.filter((tx: any) => {
+          if (!tx || !tx.id || deletedIds.has(String(tx.id))) return false;
+          const txId = String(tx.id);
+          if (txId.startsWith('ft_pay_')) {
+            const pId = txId.replace('ft_pay_', '');
+            if (!activePaymentIds.has(pId) || deletedIds.has(pId)) return false;
+          } else if (txId.startsWith('ft_emp_')) {
+            const empTxId = txId.replace('ft_emp_', '');
+            if (!activeEmpTxIds.has(empTxId) || deletedIds.has(empTxId)) return false;
+          }
+          return true;
+        })
+      : [];
+
+    const uniqueTxMap = new Map<string, any>();
+    for (const tx of activeTxs) {
+      uniqueTxMap.set(String(tx.id), tx);
+    }
+    const cleanActiveTxs = Array.from(uniqueTxMap.values());
+
+    const updatedFunds = funds.map((fund: any) => {
+      const fundId = fund.id;
+      const total = cleanActiveTxs.reduce((sum: number, tx: any) => {
+        const amt = Number(tx.amount ?? tx.amountPaid) || 0;
+        const txFundId = tx.fundId ?? tx.fund_id;
+        const txTargetFundId = tx.targetFundId ?? tx.target_fund_id;
+
+        if (txFundId === fundId) {
+          if (['deposit', 'installment', 'transfer_in', 'employee_repay', 'manual_adjustment', 'initial'].includes(tx.type)) {
+            return sum + amt;
+          } else if (['withdraw', 'transfer_out', 'transfer', 'expense', 'employee_loan'].includes(tx.type)) {
+            return sum - amt;
+          }
+        } else if (txTargetFundId === fundId && tx.type === 'transfer') {
+          return sum + amt;
+        }
+        return sum;
+      }, 0);
+
+      return {
+        ...fund,
+        balance: Math.max(0, total),
+      };
+    });
+
+    if (persistToCache) {
+      try {
+        setLocalCache('funds', updatedFunds);
+      } catch (e) {}
+    }
+
+    return updatedFunds;
+  } catch (err) {
+    console.warn('[recalculateLocalFundBalances] Error:', err);
+    return getLocalCache<any>('funds') || [];
+  }
+}
+
 /**
  * Enriches contracts with customer GPS location coordinates from customers table/cache
  * Guarantees that customer locations are preserved even if contracts table has null coordinates
@@ -693,9 +792,28 @@ export function getLocalCache<T>(tableName: string): T[] {
     const raw = localStorage.getItem(`sami_cache_${tableName}`);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch (e) {}
+
+  // Auto-seed initial fallback data if cache is empty or missing (essential for published / APK builds)
+  let fallback: any[] = [];
+  if (tableName === 'reps') fallback = DEFAULT_REPS;
+  else if (tableName === 'funds') fallback = INITIAL_FUNDS;
+  else if (tableName === 'customer_lists') fallback = INITIAL_CUSTOMER_LISTS;
+  else if (tableName === 'contracts') fallback = INITIAL_CONTRACTS;
+  else if (tableName === 'payments') fallback = INITIAL_PAYMENTS;
+  else if (tableName === 'inventory') fallback = INITIAL_INVENTORY;
+  else if (tableName === 'employees') fallback = INITIAL_EMPLOYEES;
+  else if (tableName === 'appointments') fallback = INITIAL_APPOINTMENTS;
+
+  if (fallback.length > 0) {
+    try {
+      localStorage.setItem(`sami_cache_${tableName}`, JSON.stringify(fallback));
+    } catch (e) {}
+    return fallback as T[];
+  }
+
   return [];
 }
 
@@ -1674,6 +1792,8 @@ export async function reconcileAllLocalWithDatabase(options?: {
           setLocalCache('appointments', mergeRemoteWithPendingLocal('appointments', data.appointments));
         }
 
+        recalculateLocalFundBalances(true);
+
         mirrorLocalSnapshotToIndexedDb(true);
         notifySubscribersRefresh();
         const cCount = data.contracts?.length || 0;
@@ -2156,6 +2276,7 @@ function createSubscriber<T extends { id?: string }>(tableName: string, apiEndpo
         else if (tableName === 'payments') initialFallback = INITIAL_PAYMENTS;
         else if (tableName === 'inventory') initialFallback = INITIAL_INVENTORY;
         else if (tableName === 'employees') initialFallback = INITIAL_EMPLOYEES;
+        else if (tableName === 'appointments') initialFallback = INITIAL_APPOINTMENTS;
         if (initialFallback.length > 0) {
           setLocalCache(tableName, initialFallback as T[]);
           emitIfChanged(initialFallback as T[]);
@@ -2479,7 +2600,7 @@ export const recordPaymentInDatabase = async (arg1: any, arg2?: any, arg3?: any,
   if (payload.contractId) unmarkRecordAsDeleted(payload.contractId);
   updateLocalCacheItem('payments', payload);
 
-  // Instantly reflect installment in local funds and fund transactions
+  // Instantly reflect installment in local funds and fund transactions authoritatively
   if (resolvedFundId && numAmount > 0) {
     const ftId = `ft_pay_${id}`;
     const txObj = {
@@ -2492,15 +2613,7 @@ export const recordPaymentInDatabase = async (arg1: any, arg2?: any, arg3?: any,
       createdAt: payload.paymentDate || payload.createdAt || new Date().toISOString(),
     };
     updateLocalCacheItem('fund_transactions', txObj);
-
-    const cachedFunds = getLocalCache<any>('funds');
-    const targetFund = cachedFunds.find((f: any) => f.id === resolvedFundId);
-    if (targetFund) {
-      updateLocalCacheItem('funds', {
-        ...targetFund,
-        balance: Math.max(0, (Number(targetFund.balance) || 0) + numAmount),
-      });
-    }
+    recalculateLocalFundBalances(true);
   }
 
   const payPromise = addToPendingQueue('CREATE_PAYMENT', payload);
@@ -2720,14 +2833,8 @@ export const deletePaymentFromDatabase = async (id: string | any, _contracts?: a
 
   // Immediately deduct from local fund cache and remove transaction
   if (fundId && payAmt > 0) {
-    const targetFund = funds.find((f: any) => f.id === fundId || (f.name && normName(f.name) === normName(fundId)));
-    if (targetFund) {
-      updateLocalCacheItem('funds', {
-        ...targetFund,
-        balance: Math.max(0, (Number(targetFund.balance) || 0) - payAmt),
-      });
-    }
     removeLocalCacheItem('fund_transactions', `ft_pay_${docId}`);
+    recalculateLocalFundBalances(true);
   }
 
   markRecordAsDeleted(docId, 'payments');
@@ -2830,13 +2937,6 @@ export const deleteMultiplePaymentsFromDatabase = async (payments: any[], _contr
     }
 
     if (fundId && payAmt > 0) {
-      const targetFund = funds.find((f: any) => f.id === fundId || (f.name && normName(f.name) === normName(fundId)));
-      if (targetFund) {
-        updateLocalCacheItem('funds', {
-          ...targetFund,
-          balance: Math.max(0, (Number(targetFund.balance) || 0) - payAmt),
-        });
-      }
       removeLocalCacheItem('fund_transactions', `ft_pay_${docId}`);
     }
 
@@ -2855,16 +2955,14 @@ export const deleteMultiplePaymentsFromDatabase = async (payments: any[], _contr
     saveToPostgres(`payments/${docId}`, 'DELETE', undefined, qPromise);
 
     if (paymentObj && allContracts.length > 0) {
-      const target = allContracts.find(
-        (c: any) =>
-          (paymentObj.contractId && c.id && paymentObj.contractId === c.id) ||
-          (!paymentObj.contractId && paymentObj.customerName && c.customerName && normName(paymentObj.customerName) === normName(c.customerName))
-      );
+      const target = allContracts.find((ct: any) => ct.id === contractId || (ct.customerName && paymentObj.customerName && normName(ct.customerName) === normName(paymentObj.customerName)));
       if (target && target.id) {
         affectedContractMap.set(target.id, target);
       }
     }
   }
+
+  recalculateLocalFundBalances(true);
 
   // Trigger batch API call to server
   try {
@@ -2986,6 +3084,26 @@ export const addFundToDatabase = async (fund: any, ..._rest: any[]) => {
   const orderIndex = fund.orderIndex !== undefined ? Number(fund.orderIndex) : current.length;
   const payload = { ...fund, id, orderIndex };
   updateLocalCacheItem('funds', payload);
+
+  const initBal = Number(payload.balance) || 0;
+  if (initBal > 0) {
+    const initId = `ft_init_${id}_${Date.now()}`;
+    const txObj = {
+      id: initId,
+      fundId: id,
+      type: 'deposit',
+      amount: initBal,
+      note: 'رصيد افتتاحي للصندوق',
+      repName: 'الإدارة',
+      createdAt: new Date().toISOString(),
+    };
+    updateLocalCacheItem('fund_transactions', txObj);
+    const txqPromise = addToPendingQueue('CREATE_FUND_TRANSACTION', txObj);
+    saveToPostgres('fund-transactions', 'POST', txObj, txqPromise);
+  }
+
+  recalculateLocalFundBalances(true);
+
   const qPromise = addToPendingQueue('CREATE_FUND', payload);
   saveToPostgres('funds', 'POST', payload, qPromise);
 };
@@ -3000,7 +3118,34 @@ export const updateFundInDatabase = async (id: string | any, updates?: any, ..._
   const existing = current.find((f) => f.id === docId);
   const merged = existing ? { ...existing, ...payload } : payload;
 
+  if (payload.balance !== undefined && payload.balance !== null && payload.balance !== '') {
+    const targetBal = Number(payload.balance);
+    if (!isNaN(targetBal)) {
+      const recalculatedFunds = recalculateLocalFundBalances(false);
+      const targetFund = recalculatedFunds.find((f: any) => f.id === docId);
+      const currentCalcBal = Number(targetFund?.balance) || 0;
+      const diff = targetBal - currentCalcBal;
+      if (diff !== 0) {
+        const adjId = `ft_adj_${docId}_${Date.now()}`;
+        const txObj = {
+          id: adjId,
+          fundId: docId,
+          type: diff > 0 ? 'deposit' : 'withdraw',
+          amount: Math.abs(diff),
+          note: 'تعديل يدوي لرصيد الخزينة',
+          repName: 'الإدارة',
+          createdAt: new Date().toISOString(),
+        };
+        updateLocalCacheItem('fund_transactions', txObj);
+        const txqPromise = addToPendingQueue('CREATE_FUND_TRANSACTION', txObj);
+        saveToPostgres('fund-transactions', 'POST', txObj, txqPromise);
+      }
+    }
+  }
+
   updateLocalCacheItem('funds', merged);
+  recalculateLocalFundBalances(true);
+
   const qPromise = addToPendingQueue('UPDATE_FUND', payload);
   saveToPostgres(`funds/${docId}`, 'PUT', payload, qPromise);
 };
