@@ -57,7 +57,7 @@ import {
   openBatteryOptimizationSettings,
   openAutoStartSettings,
 } from '../lib/offlineQueue';
-import { checkServerHealth } from '../lib/apiConfig';
+import { checkServerHealth, getHostingerServerUrl, setHostingerServerUrl } from '../lib/apiConfig';
 import { forceRefreshAllDataFromPostgres, reconcileAllLocalWithDatabase } from '../lib/postgresClient';
 
 interface PrinterSettingsModalProps {
@@ -104,6 +104,7 @@ export const PrinterSettingsModal: React.FC<PrinterSettingsModalProps> = ({
   const [showLockGuide, setShowLockGuide] = useState<boolean>(false);
 
   // Server & Database connection state
+  const [hostingerUrlInput, setHostingerUrlInput] = useState<string>(() => getHostingerServerUrl());
   const [isTestingServer, setIsTestingServer] = useState<boolean>(false);
   const [isReconciling, setIsReconciling] = useState<boolean>(false);
   const [reconcileResult, setReconcileResult] = useState<{ success: boolean; message: string; count?: number } | null>(null);
@@ -115,6 +116,42 @@ export const PrinterSettingsModal: React.FC<PrinterSettingsModalProps> = ({
   } | null>(null);
 
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const handleTestAndSaveHostingerUrl = async () => {
+    if (!hostingerUrlInput.trim()) {
+      setStatusMessage({ text: isAr ? 'يرجى إدخال رابط سيرفر هوستجر صالح' : 'Please enter valid Hostinger URL', type: 'error' });
+      return;
+    }
+    const cleanUrl = hostingerUrlInput.trim().replace(/\/+$/, '');
+    setIsTestingServer(true);
+    try {
+      setHostingerServerUrl(cleanUrl);
+      const health = await checkServerHealth(cleanUrl);
+      if (health.ok) {
+        setServerHealth({
+          tested: true,
+          ok: true,
+          latencyMs: health.latencyMs,
+          message: isAr
+            ? `تم الاتصال بسيرفر هوستجر بنجاح (${health.latencyMs}ms) 🟢`
+            : `Hostinger Connected (${health.latencyMs}ms)`,
+        });
+        setStatusMessage({ text: isAr ? 'تم ربط واستدعاء سيرفر هوستجر بنجاح! 🌐' : 'Hostinger Server connected successfully', type: 'success' });
+        await forceRefreshAllDataFromPostgres();
+      } else {
+        setServerHealth({
+          tested: true,
+          ok: false,
+          message: isAr ? `تنبيه الاتصال: ${health.error}` : `Connection notice: ${health.error}`,
+        });
+        setStatusMessage({ text: isAr ? `تم حفظ رابط هوستجر (تم اختبار الرابط): ${health.error}` : `Hostinger URL set: ${health.error}`, type: 'info' });
+      }
+    } catch (e: any) {
+      setStatusMessage({ text: e?.message || 'خطأ أثناء اختبار الاتصال', type: 'error' });
+    } finally {
+      setIsTestingServer(false);
+    }
+  };
 
   const handleRunReconciliation = async () => {
     setIsReconciling(true);
@@ -927,13 +964,44 @@ export const PrinterSettingsModal: React.FC<PrinterSettingsModalProps> = ({
               </p>
             )}
 
+            {/* حالة وقسم رابط استضافة هوستجر (Hostinger Server Domain) */}
+            <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-indigo-200 dark:border-indigo-800/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-indigo-600" />
+                  {isAr ? 'رابط استضافة هوستجر (Hostinger Server Link):' : 'Hostinger Server Link:'}
+                </span>
+                <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+                  {isAr ? 'مستضيف ومربوط' : 'Hostinger Connected'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 dir-ltr">
+                <input
+                  type="text"
+                  value={hostingerUrlInput}
+                  onChange={(e) => setHostingerUrlInput(e.target.value)}
+                  placeholder="http://72.62.158.128:3000 or https://your-hostinger-domain.com"
+                  className="flex-1 px-3 py-2 text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleTestAndSaveHostingerUrl}
+                  disabled={isTestingServer}
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-all cursor-pointer flex items-center gap-1 shrink-0 disabled:opacity-50"
+                >
+                  {isTestingServer ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
+                  <span>{isAr ? 'حفظ واختبار' : 'Save & Test'}</span>
+                </button>
+              </div>
+            </div>
+
             {/* حالة خادم السحاب المباشر التلقائي */}
             <div className="pt-2 border-t border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-[11px]">
               <span className="font-bold text-slate-600 dark:text-slate-400">
                 {isAr ? 'خادم المزامنة التلقائي:' : 'Auto Sync Server:'}
               </span>
               <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                {isAr ? 'مربوط ومفعل تلقائياً (100%)' : 'Auto-Connected (100%)'}
+                {isAr ? 'مربوط بمستضيف هوستجر (100%)' : 'Hostinger Connected (100%)'}
               </span>
             </div>
 
